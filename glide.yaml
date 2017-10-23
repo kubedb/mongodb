@@ -1,0 +1,30 @@
+package: github.com/k8sdb/mongodb
+import:
+- package: github.com/appscode/go
+- package: github.com/appscode/kutil
+- package: github.com/appscode/log
+- package: github.com/appscode/pat
+- package: github.com/coreos/prometheus-operator
+  repo: https://github.com/appscode/prometheus-operator.git
+  vcs: git
+  version: client-go-5
+- package: github.com/jpillora/go-ogle-analytics
+- package: github.com/k8sdb/apimachinery
+  version: mongo
+- package: github.com/prometheus/client_golang
+  version: v0.8.0
+- package: github.com/prometheus/common
+  version: 3233b24a36715a2fe36d162260457857a56d672d
+- package: github.com/sirupsen/logrus
+  version: v1.0.3
+- package: github.com/spf13/cobra
+- package: github.com/spf13/pflag
+  version: v1.0.0
+- package: k8s.io/api
+  version: fe29995db37613b9c5b2a647544cf627bfa8d299
+- package: k8s.io/apiextensions-apiserver
+  version: release-1.8
+- package: k8s.io/apimachinery
+  version: 019ae5ada31de202164b118aee88ee2d14075c31
+- package: k8s.io/client-go
+  version: v5.0.0
