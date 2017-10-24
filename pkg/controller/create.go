@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
 	tapi "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
@@ -53,7 +54,11 @@ func (c *Controller) createService(mongodb *tapi.MongoDB) error {
 		},
 		Spec: core.ServiceSpec{
 			Ports: []core.ServicePort{
-			// TODO: Use appropriate port for your service
+				{
+					Name:       "db",
+					Port:       27017,
+					TargetPort: intstr.FromString("db"),
+				},
 			},
 			Selector: mongodb.OffshootLabels(),
 		},
@@ -113,21 +118,28 @@ func (c *Controller) createStatefulSet(mongodb *tapi.MongoDB) (*apps.StatefulSet
 					Containers: []core.Container{
 						{
 							Name: tapi.ResourceNameMongoDB,
-							//TODO: Use correct image. Its a template
-							Image:           fmt.Sprintf("%s:%s", docker.ImageMongoDB, mongodb.Spec.Version),
+							//#LATER Image:           fmt.Sprintf("%s:%s", docker.ImageMongoDB, mongodb.Spec.Version),
+							Image:           fmt.Sprintf("%s:%s", "library/mongodb", mongodb.Spec.Version),
 							ImagePullPolicy: core.PullIfNotPresent,
-							Ports:           []core.ContainerPort{
-							//TODO: Use appropriate port for your container
+							Ports: []core.ContainerPort{
+								{
+									Name:          "db",
+									ContainerPort: 27017,
+								},
 							},
 							Resources: mongodb.Spec.Resources,
 							VolumeMounts: []core.VolumeMount{
-								//TODO: Add Secret volume if necessary
 								{
 									Name:      "data",
-									MountPath: "/var/pv",
+									MountPath: "/data/db", //Data files path of mongodb, ref: https://github.com/docker-library/docs/tree/master/mongo#where-to-store-data
 								},
 							},
-							Args: []string{ /*TODO Add args if necessary*/ },
+							Env: []core.EnvVar{
+								{
+									Name:  "MONGO_INITDB_ROOT_USERNAME",
+									Value: "root",
+								},
+							},
 						},
 					},
 					NodeSelector:  mongodb.Spec.NodeSelector,
@@ -162,9 +174,6 @@ func (c *Controller) createStatefulSet(mongodb *tapi.MongoDB) (*apps.StatefulSet
 		statefulSet.Spec.Template.Spec.Containers = append(statefulSet.Spec.Template.Spec.Containers, exporter)
 	}
 
-	// ---> Start
-	//TODO: Use following if secret is necessary
-	// otherwise remove
 	if mongodb.Spec.DatabaseSecret == nil {
 		secretVolumeSource, err := c.createDatabaseSecret(mongodb)
 		if err != nil {
@@ -182,9 +191,8 @@ func (c *Controller) createStatefulSet(mongodb *tapi.MongoDB) (*apps.StatefulSet
 		mongodb = _mongodb
 	}
 
-	// Add secretVolume for authentication
-	addSecretVolume(statefulSet, mongodb.Spec.DatabaseSecret)
-	// --- > End
+	//Set root user password from Secret
+	setEnvFromSecret(statefulSet, mongodb.Spec.DatabaseSecret)
 
 	// Add Data volume for StatefulSet
 	addDataVolume(statefulSet, mongodb.Spec.Storage)
@@ -215,6 +223,23 @@ func (c *Controller) createStatefulSet(mongodb *tapi.MongoDB) (*apps.StatefulSet
 	return statefulSet, nil
 }
 
+// Set root user password from Secret, Through Env.
+func setEnvFromSecret(statefulSet *apps.StatefulSet, secSource *core.SecretVolumeSource) {
+	statefulSet.Spec.Template.Spec.Containers[0].Env = append(statefulSet.Spec.Template.Spec.Containers[0].Env,
+		core.EnvVar{
+			Name: "MYSQL_ROOT_PASSWORD",
+			ValueFrom: &core.EnvVarSource{
+				SecretKeyRef: &core.SecretKeySelector{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: secSource.SecretName,
+					},
+					Key: ".admin",
+				},
+			},
+		},
+	)
+}
+
 func (c *Controller) findSecret(secretName, namespace string) (bool, error) {
 	secret, err := c.Client.CoreV1().Secrets(namespace).Get(secretName, metav1.GetOptions{})
 	if err != nil {
@@ -231,9 +256,6 @@ func (c *Controller) findSecret(secretName, namespace string) (bool, error) {
 	return true, nil
 }
 
-// ---> start
-//TODO: Use this method to create secret dynamically
-// otherwise remove this method
 func (c *Controller) createDatabaseSecret(mongodb *tapi.MongoDB) (*core.SecretVolumeSource, error) {
 	authSecretName := mongodb.Name + "-admin-auth"
 
@@ -243,6 +265,10 @@ func (c *Controller) createDatabaseSecret(mongodb *tapi.MongoDB) (*core.SecretVo
 	}
 
 	if !found {
+		MONGO_PASSWORD := fmt.Sprintf("%s", rand.GeneratePassword())
+		data := map[string][]byte{
+			".admin": []byte(MONGO_PASSWORD),
+		}
 
 		secret := &core.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -252,7 +278,7 @@ func (c *Controller) createDatabaseSecret(mongodb *tapi.MongoDB) (*core.SecretVo
 				},
 			},
 			Type: core.SecretTypeOpaque,
-			Data: make(map[string][]byte), // Add secret data
+			Data: data, // Add secret data
 		}
 		if _, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Create(secret); err != nil {
 			return nil, err
@@ -263,25 +289,6 @@ func (c *Controller) createDatabaseSecret(mongodb *tapi.MongoDB) (*core.SecretVo
 		SecretName: authSecretName,
 	}, nil
 }
-
-// ---> End
-
-// ---> Start
-//TODO: Use this method to add secret volume
-// otherwise remove this method
-func addSecretVolume(statefulSet *apps.StatefulSet, secretVolume *core.SecretVolumeSource) error {
-	statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes,
-		core.Volume{
-			Name: "secret",
-			VolumeSource: core.VolumeSource{
-				Secret: secretVolume,
-			},
-		},
-	)
-	return nil
-}
-
-// ---> End
 
 func addDataVolume(statefulSet *apps.StatefulSet, pvcSpec *core.PersistentVolumeClaimSpec) {
 	if pvcSpec != nil {
@@ -318,20 +325,13 @@ func addDataVolume(statefulSet *apps.StatefulSet, pvcSpec *core.PersistentVolume
 	}
 }
 
-// ---> Start
-//TODO: Use this method to add initial script, if supported
-// Otherwise, remove it
 func addInitialScript(statefulSet *apps.StatefulSet, script *tapi.ScriptSourceSpec) {
 	statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts,
 		core.VolumeMount{
 			Name:      "initial-script",
-			MountPath: "/var/db-script",
+			MountPath: "/docker-entrypoint-initdb.d",
 		},
 	)
-	statefulSet.Spec.Template.Spec.Containers[0].Args = []string{
-		// Add additional args
-		script.ScriptPath,
-	}
 
 	statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes,
 		core.Volume{
@@ -340,8 +340,6 @@ func addInitialScript(statefulSet *apps.StatefulSet, script *tapi.ScriptSourceSp
 		},
 	)
 }
-
-// ---> End
 
 func (c *Controller) createDormantDatabase(mongodb *tapi.MongoDB) (*tapi.DormantDatabase, error) {
 	dormantDb := &tapi.DormantDatabase{
@@ -450,7 +448,10 @@ func (c *Controller) createRestoreJob(mongodb *tapi.MongoDB, snapshot *tapi.Snap
 							},
 							Resources: snapshot.Spec.Resources,
 							VolumeMounts: []core.VolumeMount{
-								//TODO: Mount secret volume if necessary
+								{
+									Name:      "secret",
+									MountPath: "/srv/" + tapi.ResourceNameMySQL + "/secrets",
+								},
 								{
 									Name:      persistentVolume.Name,
 									MountPath: "/var/" + snapshotType_DumpRestore + "/",
@@ -464,8 +465,14 @@ func (c *Controller) createRestoreJob(mongodb *tapi.MongoDB, snapshot *tapi.Snap
 						},
 					},
 					Volumes: []core.Volume{
-						//TODO: Add secret volume if necessary
-						// Check postgres repository for example
+						{
+							Name: "secret",
+							VolumeSource: core.VolumeSource{
+								Secret: &core.SecretVolumeSource{
+									SecretName: mongodb.Spec.DatabaseSecret.SecretName,
+								},
+							},
+						},
 						{
 							Name:         persistentVolume.Name,
 							VolumeSource: persistentVolume.VolumeSource,

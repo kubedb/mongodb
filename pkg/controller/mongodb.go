@@ -18,9 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// TODO: Use your resource instead of *tapi.MongoDB
 func (c *Controller) create(mongodb *tapi.MongoDB) error {
-	// TODO: Use correct TryPatch method
 	_, err := kutildb.TryPatchMongoDB(c.ExtClient, mongodb.ObjectMeta, func(in *tapi.MongoDB) *tapi.MongoDB {
 		t := metav1.Now()
 		in.Status.CreationTime = &t
@@ -163,15 +161,11 @@ func (c *Controller) matchDormantDatabase(mongodb *tapi.MongoDB) (bool, error) {
 		return false, errors.New(message)
 	}
 
-	// Check DatabaseKind
-	// TODO: Change tapi.ResourceKindMongoDB
 	if dormantDb.Labels[tapi.LabelDatabaseKind] != tapi.ResourceKindMongoDB {
 		return sendEvent(fmt.Sprintf(`Invalid MongoDB: "%v". Exists DormantDatabase "%v" of different Kind`,
 			mongodb.Name, dormantDb.Name))
 	}
 
-	// Check InitSpec
-	// TODO: Change tapi.MongoDBInitSpec
 	initSpecAnnotationStr := dormantDb.Annotations[tapi.MongoDBInitSpec]
 	if initSpecAnnotationStr != "" {
 		var initSpecAnnotation *tapi.InitSpec
@@ -191,15 +185,11 @@ func (c *Controller) matchDormantDatabase(mongodb *tapi.MongoDB) (bool, error) {
 	originalSpec := mongodb.Spec
 	originalSpec.Init = nil
 
-	// ---> Start
-	// TODO: Use following part if database secret is supported
-	// Otherwise, remove it
 	if originalSpec.DatabaseSecret == nil {
 		originalSpec.DatabaseSecret = &core.SecretVolumeSource{
 			SecretName: mongodb.Name + "-admin-auth",
 		}
 	}
-	// ---> End
 
 	if !reflect.DeepEqual(drmnOriginSpec, &originalSpec) {
 		return sendEvent("MongoDB spec mismatches with OriginSpec in DormantDatabases")
@@ -274,7 +264,6 @@ func (c *Controller) ensureStatefulSet(mongodb *tapi.MongoDB) error {
 	}
 
 	if mongodb.Spec.Init != nil && mongodb.Spec.Init.SnapshotSource != nil {
-		// TODO: Use correct TryPatch method
 		_, err := kutildb.TryPatchMongoDB(c.ExtClient, mongodb.ObjectMeta, func(in *tapi.MongoDB) *tapi.MongoDB {
 			in.Status.Phase = tapi.DatabasePhaseInitializing
 			return in
@@ -295,7 +284,6 @@ func (c *Controller) ensureStatefulSet(mongodb *tapi.MongoDB) error {
 		}
 	}
 
-	// TODO: Use correct TryPatch method
 	_, err = kutildb.TryPatchMongoDB(c.ExtClient, mongodb.ObjectMeta, func(in *tapi.MongoDB) *tapi.MongoDB {
 		in.Status.Phase = tapi.DatabasePhaseRunning
 		return in
@@ -386,7 +374,6 @@ func (c *Controller) initialize(mongodb *tapi.MongoDB) error {
 func (c *Controller) pause(mongodb *tapi.MongoDB) error {
 	if mongodb.Annotations != nil {
 		if val, found := mongodb.Annotations["kubedb.com/ignore"]; found {
-			//TODO: Add Event Reason "Ignored"
 			c.recorder.Event(mongodb.ObjectReference(), core.EventTypeNormal, "Ignored", val)
 			return nil
 		}

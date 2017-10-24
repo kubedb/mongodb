@@ -92,7 +92,10 @@ func (c *Controller) GetSnapshotter(snapshot *tapi.Snapshot) (*batch.Job, error)
 							},
 							Resources: snapshot.Spec.Resources,
 							VolumeMounts: []core.VolumeMount{
-								//TODO: Add Secret volume if necessary
+								{
+									Name:      "secret",
+									MountPath: "/srv/" + tapi.ResourceNameMySQL + "/secrets",
+								},
 								{
 									Name:      persistentVolume.Name,
 									MountPath: "/var/" + snapshotType_DumpBackup + "/",
@@ -106,8 +109,14 @@ func (c *Controller) GetSnapshotter(snapshot *tapi.Snapshot) (*batch.Job, error)
 						},
 					},
 					Volumes: []core.Volume{
-						//TODO: Add secret volume if necessary
-						// Check postgres repository for example
+						{
+							Name: "secret",
+							VolumeSource: core.VolumeSource{
+								Secret: &core.SecretVolumeSource{
+									SecretName: mongodb.Spec.DatabaseSecret.SecretName,
+								},
+							},
+						},
 						{
 							Name:         persistentVolume.Name,
 							VolumeSource: persistentVolume.VolumeSource,

@@ -89,7 +89,7 @@ func (c *Controller) Run() {
 	// Start Cron
 	c.cronController.StartCron()
 	// Stop Cron
-	defer c.cronController.StopCron()
+	//defer c.cronController.StopCron()
 
 	// Watch x  TPR objects
 	go c.watchMongoDB()
@@ -98,7 +98,7 @@ func (c *Controller) Run() {
 	// Watch DeletedDatabase with labelSelector only for MongoDB
 	go c.watchDeletedDatabase()
 	// hold
-	hold.Hold()
+	//hold.Hold()
 }
 
 // Blocks caller. Intended to be called as a Go routine.
@@ -167,7 +167,6 @@ func (c *Controller) watchMongoDB() {
 
 func (c *Controller) watchDatabaseSnapshot() {
 	labelMap := map[string]string{
-		// TODO: Use appropriate ResourceKind.
 		api.LabelDatabaseKind: api.ResourceKindMongoDB,
 	}
 	// Watch with label selector
@@ -191,7 +190,6 @@ func (c *Controller) watchDatabaseSnapshot() {
 
 func (c *Controller) watchDeletedDatabase() {
 	labelMap := map[string]string{
-		// TODO: Use appropriate ResourceKind.
 		api.LabelDatabaseKind: api.ResourceKindMongoDB,
 	}
 	// Watch with label selector
@@ -216,7 +214,6 @@ func (c *Controller) watchDeletedDatabase() {
 func (c *Controller) ensureCustomResourceDefinition() {
 	log.Infoln("Ensuring CustomResourceDefinition...")
 
-	// TODO: Use appropriate ResourceType.
 	resourceName := api.ResourceTypeMongoDB + "." + api.SchemeGroupVersion.Group
 	if _, err := c.ApiExtKubeClient.CustomResourceDefinitions().Get(resourceName, metav1.GetOptions{}); err != nil {
 		if !kerr.IsNotFound(err) {
@@ -238,7 +235,6 @@ func (c *Controller) ensureCustomResourceDefinition() {
 			Version: api.SchemeGroupVersion.Version,
 			Scope:   crd_api.NamespaceScoped,
 			Names: crd_api.CustomResourceDefinitionNames{
-				// TODO: Use appropriate const.
 				Plural:     api.ResourceTypeMongoDB,
 				Kind:       api.ResourceKindMongoDB,
 				ShortNames: []string{api.ResourceCodeMongoDB},
