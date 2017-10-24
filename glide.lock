@@ -1,5 +1,5 @@
 hash: 0c42a43e995dd6b458a0adbf8f567050db5e38358f702073fece569a387e9bca
-updated: 2017-10-24T10:29:23.737596269+06:00
+updated: 2017-10-24T11:02:20.621223047+06:00
 imports:
 - name: cloud.google.com/go
   version: fe3d41e1ecb2ce36ad3a979037c9b9a2b726226f
@@ -88,7 +88,6 @@ imports:
   vcs: git
   subpackages:
   - pkg/client/monitoring/v1
-  - pkg/client/monitoring/v1alpha1
 - name: github.com/davecgh/go-spew
   version: 782f4967f2dc4564575ca782fe2d04090b5faca8
   subpackages:
@@ -206,7 +205,7 @@ imports:
 - name: github.com/juju/ratelimit
   version: 5b9ff866471762aa2ab2dced63c9fb6f53921342
 - name: github.com/k8sdb/apimachinery
-  version: 14ff34f214ebffb07d410b686d74d7d16a00de9f
+  version: 1c5ae126447d6672df3e94cef128916ee8be1917
   subpackages:
   - apis/kubedb
   - apis/kubedb/v1alpha1
@@ -324,7 +323,7 @@ imports:
   - unicode/norm
   - width
 - name: google.golang.org/api
-  version: 7afc123cf726cd2f253faa3e144d2ab65477b18f
+  version: 0bf971c28aa2a58853c3ea0a9bc60c9b3761234a
   subpackages:
   - gensupport
   - googleapi
@@ -387,7 +386,6 @@ imports:
   subpackages:
   - pkg/apis/apiextensions
   - pkg/apis/apiextensions/v1beta1
-  - pkg/client/clientset/clientset
   - pkg/client/clientset/clientset/scheme
   - pkg/client/clientset/clientset/typed/apiextensions/v1beta1
 - name: k8s.io/apimachinery

@@ -15,10 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-func EnsureMongoDB(c tcs.KubedbV1alpha1Interface, meta metav1.ObjectMeta, transform func(alert *aci.MongoDB) *aci.MongoDB) (*aci.MongoDB, error) {
-	return CreateOrPatchMongoDB(c, meta, transform)
-}
-
 func CreateOrPatchMongoDB(c tcs.KubedbV1alpha1Interface, meta metav1.ObjectMeta, transform func(alert *aci.MongoDB) *aci.MongoDB) (*aci.MongoDB, error) {
 	cur, err := c.MongoDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
 	if kerr.IsNotFound(err) {
