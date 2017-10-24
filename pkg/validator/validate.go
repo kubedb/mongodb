@@ -10,7 +10,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// TODO: Change method name. ValidateMongoDB -> Validate<--->
 func ValidateMongoDB(client kubernetes.Interface, mongodb *tapi.MongoDB) error {
 	if mongodb.Spec.Version == "" {
 		return fmt.Errorf(`Object 'Version' is missing in '%v'`, mongodb.Spec)

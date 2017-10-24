@@ -118,8 +118,7 @@ func (c *Controller) createStatefulSet(mongodb *tapi.MongoDB) (*apps.StatefulSet
 					Containers: []core.Container{
 						{
 							Name: tapi.ResourceNameMongoDB,
-							//#LATER Image:           fmt.Sprintf("%s:%s", docker.ImageMongoDB, mongodb.Spec.Version),
-							Image:           fmt.Sprintf("%s:%s", "library/mongodb", mongodb.Spec.Version),
+							Image:           fmt.Sprintf("%s:%s", docker.ImageMongoDB, mongodb.Spec.Version),
 							ImagePullPolicy: core.PullIfNotPresent,
 							Ports: []core.ContainerPort{
 								{
@@ -133,6 +132,9 @@ func (c *Controller) createStatefulSet(mongodb *tapi.MongoDB) (*apps.StatefulSet
 									Name:      "data",
 									MountPath: "/data/db", //Data files path of mongodb, ref: https://github.com/docker-library/docs/tree/master/mongo#where-to-store-data
 								},
+							},
+							Args: []string{
+								"--auth",
 							},
 							Env: []core.EnvVar{
 								{
@@ -227,7 +229,7 @@ func (c *Controller) createStatefulSet(mongodb *tapi.MongoDB) (*apps.StatefulSet
 func setEnvFromSecret(statefulSet *apps.StatefulSet, secSource *core.SecretVolumeSource) {
 	statefulSet.Spec.Template.Spec.Containers[0].Env = append(statefulSet.Spec.Template.Spec.Containers[0].Env,
 		core.EnvVar{
-			Name: "MYSQL_ROOT_PASSWORD",
+			Name: "MONGO_INITDB_ROOT_PASSWORD",
 			ValueFrom: &core.EnvVarSource{
 				SecretKeyRef: &core.SecretKeySelector{
 					LocalObjectReference: core.LocalObjectReference{

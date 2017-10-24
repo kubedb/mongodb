@@ -28,3 +28,6 @@ import:
   version: 019ae5ada31de202164b118aee88ee2d14075c31
 - package: k8s.io/client-go
   version: v5.0.0
+testImport:
+- package: github.com/stretchr/testify
+  version: v1.1.4
