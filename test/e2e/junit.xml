@@ -1,2 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <testsuite tests="1" failures="0" time="749.877887173"></testsuite>
+  <testsuite tests="1" failures="0" time="2748.742015597">
+      <testcase name="MongoDB Test General - should run successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test General With PVC should run successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test DoNotPause should work successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+  </testsuite>

@@ -16,11 +16,9 @@ import (
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"github.com/TamalSaha/go-oneliners"
 )
 
 func (c *Controller) create(mongodb *tapi.MongoDB) error {
-	oneliners.FILE("1")
 	_, err := kutildb.TryPatchMongoDB(c.ExtClient, mongodb.ObjectMeta, func(in *tapi.MongoDB) *tapi.MongoDB {
 		t := metav1.Now()
 		in.Status.CreationTime = &t
@@ -28,21 +26,15 @@ func (c *Controller) create(mongodb *tapi.MongoDB) error {
 		return in
 	})
 
-	oneliners.FILE("2")
-
 	if err != nil {
 		c.recorder.Eventf(mongodb.ObjectReference(), core.EventTypeWarning, eventer.EventReasonFailedToUpdate, err.Error())
 		return err
 	}
 
-	oneliners.FILE("3")
-
 	if err := validator.ValidateMongoDB(c.Client, mongodb); err != nil {
 		c.recorder.Event(mongodb.ObjectReference(), core.EventTypeWarning, eventer.EventReasonInvalid, err.Error())
-		oneliners.FILE("errr >> ", err)
 		return err
 	}
-	oneliners.FILE("4")
 	// Event for successful validation
 	c.recorder.Event(
 		mongodb.ObjectReference(),
@@ -56,7 +48,6 @@ func (c *Controller) create(mongodb *tapi.MongoDB) error {
 	if err != nil {
 		return err
 	}
-	oneliners.FILE("5")
 	if matched {
 		//TODO: Use Annotation Key
 		mongodb.Annotations = map[string]string{
@@ -82,7 +73,6 @@ func (c *Controller) create(mongodb *tapi.MongoDB) error {
 
 		return nil
 	}
-	oneliners.FILE("6")
 
 	// Event for notification that kubernetes objects are creating
 	c.recorder.Event(mongodb.ObjectReference(), core.EventTypeNormal, eventer.EventReasonCreating, "Creating Kubernetes objects")
@@ -101,20 +91,15 @@ func (c *Controller) create(mongodb *tapi.MongoDB) error {
 		return err
 	}
 
-	oneliners.FILE("7")
-
 	// ensure database Service
 	if err := c.ensureService(mongodb); err != nil {
 		return err
 	}
 
-	oneliners.FILE("8")
-
 	// ensure database StatefulSet
 	if err := c.ensureStatefulSet(mongodb); err != nil {
 		return err
 	}
-	oneliners.FILE("9")
 
 	c.recorder.Event(
 		mongodb.ObjectReference(),
@@ -238,7 +223,6 @@ func (c *Controller) ensureService(mongodb *tapi.MongoDB) error {
 }
 
 func (c *Controller) ensureStatefulSet(mongodb *tapi.MongoDB) error {
-	oneliners.FILE("111111")
 	found, err := c.findStatefulSet(mongodb)
 	if err != nil {
 		return err
