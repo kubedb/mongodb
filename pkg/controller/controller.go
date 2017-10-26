@@ -98,7 +98,7 @@ func (c *Controller) Run() {
 	// Watch DeletedDatabase with labelSelector only for MongoDB
 	go c.watchDeletedDatabase()
 	// hold
-	//hold.Hold()
+	hold.Hold()
 }
 
 // Blocks caller. Intended to be called as a Go routine.

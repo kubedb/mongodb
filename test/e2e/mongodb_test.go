@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"github.com/appscode/go/hold"
 )
 
 const (
@@ -76,7 +75,7 @@ var _ = Describe("MongoDB", func() {
 		// Create MongoDB
 		createAndWaitForRunning()
 
-		hold.Hold()  //#LATER, delete
+		//hold.Hold()
 
 		// Delete test resource
 		deleteTestResouce()
@@ -259,7 +258,7 @@ var _ = Describe("MongoDB", func() {
 					}
 				})
 
-				FIt("should run successfully", shouldSuccessfullyRunning)
+				It("should run successfully", shouldSuccessfullyRunning)
 
 			})
 
@@ -362,23 +361,23 @@ var _ = Describe("MongoDB", func() {
 				It("should resume DormantDatabase successfully", shouldResumeSuccessfully)
 			})
 
-			//Context("With Init", func() {
-			//	BeforeEach(func() {
-			//		usedInitSpec = true
-			//		mongodb.Spec.Init = &tapi.InitSpec{
-			//			ScriptSource: &tapi.ScriptSourceSpec{
-			//				ScriptPath: "mongodb-init-scripts/run.sh",
-			//				VolumeSource: core.VolumeSource{
-			//					GitRepo: &core.GitRepoVolumeSource{
-			//						Repository: "https://github.com/k8sdb/mongodb-init-scripts.git",
-			//					},
-			//				},
-			//			},
-			//		}
-			//	})
-			//
-			//	It("should resume DormantDatabase successfully", shouldResumeSuccessfully)
-			//})
+			Context("With Init", func() {
+				BeforeEach(func() {
+					usedInitSpec = true
+					mongodb.Spec.Init = &tapi.InitSpec{
+						ScriptSource: &tapi.ScriptSourceSpec{
+							VolumeSource: core.VolumeSource{
+								GitRepo: &core.GitRepoVolumeSource{
+									Repository: "https://github.com/the-redback/k8s-mongodb-init-script.git",
+									Directory: ".",
+								},
+							},
+						},
+					}
+				})
+
+				FIt("should resume DormantDatabase successfully", shouldResumeSuccessfully)
+			})
 
 			Context("With original MongoDB", func() {
 				It("should resume DormantDatabase successfully", func() {

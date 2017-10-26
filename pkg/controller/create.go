@@ -133,15 +133,15 @@ func (c *Controller) createStatefulSet(mongodb *tapi.MongoDB) (*apps.StatefulSet
 									MountPath: "/data/db", //Data files path of mongodb, ref: https://github.com/docker-library/docs/tree/master/mongo#where-to-store-data
 								},
 							},
-							//Args: []string{
-							//	"--auth",
-							//},
-							//Env: []core.EnvVar{
-							//	{
-							//		Name:  "MONGO_INITDB_ROOT_USERNAME",
-							//		Value: "root",
-							//	},
-							//},
+							Args: []string{
+							"--auth",
+							},
+							Env: []core.EnvVar{
+								{
+									Name:  "MONGO_INITDB_ROOT_USERNAME",
+									Value: "root",
+								},
+							},
 						},
 					},
 					NodeSelector:  mongodb.Spec.NodeSelector,
@@ -194,7 +194,7 @@ func (c *Controller) createStatefulSet(mongodb *tapi.MongoDB) (*apps.StatefulSet
 	}
 
 	//Set root user password from Secret
-	//setEnvFromSecret(statefulSet, mongodb.Spec.DatabaseSecret)
+	setEnvFromSecret(statefulSet, mongodb.Spec.DatabaseSecret)
 
 	// Add Data volume for StatefulSet
 	addDataVolume(statefulSet, mongodb.Spec.Storage)

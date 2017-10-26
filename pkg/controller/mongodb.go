@@ -16,6 +16,7 @@ import (
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/TamalSaha/go-oneliners"
 )
 
 func (c *Controller) create(mongodb *tapi.MongoDB) error {
@@ -46,13 +47,17 @@ func (c *Controller) create(mongodb *tapi.MongoDB) error {
 	// Check DormantDatabase
 	matched, err := c.matchDormantDatabase(mongodb)
 	if err != nil {
+		oneliners.FILE("errr >> ",err)
 		return err
 	}
 	if matched {
+
+		oneliners.FILE("Found dormant database")
 		//TODO: Use Annotation Key
 		mongodb.Annotations = map[string]string{
 			"kubedb.com/ignore": "",
 		}
+		oneliners.FILE(">>>>>>>>> 1")
 		if err := c.ExtClient.MongoDBs(mongodb.Namespace).Delete(mongodb.Name, &metav1.DeleteOptions{}); err != nil {
 			return fmt.Errorf(
 				`Failed to resume MongoDB "%v" from DormantDatabase "%v". Error: %v`,
@@ -61,6 +66,7 @@ func (c *Controller) create(mongodb *tapi.MongoDB) error {
 				err,
 			)
 		}
+		oneliners.FILE(">>>>>>>>> 1")
 
 		_, err := kutildb.TryPatchDormantDatabase(c.ExtClient, mongodb.ObjectMeta, func(in *tapi.DormantDatabase) *tapi.DormantDatabase {
 			in.Spec.Resume = true
@@ -70,7 +76,7 @@ func (c *Controller) create(mongodb *tapi.MongoDB) error {
 			c.recorder.Eventf(mongodb.ObjectReference(), core.EventTypeWarning, eventer.EventReasonFailedToUpdate, err.Error())
 			return err
 		}
-
+		oneliners.FILE(">>>>>>>>> 2")
 		return nil
 	}
 
@@ -165,6 +171,7 @@ func (c *Controller) matchDormantDatabase(mongodb *tapi.MongoDB) (bool, error) {
 		return sendEvent(fmt.Sprintf(`Invalid MongoDB: "%v". Exists DormantDatabase "%v" of different Kind`,
 			mongodb.Name, dormantDb.Name))
 	}
+	oneliners.FILE("### 1")
 
 	initSpecAnnotationStr := dormantDb.Annotations[tapi.MongoDBInitSpec]
 	if initSpecAnnotationStr != "" {
@@ -172,13 +179,20 @@ func (c *Controller) matchDormantDatabase(mongodb *tapi.MongoDB) (bool, error) {
 		if err := json.Unmarshal([]byte(initSpecAnnotationStr), &initSpecAnnotation); err != nil {
 			return sendEvent(err.Error())
 		}
+		oneliners.FILE("### 2")
 
+		oneliners.FILE("/==================== mongodb.Spec.Init ===============\n",mongodb.Spec.Init)
+		oneliners.FILE("/==================== initSpecAnnotation ===============\n",initSpecAnnotation)
 		if mongodb.Spec.Init != nil {
 			if !reflect.DeepEqual(initSpecAnnotation, mongodb.Spec.Init) {
 				return sendEvent("InitSpec mismatches with DormantDatabase annotation")
 			}
 		}
+		oneliners.FILE("### 3")
+
 	}
+	oneliners.FILE("### 4")
+
 
 	// Check Origin Spec
 	drmnOriginSpec := dormantDb.Spec.Origin.Spec.MongoDB
@@ -191,9 +205,15 @@ func (c *Controller) matchDormantDatabase(mongodb *tapi.MongoDB) (bool, error) {
 		}
 	}
 
+	oneliners.FILE("### 5")
+
+
 	if !reflect.DeepEqual(drmnOriginSpec, &originalSpec) {
 		return sendEvent("MongoDB spec mismatches with OriginSpec in DormantDatabases")
 	}
+
+	oneliners.FILE("### 6")
+
 
 	return true, nil
 }
