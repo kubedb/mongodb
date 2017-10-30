@@ -13,6 +13,7 @@ import (
 	"github.com/k8sdb/apimachinery/pkg/docker"
 	"github.com/k8sdb/apimachinery/pkg/eventer"
 	"github.com/k8sdb/apimachinery/pkg/storage"
+	"github.com/the-redback/go-oneliners"
 	apps "k8s.io/api/apps/v1beta1"
 	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
@@ -117,7 +118,7 @@ func (c *Controller) createStatefulSet(mongodb *tapi.MongoDB) (*apps.StatefulSet
 				Spec: core.PodSpec{
 					Containers: []core.Container{
 						{
-							Name: tapi.ResourceNameMongoDB,
+							Name:            tapi.ResourceNameMongoDB,
 							Image:           fmt.Sprintf("%s:%s", docker.ImageMongoDB, mongodb.Spec.Version),
 							ImagePullPolicy: core.PullIfNotPresent,
 							Ports: []core.ContainerPort{
@@ -134,7 +135,7 @@ func (c *Controller) createStatefulSet(mongodb *tapi.MongoDB) (*apps.StatefulSet
 								},
 							},
 							Args: []string{
-							"--auth",
+								"--auth",
 							},
 							Env: []core.EnvVar{
 								{
@@ -344,6 +345,7 @@ func addInitialScript(statefulSet *apps.StatefulSet, script *tapi.ScriptSourceSp
 }
 
 func (c *Controller) createDormantDatabase(mongodb *tapi.MongoDB) (*tapi.DormantDatabase, error) {
+	oneliners.PrettyJson(mongodb, "Initial mongodb")
 	dormantDb := &tapi.DormantDatabase{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      mongodb.Name,
@@ -373,6 +375,8 @@ func (c *Controller) createDormantDatabase(mongodb *tapi.MongoDB) (*tapi.Dormant
 			tapi.MongoDBInitSpec: string(initSpec),
 		}
 	}
+
+	oneliners.PrettyJson(dormantDb, "Patched dormantdb")
 
 	dormantDb.Spec.Origin.Spec.MongoDB.Init = nil
 

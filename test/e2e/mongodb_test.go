@@ -1,7 +1,7 @@
 package e2e_test
 
 import (
-
+	"github.com/appscode/go/hold"
 	"github.com/appscode/go/types"
 	tapi "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/k8sdb/mongodb/test/e2e/framework"
@@ -10,6 +10,11 @@ import (
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	//"github.com/the-redback/go-oneliners"
+	//"fmt"
+	"fmt"
+
+	"github.com/the-redback/go-oneliners"
 )
 
 const (
@@ -21,10 +26,10 @@ const (
 
 var _ = Describe("MongoDB", func() {
 	var (
-		err         error
-		f           *framework.Invocation
-		mongodb    *tapi.MongoDB
-		snapshot    *tapi.Snapshot
+		err      error
+		f        *framework.Invocation
+		mongodb  *tapi.MongoDB
+		snapshot *tapi.Snapshot
 		//secret      *core.Secret
 		skipMessage string
 	)
@@ -75,7 +80,7 @@ var _ = Describe("MongoDB", func() {
 		// Create MongoDB
 		createAndWaitForRunning()
 
-		//hold.Hold()
+		hold.Hold()
 
 		// Delete test resource
 		deleteTestResouce()
@@ -251,7 +256,7 @@ var _ = Describe("MongoDB", func() {
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
 									Repository: "https://github.com/the-redback/k8s-mongodb-init-script.git",
-									Directory: ".",
+									Directory:  ".",
 								},
 							},
 						},
@@ -369,21 +374,20 @@ var _ = Describe("MongoDB", func() {
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
 									Repository: "https://github.com/the-redback/k8s-mongodb-init-script.git",
-									Directory: ".",
+									Directory:  ".",
 								},
 							},
 						},
 					}
 				})
 
-				FIt("should resume DormantDatabase successfully", shouldResumeSuccessfully)
+				It("should resume DormantDatabase successfully", shouldResumeSuccessfully)
 			})
 
 			Context("With original MongoDB", func() {
 				It("should resume DormantDatabase successfully", func() {
 					// Create and wait for running MongoDB
 					createAndWaitForRunning()
-
 					By("Delete mongodb")
 					f.DeleteMongoDB(mongodb.ObjectMeta)
 
@@ -401,11 +405,67 @@ var _ = Describe("MongoDB", func() {
 					By("Wait for Running mongodb")
 					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
 
-					mongodb, err = f.GetMongoDB(mongodb.ObjectMeta)
+					_, err = f.GetMongoDB(mongodb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
+
+					if usedInitSpec {
+						Expect(mongodb.Spec.Init).Should(BeNil())
+						Expect(mongodb.Annotations[tapi.MongoDBInitSpec]).ShouldNot(BeEmpty())
+					}
 
 					// Delete test resource
 					deleteTestResouce()
+				})
+
+				Context("with init", func() {
+					BeforeEach(func() {
+						usedInitSpec = true
+						mongodb.Spec.Init = &tapi.InitSpec{
+							ScriptSource: &tapi.ScriptSourceSpec{
+								VolumeSource: core.VolumeSource{
+									GitRepo: &core.GitRepoVolumeSource{
+										Repository: "https://github.com/the-redback/k8s-mongodb-init-script.git",
+										Directory:  ".",
+									},
+								},
+							},
+						}
+					})
+
+					FIt("should resume DormantDatabase successfully", func() {
+						// Create and wait for running MongoDB
+						createAndWaitForRunning()
+
+						for i := 0; i < 3; i++ {
+							By(">>>>>>>>>>>>>> "+fmt.Sprintf("%v", i) + " times running <<<<<<<<<<<")
+							By("Delete mongodb")
+							f.DeleteMongoDB(mongodb.ObjectMeta)
+
+							By("Wait for mongodb to be paused")
+							f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
+
+							// Create MongoDB object again to resume it
+							By("Create MongoDB: " + mongodb.Name)
+							err = f.CreateMongoDB(mongodb)
+							if err != nil {
+								oneliners.FILE(err)
+							}
+							Expect(err).NotTo(HaveOccurred())
+
+							By("Wait for DormantDatabase to be deleted")
+							f.EventuallyDormantDatabase(mongodb.ObjectMeta).Should(BeFalse())
+
+							By("Wait for Running mongodb")
+							f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+
+							_mongodb, err := f.GetMongoDB(mongodb.ObjectMeta)
+							Expect(err).NotTo(HaveOccurred())
+							oneliners.PrettyJson(_mongodb, "new mongo")
+						}
+
+						// Delete test resource
+						deleteTestResouce()
+					})
 				})
 			})
 		})

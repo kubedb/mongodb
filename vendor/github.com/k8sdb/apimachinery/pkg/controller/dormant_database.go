@@ -19,6 +19,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
+	"github.com/the-redback/go-oneliners"
 )
 
 type Deleter interface {
@@ -123,6 +124,7 @@ func (c *DormantDbController) watch() {
 				dormantDb := obj.(*api.DormantDatabase)
 				kutildb.AssignTypeKind(dormantDb)
 				if dormantDb.Status.CreationTime == nil {
+					oneliners.FILE("###### Dormant create!!!!!!!!")
 					if err := c.create(dormantDb); err != nil {
 						log.Errorln(err)
 					}
@@ -131,6 +133,7 @@ func (c *DormantDbController) watch() {
 			DeleteFunc: func(obj interface{}) {
 				dormantDb := obj.(*api.DormantDatabase)
 				kutildb.AssignTypeKind(dormantDb)
+				oneliners.FILE("###### Dormant Delete!!!!!!!!")
 				if err := c.delete(dormantDb); err != nil {
 					log.Errorln(err)
 				}
@@ -149,6 +152,7 @@ func (c *DormantDbController) watch() {
 				kutildb.AssignTypeKind(oldDormantDb)
 				kutildb.AssignTypeKind(newDormantDb)
 				if !reflect.DeepEqual(oldDormantDb.Spec, newDormantDb.Spec) {
+					oneliners.FILE("###### Dormant Update!!!!!!!!")
 					if err := c.update(oldDormantDb, newDormantDb); err != nil {
 						log.Errorln(err)
 					}
@@ -253,6 +257,7 @@ func (c *DormantDbController) create(dormantDb *api.DormantDatabase) error {
 func (c *DormantDbController) delete(dormantDb *api.DormantDatabase) error {
 	phase := dormantDb.Status.Phase
 	if phase != api.DormantDatabasePhaseResuming && phase != api.DormantDatabasePhaseWipedOut {
+		oneliners.FILE("Somewhere it is deleted<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
 		c.recorder.Eventf(
 			dormantDb.ObjectReference(),
 			core.EventTypeWarning,
@@ -279,11 +284,13 @@ func (c *DormantDbController) delete(dormantDb *api.DormantDatabase) error {
 
 func (c *DormantDbController) update(oldDormantDb, updatedDormantDb *api.DormantDatabase) error {
 	if oldDormantDb.Spec.WipeOut != updatedDormantDb.Spec.WipeOut && updatedDormantDb.Spec.WipeOut {
+		oneliners.FILE("In wipeout!!!!!")
 		return c.wipeOut(updatedDormantDb)
 	}
 
 	if oldDormantDb.Spec.Resume != updatedDormantDb.Spec.Resume && updatedDormantDb.Spec.Resume {
 		if oldDormantDb.Status.Phase == api.DormantDatabasePhasePaused {
+			oneliners.FILE("In Resuming part")
 			return c.resume(updatedDormantDb)
 		} else {
 			message := "Failed to resume Database. " +
@@ -432,6 +439,7 @@ func (c *DormantDbController) resume(dormantDb *api.DormantDatabase) error {
 	}
 
 	if err = c.deleter.ResumeDatabase(dormantDb); err != nil {
+		oneliners.FILE("Error in resuming database!!!!!!!")
 		if err := c.reCreateDormantDatabase(dormantDb); err != nil {
 			c.recorder.Eventf(
 				dormantDb.ObjectReference(),
@@ -457,6 +465,7 @@ func (c *DormantDbController) resume(dormantDb *api.DormantDatabase) error {
 }
 
 func (c *DormantDbController) reCreateDormantDatabase(dormantDb *api.DormantDatabase) error {
+	oneliners.FILE("Here is recreating!!!!!!!!!!!!!!!!!!!!!!!!!!")
 	_dormantDb := &api.DormantDatabase{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        dormantDb.Name,

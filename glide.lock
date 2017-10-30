@@ -290,8 +290,6 @@ imports:
   version: 7b2c5ac9fc04fc5efafb60700713d4fa609b777b
 - name: github.com/spf13/pflag
   version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
-- name: github.com/TamalSaha/go-oneliners
-  version: 4ca214c0460d9077e49e3ef394785f92408f7699
 - name: golang.org/x/crypto
   version: 81e90905daefcd6fd217b62423c0908922eadb30
   subpackages:

@@ -1,10 +1,11 @@
 package unit_tests
 
 import (
+	"log"
 	"path/filepath"
 	"testing"
-	"log"
 
+	"github.com/appscode/go/hold"
 	api "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
 	cs "github.com/k8sdb/apimachinery/client/typed/kubedb/v1alpha1"
 	amc "github.com/k8sdb/apimachinery/pkg/controller"
@@ -13,10 +14,10 @@ import (
 	crd_cs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	"github.com/appscode/go/hold"
 )
 
 func TestController_Run(t *testing.T) {
+
 	ctrl := GetNewController()
 	ctrl.Run()
 	hold.Hold()
@@ -42,7 +43,7 @@ func GetNewController() *controller.Controller {
 	cronController.StartCron()
 
 	opt := controller.Options{
-		GoverningService:  api.DatabaseNamePrefix,
+		GoverningService: api.DatabaseNamePrefix,
 	}
 
 	// Controller
