@@ -24,7 +24,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
-	"github.com/the-redback/go-oneliners"
+	"fmt"
 )
 
 type Options struct {
@@ -129,7 +129,7 @@ func (c *Controller) watchMongoDB() {
 				mongodb := obj.(*api.MongoDB)
 				kutildb.AssignTypeKind(mongodb)
 				if mongodb.Status.CreationTime == nil {
-					oneliners.FILE("==========MongoDB create!!!!!!!")
+					fmt.Println("==========MongoDB create!!!!!!!")
 					if err := c.create(mongodb); err != nil {
 						log.Errorln(err)
 						c.pushFailureEvent(mongodb, err.Error())
@@ -137,7 +137,7 @@ func (c *Controller) watchMongoDB() {
 				}
 			},
 			DeleteFunc: func(obj interface{}) {
-				oneliners.FILE("==========MongoDB Delete!!!!!!!")
+				fmt.Println("==========MongoDB Delete!!!!!!!")
 				mongodb := obj.(*api.MongoDB)
 				kutildb.AssignTypeKind(mongodb)
 				if err := c.pause(mongodb); err != nil {
@@ -156,7 +156,7 @@ func (c *Controller) watchMongoDB() {
 				kutildb.AssignTypeKind(oldObj)
 				kutildb.AssignTypeKind(newObj)
 				if !reflect.DeepEqual(oldObj.Spec, newObj.Spec) {
-					oneliners.FILE("==========MongoDB Update!!!!!!!")
+					fmt.Println("==========MongoDB Update!!!!!!!")
 					if err := c.update(oldObj, newObj); err != nil {
 						log.Errorln(err)
 					}

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <testsuite tests="1" failures="1" time="436.16883092">
+  <testsuite tests="1" failures="0" time="99.78949575">
       <testcase name="MongoDB Test General - should run successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
@@ -20,9 +20,5 @@
       </testcase>
       <testcase name="MongoDB Test Resume With original MongoDB should resume DormantDatabase successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
-      </testcase>
-      <testcase name="MongoDB Test Resume With original MongoDB with init should resume DormantDatabase successfully" classname="e2e Suite" time="435.135180176">
-          <failure type="Failure">/home/maruf/go/src/github.com/k8sdb/mongodb/test/e2e/mongodb_test.go:435&#xA;Timed out after 300.000s.&#xA;Expected&#xA;    &lt;bool&gt;: true&#xA;to be false&#xA;/home/maruf/go/src/github.com/k8sdb/mongodb/test/e2e/mongodb_test.go:456</failure>
-          <system-out>[BeforeEach] MongoDB&#xA;  /home/maruf/go/src/github.com/k8sdb/mongodb/test/e2e/mongodb_test.go:37&#xA;[BeforeEach] Resume&#xA;  /home/maruf/go/src/github.com/k8sdb/mongodb/test/e2e/mongodb_test.go:327&#xA;[BeforeEach] with init&#xA;  /home/maruf/go/src/github.com/k8sdb/mongodb/test/e2e/mongodb_test.go:421&#xA;[It] should resume DormantDatabase successfully&#xA;  /home/maruf/go/src/github.com/k8sdb/mongodb/test/e2e/mongodb_test.go:435&#xA;�[1mSTEP�[0m: Create MongoDB: mongodb-izag2y&#xA;�[1mSTEP�[0m: Wait for Running mongodb&#xA;�[1mSTEP�[0m: &gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt; 0 times running &lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&#xA;�[1mSTEP�[0m: Delete mongodb&#xA;�[1mSTEP�[0m: Wait for mongodb to be paused&#xA;�[1mSTEP�[0m: Create MongoDB: mongodb-izag2y&#xA;�[1mSTEP�[0m: Wait for DormantDatabase to be deleted&#xA;�[1mSTEP�[0m: Wait for Running mongodb&#xA;�[1mSTEP�[0m: &gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt; 1 times running &lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&#xA;�[1mSTEP�[0m: Delete mongodb&#xA;�[1mSTEP�[0m: Wait for mongodb to be paused&#xA;�[1mSTEP�[0m: Create MongoDB: mongodb-izag2y&#xA;�[1mSTEP�[0m: Wait for DormantDatabase to be deleted&#xA;</system-out>
       </testcase>
   </testsuite>

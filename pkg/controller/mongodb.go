@@ -17,7 +17,6 @@ import (
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"runtime"
 )
 
 func (c *Controller) create(mongodb *tapi.MongoDB) error {
@@ -53,7 +52,6 @@ func (c *Controller) create(mongodb *tapi.MongoDB) error {
 	}
 	if matched {
 
-		oneliners.FILE("Found dormant database")
 		//TODO: Use Annotation Key
 		mongodb.Annotations = map[string]string{
 			"kubedb.com/ignore": "",
@@ -407,8 +405,6 @@ func (c *Controller) pause(mongodb *tapi.MongoDB) error {
 		}
 		return nil
 	}
-	_, file, ln, _ := runtime.Caller(1)
-	oneliners.FILE("|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||\n File>>>>",file,"line>>>>",ln)
 
 	if _, err := c.createDormantDatabase(mongodb); err != nil {
 		c.recorder.Eventf(
