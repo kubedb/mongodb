@@ -347,19 +347,6 @@ func addInitialScript(statefulSet *apps.StatefulSet, script *tapi.ScriptSourceSp
 func (c *Controller) createDormantDatabase(mongodb *tapi.MongoDB) (*tapi.DormantDatabase, error) {
 	oneliners.PrettyJson(mongodb, "Initial mongodb")
 
-	if mongodb.Annotations == nil {
-		mongodb.Annotations = make(map[string]string)
-	}
-
-	initSpec, _ := json.Marshal(mongodb.Spec.Init)
-	if initSpec != nil {
-		fmt.Println(":::::::::::::::::::: InitSpec found!!!!!!!!!!!!!! <<<<<<<<<<<<<<")
-		mongodb.Annotations = map[string]string{
-			tapi.MongoDBInitSpec: string(initSpec),
-		}
-	}
-
-	oneliners.PrettyJson(mongodb,"Mongodb midway")
 
 	dormantDb := &tapi.DormantDatabase{
 		ObjectMeta: metav1.ObjectMeta{
@@ -384,7 +371,12 @@ func (c *Controller) createDormantDatabase(mongodb *tapi.MongoDB) (*tapi.Dormant
 		},
 	}
 
-	oneliners.PrettyJson(dormantDb, "Patched dormantdb")
+	initSpec, _ := json.Marshal(mongodb.Spec.Init)
+	if initSpec != nil {
+		dormantDb.Annotations = map[string]string{
+			tapi.MongoDBInitSpec: string(initSpec),
+		}
+	}
 
 	dormantDb.Spec.Origin.Spec.MongoDB.Init = nil
 

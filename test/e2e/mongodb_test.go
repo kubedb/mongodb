@@ -50,7 +50,7 @@ var _ = Describe("MongoDB", func() {
 		f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
 	}
 
-	var deleteTestResouce = func() {
+	var deleteTestResource = func() {
 		By("Delete mongodb")
 		err = f.DeleteMongoDB(mongodb.ObjectMeta)
 		Expect(err).NotTo(HaveOccurred())
@@ -83,7 +83,7 @@ var _ = Describe("MongoDB", func() {
 		hold.Hold()
 
 		// Delete test resource
-		deleteTestResouce()
+		deleteTestResource()
 	}
 
 	Describe("Test", func() {
@@ -138,7 +138,7 @@ var _ = Describe("MongoDB", func() {
 				})
 
 				// Delete test resource
-				deleteTestResouce()
+				deleteTestResource()
 			})
 		})
 
@@ -173,7 +173,7 @@ var _ = Describe("MongoDB", func() {
 		//		}
 		//
 		//		// Delete test resource
-		//		deleteTestResouce()
+		//		deleteTestResource()
 		//
 		//		if !skipDataCheck {
 		//			By("Check for snapshot data")
@@ -314,10 +314,10 @@ var _ = Describe("MongoDB", func() {
 			//		createAndWaitForRunning()
 			//
 			//		// Delete test resource
-			//		deleteTestResouce()
+			//		deleteTestResource()
 			//		mongodb = oldMongoDB
 			//		// Delete test resource
-			//		deleteTestResouce()
+			//		deleteTestResource()
 			//	})
 			//})
 		})
@@ -359,7 +359,7 @@ var _ = Describe("MongoDB", func() {
 				}
 
 				// Delete test resource
-				deleteTestResouce()
+				deleteTestResource()
 			}
 
 			Context("-", func() {
@@ -414,7 +414,7 @@ var _ = Describe("MongoDB", func() {
 					}
 
 					// Delete test resource
-					deleteTestResouce()
+					deleteTestResource()
 				})
 
 				Context("with init", func() {
@@ -464,7 +464,7 @@ var _ = Describe("MongoDB", func() {
 						}
 
 						// Delete test resource
-						deleteTestResouce()
+						deleteTestResource()
 					})
 				})
 			})
@@ -507,7 +507,7 @@ var _ = Describe("MongoDB", func() {
 		//			By("Count multiple Snapshot")
 		//			f.EventuallySnapshotCount(mongodb.ObjectMeta).Should(matcher.MoreThan(3))
 		//
-		//			deleteTestResouce()
+		//			deleteTestResource()
 		//		})
 		//	})
 		//
@@ -543,7 +543,7 @@ var _ = Describe("MongoDB", func() {
 		//			By("Count multiple Snapshot")
 		//			f.EventuallySnapshotCount(mongodb.ObjectMeta).Should(matcher.MoreThan(3))
 		//
-		//			deleteTestResouce()
+		//			deleteTestResource()
 		//		})
 		//	})
 		//})
