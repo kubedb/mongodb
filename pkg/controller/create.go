@@ -372,7 +372,7 @@ func (c *Controller) createDormantDatabase(mongodb *tapi.MongoDB) (*tapi.Dormant
 	}
 
 	initSpec, _ := json.Marshal(mongodb.Spec.Init)
-	if initSpec != nil {
+	if mongodb.Spec.Init != nil {
 		dormantDb.Annotations = map[string]string{
 			tapi.MongoDBInitSpec: string(initSpec),
 		}
