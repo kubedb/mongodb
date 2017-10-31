@@ -1,6 +1,8 @@
 package e2e_test
 
 import (
+	"fmt"
+
 	"github.com/appscode/go/hold"
 	"github.com/appscode/go/types"
 	tapi "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
@@ -10,7 +12,6 @@ import (
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"fmt"
 )
 
 const (
@@ -444,7 +445,7 @@ var _ = Describe("MongoDB", func() {
 						createAndWaitForRunning()
 
 						for i := 0; i < 3; i++ {
-							By(">>>>>>>>>>>>>> "+fmt.Sprintf("%v", i) + " times running <<<<<<<<<<<")
+							By(fmt.Sprintf("%v-th", i+1) + " time running.")
 							By("Delete mongodb")
 							f.DeleteMongoDB(mongodb.ObjectMeta)
 

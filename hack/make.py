@@ -27,13 +27,13 @@ check_antipackage()
 
 # ref: https://github.com/ellisonbg/antipackage
 import antipackage
-from github.appscode.libbuild import libbuild
+from github.appscode.libbuild import libbuild, pydotenv
 
 import os
 import os.path
 import subprocess
 import sys
-from os.path import expandvars
+from os.path import expandvars, join, dirname
 
 libbuild.REPO_ROOT = expandvars('$GOPATH') + '/src/github.com/k8sdb/mongodb'
 BUILD_METADATA = libbuild.metadata(libbuild.REPO_ROOT)
@@ -75,18 +75,19 @@ def version():
 
 
 def fmt():
-    libbuild.ungroup_go_imports('*.go', 'pkg')
-    die(call('goimports -w *.go pkg'))
-    call('gofmt -s -w *.go pkg')
+    libbuild.ungroup_go_imports('*.go', 'pkg', 'test')
+    die(call('goimports -w *.go pkg test'))
+    call('gofmt -s -w *.go pkg test')
 
 
 def vet():
-    call('go vet ./pkg/...')
+    call('go vet *.go ./pkg/... ./test/...')
 
 
 def lint():
     call('golint *.go')
     call('golint ./pkg/...')
+    call('golint ./test/...')
 
 
 def gen():
@@ -153,6 +154,12 @@ def default():
     fmt()
     die(call('GO15VENDOREXPERIMENT=1 ' + libbuild.GOC + ' install .'))
 
+def test(type, *args):
+    pydotenv.load_dotenv(join(libbuild.REPO_ROOT, 'hack/config/.env'))
+    if type == 'e2e':
+        die(call('ginkgo -r -v -progress -trace test/e2e -- ' + " ".join(args)))
+    else:
+        print '{test e2e}'
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
