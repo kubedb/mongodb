@@ -13,7 +13,6 @@ import (
 	"github.com/k8sdb/apimachinery/pkg/docker"
 	"github.com/k8sdb/apimachinery/pkg/eventer"
 	"github.com/k8sdb/apimachinery/pkg/storage"
-	"github.com/the-redback/go-oneliners"
 	apps "k8s.io/api/apps/v1beta1"
 	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
@@ -345,9 +344,6 @@ func addInitialScript(statefulSet *apps.StatefulSet, script *tapi.ScriptSourceSp
 }
 
 func (c *Controller) createDormantDatabase(mongodb *tapi.MongoDB) (*tapi.DormantDatabase, error) {
-	oneliners.PrettyJson(mongodb, "Initial mongodb")
-
-
 	dormantDb := &tapi.DormantDatabase{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      mongodb.Name,
@@ -379,8 +375,6 @@ func (c *Controller) createDormantDatabase(mongodb *tapi.MongoDB) (*tapi.Dormant
 	}
 
 	dormantDb.Spec.Origin.Spec.MongoDB.Init = nil
-
-	oneliners.PrettyJson(dormantDb, "Final dormantdb")
 
 	return c.ExtClient.DormantDatabases(dormantDb.Namespace).Create(dormantDb)
 }

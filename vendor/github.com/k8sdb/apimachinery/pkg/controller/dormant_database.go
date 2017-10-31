@@ -19,7 +19,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
-	"fmt"
 )
 
 type Deleter interface {
@@ -124,7 +123,6 @@ func (c *DormantDbController) watch() {
 				dormantDb := obj.(*api.DormantDatabase)
 				kutildb.AssignTypeKind(dormantDb)
 				if dormantDb.Status.CreationTime == nil {
-					fmt.Println("======== Dormant create!!!!!!!!")
 					if err := c.create(dormantDb); err != nil {
 						log.Errorln(err)
 					}
@@ -133,7 +131,6 @@ func (c *DormantDbController) watch() {
 			DeleteFunc: func(obj interface{}) {
 				dormantDb := obj.(*api.DormantDatabase)
 				kutildb.AssignTypeKind(dormantDb)
-				fmt.Println("======== Dormant Delete!!!!!!!!")
 				if err := c.delete(dormantDb); err != nil {
 					log.Errorln(err)
 				}
@@ -152,7 +149,6 @@ func (c *DormantDbController) watch() {
 				kutildb.AssignTypeKind(oldDormantDb)
 				kutildb.AssignTypeKind(newDormantDb)
 				if !reflect.DeepEqual(oldDormantDb.Spec, newDormantDb.Spec) {
-					fmt.Println("======== Dormant Update!!!!!!!!")
 					if err := c.update(oldDormantDb, newDormantDb); err != nil {
 						log.Errorln(err)
 					}

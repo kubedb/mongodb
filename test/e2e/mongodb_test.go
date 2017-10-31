@@ -10,11 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	//"github.com/the-redback/go-oneliners"
-	//"fmt"
 	"fmt"
-
-	"github.com/the-redback/go-oneliners"
 )
 
 const (
@@ -417,7 +413,7 @@ var _ = Describe("MongoDB", func() {
 					deleteTestResource()
 				})
 
-				Context("with init", func() {
+				Context("with init and pvc", func() {
 					BeforeEach(func() {
 						usedInitSpec = true
 						mongodb.Spec.Init = &tapi.InitSpec{
@@ -429,6 +425,17 @@ var _ = Describe("MongoDB", func() {
 									},
 								},
 							},
+						}
+						if f.StorageClass == "" {
+							skipMessage = "Missing StorageClassName. Provide as flag to test this."
+						}
+						mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
+							Resources: core.ResourceRequirements{
+								Requests: core.ResourceList{
+									core.ResourceStorage: resource.MustParse("50Mi"),
+								},
+							},
+							StorageClassName: types.StringP(f.StorageClass),
 						}
 					})
 
@@ -447,9 +454,6 @@ var _ = Describe("MongoDB", func() {
 							// Create MongoDB object again to resume it
 							By("Create MongoDB: " + mongodb.Name)
 							err = f.CreateMongoDB(mongodb)
-							if err != nil {
-								oneliners.FILE(err)
-							}
 							Expect(err).NotTo(HaveOccurred())
 
 							By("Wait for DormantDatabase to be deleted")
@@ -458,9 +462,8 @@ var _ = Describe("MongoDB", func() {
 							By("Wait for Running mongodb")
 							f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
 
-							_mongodb, err := f.GetMongoDB(mongodb.ObjectMeta)
+							_, err := f.GetMongoDB(mongodb.ObjectMeta)
 							Expect(err).NotTo(HaveOccurred())
-							oneliners.PrettyJson(_mongodb, "new mongo")
 						}
 
 						// Delete test resource

@@ -13,7 +13,6 @@ import (
 	"github.com/k8sdb/apimachinery/pkg/eventer"
 	"github.com/k8sdb/apimachinery/pkg/storage"
 	"github.com/k8sdb/mongodb/pkg/validator"
-	"github.com/the-redback/go-oneliners"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,7 +46,6 @@ func (c *Controller) create(mongodb *tapi.MongoDB) error {
 	// Check DormantDatabase
 	matched, err := c.matchDormantDatabase(mongodb)
 	if err != nil {
-		oneliners.FILE("errr >> ", err)
 		return err
 	}
 	if matched {

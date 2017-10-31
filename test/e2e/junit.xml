@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <testsuite tests="1" failures="0" time="221.850578017">
+  <testsuite tests="1" failures="0" time="251.489064479">
       <testcase name="MongoDB Test General - should run successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
@@ -21,5 +21,5 @@
       <testcase name="MongoDB Test Resume With original MongoDB should resume DormantDatabase successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
-      <testcase name="MongoDB Test Resume With original MongoDB with init should resume DormantDatabase successfully" classname="e2e Suite" time="220.802570137"></testcase>
+      <testcase name="MongoDB Test Resume With original MongoDB with init and pvc should resume DormantDatabase successfully" classname="e2e Suite" time="250.450400962"></testcase>
   </testsuite>
