@@ -17,7 +17,6 @@ func ValidateMongoDB(client kubernetes.Interface, mongodb *tapi.MongoDB) error {
 
 	// Set Database Image version
 	version := string(mongodb.Spec.Version)
-	// TODO: docker.ImageMongoDB should hold correct image name
 	if err := docker.CheckDockerImageVersion(docker.ImageMongoDB, version); err != nil {
 		return fmt.Errorf(`Image %v:%v not found`, docker.ImageMongoDB, version)
 	}
@@ -29,16 +28,12 @@ func ValidateMongoDB(client kubernetes.Interface, mongodb *tapi.MongoDB) error {
 		}
 	}
 
-	// ---> Start
-	// TODO: Use following if database needs/supports authentication secret
-	// otherwise, delete
 	databaseSecret := mongodb.Spec.DatabaseSecret
 	if databaseSecret != nil {
 		if _, err := client.CoreV1().Secrets(mongodb.Namespace).Get(databaseSecret.SecretName, metav1.GetOptions{}); err != nil {
 			return err
 		}
 	}
-	// ---> End
 
 	backupScheduleSpec := mongodb.Spec.BackupSchedule
 	if backupScheduleSpec != nil {

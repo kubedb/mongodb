@@ -23,11 +23,11 @@ const (
 
 var _ = Describe("MongoDB", func() {
 	var (
-		err      error
-		f        *framework.Invocation
-		mongodb  *tapi.MongoDB
-		snapshot *tapi.Snapshot
-		//secret      *core.Secret
+		err         error
+		f           *framework.Invocation
+		mongodb     *tapi.MongoDB
+		snapshot    *tapi.Snapshot
+		secret      *core.Secret
 		skipMessage string
 	)
 
@@ -139,111 +139,113 @@ var _ = Describe("MongoDB", func() {
 			})
 		})
 
-		//Context("Snapshot", func() {
-		//	var skipDataCheck bool
-		//
-		//	AfterEach(func() {
-		//		f.DeleteSecret(secret.ObjectMeta)
-		//	})
-		//
-		//	BeforeEach(func() {
-		//		skipDataCheck = false
-		//		snapshot.Spec.DatabaseName = mongodb.Name
-		//	})
-		//
-		//	var shouldTakeSnapshot = func() {
-		//		// Create and wait for running MongoDB
-		//		createAndWaitForRunning()
-		//
-		//		By("Create Secret")
-		//		f.CreateSecret(secret)
-		//
-		//		By("Create Snapshot")
-		//		f.CreateSnapshot(snapshot)
-		//
-		//		By("Check for Successed snapshot")
-		//		f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(tapi.SnapshotPhaseSuccessed))
-		//
-		//		if !skipDataCheck {
-		//			By("Check for snapshot data")
-		//			f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-		//		}
-		//
-		//		// Delete test resource
-		//		deleteTestResource()
-		//
-		//		if !skipDataCheck {
-		//			By("Check for snapshot data")
-		//			f.EventuallySnapshotDataFound(snapshot).Should(BeFalse())
-		//		}
-		//	}
-		//
-		//	Context("In Local", func() {
-		//		BeforeEach(func() {
-		//			skipDataCheck = true
-		//			secret = f.SecretForLocalBackend()
-		//			snapshot.Spec.StorageSecretName = secret.Name
-		//			snapshot.Spec.Local = &tapi.LocalSpec{
-		//				Path: "/repo",
-		//				VolumeSource: core.VolumeSource{
-		//					HostPath: &core.HostPathVolumeSource{
-		//						Path: "/repo",
-		//					},
-		//				},
-		//			}
-		//		})
-		//
-		//		It("should take Snapshot successfully", shouldTakeSnapshot)
-		//	})
-		//
-		//	Context("In S3", func() {
-		//		BeforeEach(func() {
-		//			secret = f.SecretForS3Backend()
-		//			snapshot.Spec.StorageSecretName = secret.Name
-		//			snapshot.Spec.S3 = &tapi.S3Spec{
-		//				Bucket: os.Getenv(S3_BUCKET_NAME),
-		//			}
-		//		})
-		//
-		//		It("should take Snapshot successfully", shouldTakeSnapshot)
-		//	})
-		//
-		//	Context("In GCS", func() {
-		//		BeforeEach(func() {
-		//			secret = f.SecretForGCSBackend()
-		//			snapshot.Spec.StorageSecretName = secret.Name
-		//			snapshot.Spec.GCS = &tapi.GCSSpec{
-		//				Bucket: os.Getenv(GCS_BUCKET_NAME),
-		//			}
-		//		})
-		//
-		//		It("should take Snapshot successfully", shouldTakeSnapshot)
-		//	})
-		//
-		//	Context("In Azure", func() {
-		//		BeforeEach(func() {
-		//			secret = f.SecretForAzureBackend()
-		//			snapshot.Spec.StorageSecretName = secret.Name
-		//			snapshot.Spec.Azure = &tapi.AzureSpec{
-		//				Container: os.Getenv(AZURE_CONTAINER_NAME),
-		//			}
-		//		})
-		//
-		//		It("should take Snapshot successfully", shouldTakeSnapshot)
-		//	})
-		//
-		//	Context("In Swift", func() {
-		//		BeforeEach(func() {
-		//			secret = f.SecretForSwiftBackend()
-		//			snapshot.Spec.StorageSecretName = secret.Name
-		//			snapshot.Spec.Swift = &tapi.SwiftSpec{
-		//				Container: os.Getenv(SWIFT_CONTAINER_NAME),
-		//			}
-		//		})
-		//
-		//		It("should take Snapshot successfully", shouldTakeSnapshot)
-		//	})
-		//})
+		Context("Snapshot", func() {
+			var skipDataCheck bool
+
+			AfterEach(func() {
+				f.DeleteSecret(secret.ObjectMeta)
+			})
+
+			BeforeEach(func() {
+				skipDataCheck = false
+				snapshot.Spec.DatabaseName = mongodb.Name
+			})
+
+			var shouldTakeSnapshot = func() {
+				// Create and wait for running MongoDB
+				createAndWaitForRunning()
+
+				By("Create Secret")
+				f.CreateSecret(secret)
+
+				By("Create Snapshot")
+				f.CreateSnapshot(snapshot)
+
+				hold.Hold()
+
+				By("Check for Successed snapshot")
+				f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(tapi.SnapshotPhaseSuccessed))
+
+				if !skipDataCheck {
+					By("Check for snapshot data")
+					f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
+				}
+
+				// Delete test resource
+				deleteTestResource()
+
+				if !skipDataCheck {
+					By("Check for snapshot data")
+					f.EventuallySnapshotDataFound(snapshot).Should(BeFalse())
+				}
+			}
+
+			Context("In Local", func() {
+				BeforeEach(func() {
+					skipDataCheck = true
+					secret = f.SecretForLocalBackend()
+					snapshot.Spec.StorageSecretName = secret.Name
+					snapshot.Spec.Local = &tapi.LocalSpec{
+						Path: "/repo",
+						VolumeSource: core.VolumeSource{
+							HostPath: &core.HostPathVolumeSource{
+								Path: "/repo",
+							},
+						},
+					}
+				})
+
+				FIt("should take Snapshot successfully", shouldTakeSnapshot)
+			})
+
+			//Context("In S3", func() {
+			//	BeforeEach(func() {
+			//		secret = f.SecretForS3Backend()
+			//		snapshot.Spec.StorageSecretName = secret.Name
+			//		snapshot.Spec.S3 = &tapi.S3Spec{
+			//			Bucket: os.Getenv(S3_BUCKET_NAME),
+			//		}
+			//	})
+			//
+			//	It("should take Snapshot successfully", shouldTakeSnapshot)
+			//})
+
+			//Context("In GCS", func() {
+			//	BeforeEach(func() {
+			//		secret = f.SecretForGCSBackend()
+			//		snapshot.Spec.StorageSecretName = secret.Name
+			//		snapshot.Spec.GCS = &tapi.GCSSpec{
+			//			Bucket: os.Getenv(GCS_BUCKET_NAME),
+			//		}
+			//	})
+			//
+			//	It("should take Snapshot successfully", shouldTakeSnapshot)
+			//})
+
+			//Context("In Azure", func() {
+			//	BeforeEach(func() {
+			//		secret = f.SecretForAzureBackend()
+			//		snapshot.Spec.StorageSecretName = secret.Name
+			//		snapshot.Spec.Azure = &tapi.AzureSpec{
+			//			Container: os.Getenv(AZURE_CONTAINER_NAME),
+			//		}
+			//	})
+			//
+			//	It("should take Snapshot successfully", shouldTakeSnapshot)
+			//})
+
+			//Context("In Swift", func() {
+			//	BeforeEach(func() {
+			//		secret = f.SecretForSwiftBackend()
+			//		snapshot.Spec.StorageSecretName = secret.Name
+			//		snapshot.Spec.Swift = &tapi.SwiftSpec{
+			//			Container: os.Getenv(SWIFT_CONTAINER_NAME),
+			//		}
+			//	})
+			//
+			//	It("should take Snapshot successfully", shouldTakeSnapshot)
+			//})
+		})
 
 		Context("Initialize", func() {
 			Context("With Script", func() {
@@ -440,7 +442,7 @@ var _ = Describe("MongoDB", func() {
 						}
 					})
 
-					FIt("should resume DormantDatabase successfully", func() {
+					It("should resume DormantDatabase successfully", func() {
 						// Create and wait for running MongoDB
 						createAndWaitForRunning()
 

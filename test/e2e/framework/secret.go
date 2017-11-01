@@ -109,8 +109,6 @@ func (fi *Invocation) SecretForSwiftBackend() *core.Secret {
 	}
 }
 
-// TODO: Add more methods for Swift, Backblaze B2, Rest server backend.
-
 func (f *Framework) CreateSecret(obj *core.Secret) error {
 	_, err := f.kubeClient.CoreV1().Secrets(obj.Namespace).Create(obj)
 	return err

@@ -74,10 +74,9 @@ func New(
 		ApiExtKubeClient: apiExtKubeClient,
 		promClient:       promClient,
 		cronController:   cronController,
-		// TODO
-		recorder:   eventer.NewEventRecorder(client, "MongoDB operator"),
-		opt:        opt,
-		syncPeriod: time.Minute * 2,
+		recorder:         eventer.NewEventRecorder(client, "MongoDB operator"),
+		opt:              opt,
+		syncPeriod:       time.Minute * 2,
 	}
 }
 

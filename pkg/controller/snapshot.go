@@ -5,7 +5,6 @@ import (
 
 	"github.com/appscode/go/log"
 	tapi "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
-	"github.com/k8sdb/apimachinery/pkg/docker"
 	"github.com/k8sdb/apimachinery/pkg/storage"
 	amv "github.com/k8sdb/apimachinery/pkg/validator"
 	batch "k8s.io/api/batch/v1"
@@ -81,8 +80,10 @@ func (c *Controller) GetSnapshotter(snapshot *tapi.Snapshot) (*batch.Job, error)
 				Spec: core.PodSpec{
 					Containers: []core.Container{
 						{
-							Name:  SnapshotProcess_Backup,
-							Image: fmt.Sprintf("%s:%s-util", docker.ImageMongoDB, mongodb.Spec.Version),
+							Name:            SnapshotProcess_Backup,
+							ImagePullPolicy: "Always", //#LATER, testing ,todo remove
+							//Image: fmt.Sprintf("%s:%s-util", docker.ImageMongoDB, mongodb.Spec.Version),
+							Image: fmt.Sprintf("maruftuhin/mongodb:3.4-util"),
 							Args: []string{
 								fmt.Sprintf(`--process=%s`, SnapshotProcess_Backup),
 								fmt.Sprintf(`--host=%s`, databaseName),
@@ -94,7 +95,7 @@ func (c *Controller) GetSnapshotter(snapshot *tapi.Snapshot) (*batch.Job, error)
 							VolumeMounts: []core.VolumeMount{
 								{
 									Name:      "secret",
-									MountPath: "/srv/" + tapi.ResourceNameMySQL + "/secrets",
+									MountPath: "/srv/" + tapi.ResourceNameMongoDB + "/secrets",
 								},
 								{
 									Name:      persistentVolume.Name,

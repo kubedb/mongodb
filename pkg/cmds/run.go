@@ -34,8 +34,7 @@ func NewCmdRun() *cobra.Command {
 	}
 
 	cmd := &cobra.Command{
-		Use: "run",
-		// TODO
+		Use:   "run",
 		Short: "Run MongoDB in Kubernetes",
 		Run: func(cmd *cobra.Command, args []string) {
 			config, err := clientcmd.BuildConfigFromFlags(masterURL, kubeconfigPath)
