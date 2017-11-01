@@ -22,7 +22,7 @@ func (f *Invocation) MongoDB() *tapi.MongoDB {
 			},
 		},
 		Spec: tapi.MongoDBSpec{
-			Version: types.StrYo("3.5"),
+			Version: types.StrYo("3.4"),
 		},
 	}
 }
