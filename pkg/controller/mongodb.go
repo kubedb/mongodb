@@ -244,6 +244,12 @@ func (c *Controller) ensureStatefulSet(mongodb *tapi.MongoDB) error {
 		return err
 	}
 
+	_mongodb, err := c.ExtClient.MongoDBs(mongodb.Namespace).Get(mongodb.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	mongodb = _mongodb
+
 	// Check StatefulSet Pod status
 	if err := c.CheckStatefulSetPodStatus(statefulSet, durationCheckStatefulSet); err != nil {
 		c.recorder.Eventf(
