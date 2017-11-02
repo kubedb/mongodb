@@ -231,7 +231,7 @@ var _ = Describe("MongoDB", func() {
 						}
 					})
 
-					FIt("should resume DormantDatabase successfully", shouldTakeSnapshot)
+					It("should resume DormantDatabase successfully", shouldTakeSnapshot)
 				})
 			})
 
@@ -279,59 +279,59 @@ var _ = Describe("MongoDB", func() {
 
 			})
 
-			//Context("With Snapshot", func() {
-			//	AfterEach(func() {
-			//		f.DeleteSecret(secret.ObjectMeta)
-			//	})
-			//
-			//	BeforeEach(func() {
-			//		secret = f.SecretForS3Backend()
-			//		snapshot.Spec.StorageSecretName = secret.Name
-			//		snapshot.Spec.S3 = &tapi.S3Spec{
-			//			Bucket: os.Getenv(S3_BUCKET_NAME),
-			//		}
-			//		snapshot.Spec.DatabaseName = mongodb.Name
-			//	})
-			//
-			//	It("should run successfully", func() {
-			//		// Create and wait for running MongoDB
-			//		createAndWaitForRunning()
-			//
-			//		By("Create Secret")
-			//		f.CreateSecret(secret)
-			//
-			//		By("Create Snapshot")
-			//		f.CreateSnapshot(snapshot)
-			//
-			//		By("Check for Successed snapshot")
-			//		f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(tapi.SnapshotPhaseSuccessed))
-			//
-			//		By("Check for snapshot data")
-			//		f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-			//
-			//		oldMongoDB, err := f.GetMongoDB(mongodb.ObjectMeta)
-			//		Expect(err).NotTo(HaveOccurred())
-			//
-			//		By("Create mongodb from snapshot")
-			//		mongodb = f.MongoDB()
-			//		mongodb.Spec.DatabaseSecret = oldMongoDB.Spec.DatabaseSecret
-			//		mongodb.Spec.Init = &tapi.InitSpec{
-			//			SnapshotSource: &tapi.SnapshotSourceSpec{
-			//				Namespace: snapshot.Namespace,
-			//				Name:      snapshot.Name,
-			//			},
-			//		}
-			//
-			//		// Create and wait for running MongoDB
-			//		createAndWaitForRunning()
-			//
-			//		// Delete test resource
-			//		deleteTestResource()
-			//		mongodb = oldMongoDB
-			//		// Delete test resource
-			//		deleteTestResource()
-			//	})
-			//})
+			Context("With Snapshot", func() {
+				AfterEach(func() {
+					f.DeleteSecret(secret.ObjectMeta)
+				})
+
+				BeforeEach(func() {
+					secret = f.SecretForGCSBackend()
+					snapshot.Spec.StorageSecretName = secret.Name
+					snapshot.Spec.GCS = &tapi.GCSSpec{
+						Bucket: os.Getenv(GCS_BUCKET_NAME),
+					}
+					snapshot.Spec.DatabaseName = mongodb.Name
+				})
+
+				FIt("should run successfully", func() {
+					// Create and wait for running MongoDB
+					createAndWaitForRunning()
+
+					By("Create Secret")
+					f.CreateSecret(secret)
+
+					By("Create Snapshot")
+					f.CreateSnapshot(snapshot)
+
+					By("Check for Successed snapshot")
+					f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(tapi.SnapshotPhaseSuccessed))
+
+					By("Check for snapshot data")
+					f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
+
+					oldMongoDB, err := f.GetMongoDB(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Create mongodb from snapshot")
+					mongodb = f.MongoDB()
+					mongodb.Spec.DatabaseSecret = oldMongoDB.Spec.DatabaseSecret
+					mongodb.Spec.Init = &tapi.InitSpec{
+						SnapshotSource: &tapi.SnapshotSourceSpec{
+							Namespace: snapshot.Namespace,
+							Name:      snapshot.Name,
+						},
+					}
+
+					// Create and wait for running MongoDB
+					createAndWaitForRunning()
+
+					// Delete test resource
+					deleteTestResource()
+					mongodb = oldMongoDB
+					// Delete test resource
+					deleteTestResource()
+				})
+			})
 		})
 
 		Context("Resume", func() {

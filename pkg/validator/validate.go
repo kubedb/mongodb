@@ -49,5 +49,6 @@ func ValidateMongoDB(client kubernetes.Interface, mongodb *tapi.MongoDB) error {
 		}
 
 	}
+
 	return nil
 }
