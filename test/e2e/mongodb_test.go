@@ -2,8 +2,8 @@ package e2e_test
 
 import (
 	"fmt"
+	"os"
 
-	"github.com/appscode/go/hold"
 	"github.com/appscode/go/types"
 	tapi "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/k8sdb/mongodb/test/e2e/framework"
@@ -76,8 +76,6 @@ var _ = Describe("MongoDB", func() {
 
 		// Create MongoDB
 		createAndWaitForRunning()
-
-		hold.Hold()
 
 		// Delete test resource
 		deleteTestResource()
@@ -161,8 +159,6 @@ var _ = Describe("MongoDB", func() {
 				By("Create Snapshot")
 				f.CreateSnapshot(snapshot)
 
-				hold.Hold()
-
 				By("Check for Successed snapshot")
 				f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(tapi.SnapshotPhaseSuccessed))
 
@@ -195,7 +191,7 @@ var _ = Describe("MongoDB", func() {
 					}
 				})
 
-				FIt("should take Snapshot successfully", shouldTakeSnapshot)
+				It("should take Snapshot successfully", shouldTakeSnapshot)
 			})
 
 			//Context("In S3", func() {
@@ -210,17 +206,34 @@ var _ = Describe("MongoDB", func() {
 			//	It("should take Snapshot successfully", shouldTakeSnapshot)
 			//})
 
-			//Context("In GCS", func() {
-			//	BeforeEach(func() {
-			//		secret = f.SecretForGCSBackend()
-			//		snapshot.Spec.StorageSecretName = secret.Name
-			//		snapshot.Spec.GCS = &tapi.GCSSpec{
-			//			Bucket: os.Getenv(GCS_BUCKET_NAME),
-			//		}
-			//	})
-			//
-			//	It("should take Snapshot successfully", shouldTakeSnapshot)
-			//})
+			Context("In GCS", func() {
+				BeforeEach(func() {
+					secret = f.SecretForGCSBackend()
+					snapshot.Spec.StorageSecretName = secret.Name
+					snapshot.Spec.GCS = &tapi.GCSSpec{
+						Bucket: os.Getenv(GCS_BUCKET_NAME),
+					}
+				})
+
+				It("should take Snapshot successfully", shouldTakeSnapshot)
+
+				Context("With Init", func() {
+					BeforeEach(func() {
+						mongodb.Spec.Init = &tapi.InitSpec{
+							ScriptSource: &tapi.ScriptSourceSpec{
+								VolumeSource: core.VolumeSource{
+									GitRepo: &core.GitRepoVolumeSource{
+										Repository: "https://github.com/the-redback/k8s-mongodb-init-script.git",
+										Directory:  ".",
+									},
+								},
+							},
+						}
+					})
+
+					FIt("should resume DormantDatabase successfully", shouldTakeSnapshot)
+				})
+			})
 
 			//Context("In Azure", func() {
 			//	BeforeEach(func() {
