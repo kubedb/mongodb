@@ -13,6 +13,7 @@ import (
 	"github.com/k8sdb/apimachinery/pkg/eventer"
 	"github.com/k8sdb/apimachinery/pkg/storage"
 	"github.com/k8sdb/mongodb/pkg/validator"
+	"github.com/the-redback/go-oneliners"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -306,6 +307,7 @@ func (c *Controller) ensureBackupScheduler(mongodb *tapi.MongoDB) {
 	if mongodb.Spec.BackupSchedule != nil {
 		err := c.cronController.ScheduleBackup(mongodb, mongodb.ObjectMeta, mongodb.Spec.BackupSchedule)
 		if err != nil {
+			oneliners.FILE("Error>>", err)
 			c.recorder.Eventf(
 				mongodb.ObjectReference(),
 				core.EventTypeWarning,
@@ -314,6 +316,7 @@ func (c *Controller) ensureBackupScheduler(mongodb *tapi.MongoDB) {
 				err,
 			)
 			log.Errorln(err)
+			oneliners.FILE("Error>>", err)
 		}
 	} else {
 		c.cronController.StopBackupScheduling(mongodb.ObjectMeta)

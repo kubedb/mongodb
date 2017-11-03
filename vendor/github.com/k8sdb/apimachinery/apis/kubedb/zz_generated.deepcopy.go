@@ -21,11 +21,12 @@ limitations under the License.
 package kubedb
 
 import (
+	reflect "reflect"
+
 	core_v1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
-	reflect "reflect"
 )
 
 func init() {
@@ -629,14 +630,9 @@ func (in *MongoDBList) DeepCopyInto(out *MongoDBList) {
 	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
-		*out = make([]*MongoDB, len(*in))
+		*out = make([]MongoDB, len(*in))
 		for i := range *in {
-			if (*in)[i] == nil {
-				(*out)[i] = nil
-			} else {
-				(*out)[i] = new(MongoDB)
-				(*in)[i].DeepCopyInto((*out)[i])
-			}
+			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 	return

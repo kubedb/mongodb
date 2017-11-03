@@ -21,13 +21,14 @@ limitations under the License.
 package v1alpha1
 
 import (
+	unsafe "unsafe"
+
 	types "github.com/appscode/go/encoding/json/types"
 	kubedb "github.com/k8sdb/apimachinery/apis/kubedb"
 	core_v1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
-	unsafe "unsafe"
 )
 
 func init() {
@@ -547,7 +548,7 @@ func Convert_kubedb_MongoDB_To_v1alpha1_MongoDB(in *kubedb.MongoDB, out *MongoDB
 
 func autoConvert_v1alpha1_MongoDBList_To_kubedb_MongoDBList(in *MongoDBList, out *kubedb.MongoDBList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]*kubedb.MongoDB)(unsafe.Pointer(&in.Items))
+	out.Items = *(*[]kubedb.MongoDB)(unsafe.Pointer(&in.Items))
 	return nil
 }
 
@@ -558,7 +559,7 @@ func Convert_v1alpha1_MongoDBList_To_kubedb_MongoDBList(in *MongoDBList, out *ku
 
 func autoConvert_kubedb_MongoDBList_To_v1alpha1_MongoDBList(in *kubedb.MongoDBList, out *MongoDBList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]*MongoDB)(unsafe.Pointer(&in.Items))
+	out.Items = *(*[]MongoDB)(unsafe.Pointer(&in.Items))
 	return nil
 }
 

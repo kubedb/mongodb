@@ -91,6 +91,7 @@ var _ = Describe("MongoDB", func() {
 
 			Context("With PVC", func() {
 				BeforeEach(func() {
+					fmt.Println(f.StorageClass)
 					if f.StorageClass == "" {
 						skipMessage = "Missing StorageClassName. Provide as flag to test this."
 					}
@@ -489,83 +490,112 @@ var _ = Describe("MongoDB", func() {
 			})
 		})
 
-		//Context("SnapshotScheduler", func() {
-		//	AfterEach(func() {
-		//		f.DeleteSecret(secret.ObjectMeta)
-		//	})
-		//
-		//	BeforeEach(func() {
-		//		secret = f.SecretForLocalBackend()
-		//	})
-		//
-		//	Context("With Startup", func() {
-		//		BeforeEach(func() {
-		//			mongodb.Spec.BackupSchedule = &tapi.BackupScheduleSpec{
-		//				CronExpression: "@every 1m",
-		//				SnapshotStorageSpec: tapi.SnapshotStorageSpec{
-		//					StorageSecretName: secret.Name,
-		//					Local: &tapi.LocalSpec{
-		//						Path: "/repo",
-		//						VolumeSource: core.VolumeSource{
-		//							HostPath: &core.HostPathVolumeSource{
-		//								Path: "/repo",
-		//							},
-		//						},
-		//					},
-		//				},
-		//			}
-		//		})
-		//
-		//		It("should run schedular successfully", func() {
-		//			By("Create Secret")
-		//			f.CreateSecret(secret)
-		//
-		//			// Create and wait for running MongoDB
-		//			createAndWaitForRunning()
-		//
-		//			By("Count multiple Snapshot")
-		//			f.EventuallySnapshotCount(mongodb.ObjectMeta).Should(matcher.MoreThan(3))
-		//
-		//			deleteTestResource()
-		//		})
-		//	})
-		//
-		//	Context("With Update", func() {
-		//		It("should run schedular successfully", func() {
-		//			// Create and wait for running MongoDB
-		//			createAndWaitForRunning()
-		//
-		//			By("Create Secret")
-		//			f.CreateSecret(secret)
-		//
-		//			By("Update mongodb")
-		//			_, err = f.TryPatchMongoDB(mongodb.ObjectMeta, func(in *tapi.MongoDB) *tapi.MongoDB {
-		//				in.Spec.BackupSchedule = &tapi.BackupScheduleSpec{
-		//					CronExpression: "@every 1m",
-		//					SnapshotStorageSpec: tapi.SnapshotStorageSpec{
-		//						StorageSecretName: secret.Name,
-		//						Local: &tapi.LocalSpec{
-		//							Path: "/repo",
-		//							VolumeSource: core.VolumeSource{
-		//								HostPath: &core.HostPathVolumeSource{
-		//									Path: "/repo",
-		//								},
-		//							},
-		//						},
-		//					},
-		//				}
-		//
-		//				return in
-		//			})
-		//			Expect(err).NotTo(HaveOccurred())
-		//
-		//			By("Count multiple Snapshot")
-		//			f.EventuallySnapshotCount(mongodb.ObjectMeta).Should(matcher.MoreThan(3))
-		//
-		//			deleteTestResource()
-		//		})
-		//	})
-		//})
+		Context("SnapshotScheduler", func() {
+			AfterEach(func() {
+				f.DeleteSecret(secret.ObjectMeta)
+			})
+
+			Context("With Startup", func() {
+
+				var shouldStartupSchedular = func() {
+					By("Create Secret")
+					f.CreateSecret(secret)
+
+					// Create and wait for running MongoDB
+					createAndWaitForRunning()
+
+					By("Count multiple Snapshot")
+					f.EventuallySnapshotCount(mongodb.ObjectMeta).Should(matcher.MoreThan(3))
+
+					deleteTestResource()
+				}
+
+				Context("with local", func() {
+					BeforeEach(func() {
+						secret = f.SecretForLocalBackend()
+						mongodb.Spec.BackupSchedule = &tapi.BackupScheduleSpec{
+							CronExpression: "@every 1m",
+							SnapshotStorageSpec: tapi.SnapshotStorageSpec{
+								StorageSecretName: secret.Name,
+								Local: &tapi.LocalSpec{
+									Path: "/repo",
+									VolumeSource: core.VolumeSource{
+										HostPath: &core.HostPathVolumeSource{
+											Path: "/repo",
+										},
+									},
+								},
+							},
+						}
+					})
+
+					It("should run schedular successfully", shouldStartupSchedular)
+				})
+				Context("with GCS and PVC", func() {
+					BeforeEach(func() {
+						secret = f.SecretForGCSBackend()
+						mongodb.Spec.BackupSchedule = &tapi.BackupScheduleSpec{
+							CronExpression: "@every 1m",
+							SnapshotStorageSpec: tapi.SnapshotStorageSpec{
+								StorageSecretName: secret.Name,
+								GCS: &tapi.GCSSpec{
+									Bucket: os.Getenv(GCS_BUCKET_NAME),
+								},
+							},
+						}
+						if f.StorageClass == "" {
+							skipMessage = "Missing StorageClassName. Provide as flag to test this."
+						}
+						mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
+							Resources: core.ResourceRequirements{
+								Requests: core.ResourceList{
+									core.ResourceStorage: resource.MustParse("50Mi"),
+								},
+							},
+							StorageClassName: types.StringP(f.StorageClass),
+						}
+					})
+
+					It("should run schedular successfully", shouldStartupSchedular)
+				})
+			})
+
+			Context("With Update", func() {
+				It("should run schedular successfully", func() {
+					// Create and wait for running MongoDB
+					createAndWaitForRunning()
+
+					By("Create Secret")
+					f.CreateSecret(secret)
+
+					By("Update mongodb")
+					_, err = f.TryPatchMongoDB(mongodb.ObjectMeta, func(in *tapi.MongoDB) *tapi.MongoDB {
+						in.Spec.BackupSchedule = &tapi.BackupScheduleSpec{
+							CronExpression: "@every 1m",
+							SnapshotStorageSpec: tapi.SnapshotStorageSpec{
+								StorageSecretName: secret.Name,
+								Local: &tapi.LocalSpec{
+									Path: "/repo",
+									VolumeSource: core.VolumeSource{
+										HostPath: &core.HostPathVolumeSource{
+											Path: "/repo",
+										},
+									},
+								},
+							},
+						}
+
+						return in
+					})
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Count multiple Snapshot")
+					f.EventuallySnapshotCount(mongodb.ObjectMeta).Should(matcher.MoreThan(3))
+
+					deleteTestResource()
+				})
+			})
+		})
 
 	})
 })

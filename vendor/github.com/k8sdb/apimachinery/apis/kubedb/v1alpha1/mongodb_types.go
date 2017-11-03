@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	ResourceCodeMongoDB = "mn"
+	ResourceCodeMongoDB = "mg"
 	ResourceKindMongoDB = "MongoDB"
 	ResourceNameMongoDB = "mongodb"
 	ResourceTypeMongoDB = "mongodbs"
@@ -75,5 +75,5 @@ type MongoDBList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	// Items is a list of MongoDB TPR objects
-	Items []*MongoDB `json:"items,omitempty"`
+	Items []MongoDB `json:"items,omitempty"`
 }
