@@ -86,7 +86,7 @@ var _ = Describe("MongoDB", func() {
 		Context("General", func() {
 
 			Context("-", func() {
-				It("should run successfully", shouldSuccessfullyRunning)
+				FIt("should run successfully", shouldSuccessfullyRunning)
 			})
 
 			Context("With PVC", func() {
@@ -104,7 +104,7 @@ var _ = Describe("MongoDB", func() {
 						StorageClassName: types.StringP(f.StorageClass),
 					}
 				})
-				FIt("should run successfully", shouldSuccessfullyRunning)
+				It("should run successfully", shouldSuccessfullyRunning)
 			})
 		})
 
