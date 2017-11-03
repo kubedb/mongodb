@@ -74,6 +74,6 @@ type MySQLStatus struct {
 type MySQLList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	// Items is a list of MongoDB TPR objects
-	Items []*MySQL `json:"items,omitempty"`
+	// Items is a list of MySQL TPR objects
+	Items []MySQL `json:"items,omitempty"`
 }

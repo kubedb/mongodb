@@ -104,7 +104,7 @@ var _ = Describe("MongoDB", func() {
 						StorageClassName: types.StringP(f.StorageClass),
 					}
 				})
-				It("should run successfully", shouldSuccessfullyRunning)
+				FIt("should run successfully", shouldSuccessfullyRunning)
 			})
 		})
 
