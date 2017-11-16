@@ -3,7 +3,6 @@ package e2e_test
 import (
 	"fmt"
 
-	"github.com/appscode/go/hold"
 	"github.com/appscode/go/types"
 	tapi "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/k8sdb/mongodb/test/e2e/framework"
@@ -76,8 +75,6 @@ var _ = Describe("MongoDB", func() {
 
 		// Create MongoDB
 		createAndWaitForRunning()
-
-		hold.Hold()
 
 		// Delete test resource
 		deleteTestResource()
@@ -440,7 +437,7 @@ var _ = Describe("MongoDB", func() {
 						}
 					})
 
-					FIt("should resume DormantDatabase successfully", func() {
+					It("should resume DormantDatabase successfully", func() {
 						// Create and wait for running MongoDB
 						createAndWaitForRunning()
 

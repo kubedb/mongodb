@@ -199,15 +199,10 @@ func (c *Controller) createStatefulSet(mongodb *tapi.MongoDB) (*apps.StatefulSet
 	// Add Data volume for StatefulSet
 	addDataVolume(statefulSet, mongodb.Spec.Storage)
 
-	// ---> Start
-	//TODO: Use following if supported
-	// otherwise remove
-
 	// Add InitialScript to run at startup
 	if mongodb.Spec.Init != nil && mongodb.Spec.Init.ScriptSource != nil {
 		addInitialScript(statefulSet, mongodb.Spec.Init.ScriptSource)
 	}
-	// ---> End
 
 	if c.opt.EnableRbac {
 		// Ensure ClusterRoles for database statefulsets
@@ -438,9 +433,8 @@ func (c *Controller) createRestoreJob(mongodb *tapi.MongoDB, snapshot *tapi.Snap
 				Spec: core.PodSpec{
 					Containers: []core.Container{
 						{
-							Name: SnapshotProcess_Restore,
-							//TODO: Use appropriate image
-							Image: fmt.Sprintf("%s:%s", docker.ImageMongoDB, mongodb.Spec.Version),
+							Name:  SnapshotProcess_Restore,
+							Image: fmt.Sprintf("%s:%s", docker.ImageMongoDB, mongodb.Spec.Version), //Fixed in later PRs.
 							Args: []string{
 								fmt.Sprintf(`--process=%s`, SnapshotProcess_Restore),
 								fmt.Sprintf(`--host=%s`, databaseName),

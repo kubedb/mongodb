@@ -49,7 +49,6 @@ func (c *Controller) create(mongodb *tapi.MongoDB) error {
 		return err
 	}
 	if matched {
-
 		//TODO: Use Annotation Key
 		mongodb.Annotations = map[string]string{
 			"kubedb.com/ignore": "",

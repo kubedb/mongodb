@@ -38,7 +38,7 @@ func PatchMongoDB(c tcs.KubedbV1alpha1Interface, cur *aci.MongoDB, transform fun
 		return nil, err
 	}
 
-	modJson, err := json.Marshal(transform(cur))
+	modJson, err := json.Marshal(transform(cur.DeepCopy()))
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,8 @@ func TryUpdateMongoDB(c tcs.KubedbV1alpha1Interface, meta metav1.ObjectMeta, tra
 		if kerr.IsNotFound(e2) {
 			return false, e2
 		} else if e2 == nil {
-			result, e2 = c.MongoDBs(cur.Namespace).Update(transform(cur))
+
+			result, e2 = c.MongoDBs(cur.Namespace).Update(transform(cur.DeepCopy()))
 			return e2 == nil, nil
 		}
 		glog.Errorf("Attempt %d failed to update MongoDB %s/%s due to %v.", attempt, cur.Namespace, cur.Name, e2)

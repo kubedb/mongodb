@@ -1,24 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <testsuite tests="1" failures="0" time="268.979379489">
-      <testcase name="MongoDB Test General - should run successfully" classname="e2e Suite" time="0">
-          <skipped></skipped>
-      </testcase>
-      <testcase name="MongoDB Test General With PVC should run successfully" classname="e2e Suite" time="0">
-          <skipped></skipped>
-      </testcase>
-      <testcase name="MongoDB Test DoNotPause should work successfully" classname="e2e Suite" time="0">
-          <skipped></skipped>
-      </testcase>
-      <testcase name="MongoDB Test Initialize With Script should run successfully" classname="e2e Suite" time="0">
-          <skipped></skipped>
-      </testcase>
-      <testcase name="MongoDB Test Resume - should resume DormantDatabase successfully" classname="e2e Suite" time="0">
-          <skipped></skipped>
-      </testcase>
-      <testcase name="MongoDB Test Resume With Init should resume DormantDatabase successfully" classname="e2e Suite" time="0">
-          <skipped></skipped>
-      </testcase>
-      <testcase name="MongoDB Test Resume With original MongoDB should resume DormantDatabase successfully" classname="e2e Suite" time="0">
-          <skipped></skipped>
-      </testcase>
+  <testsuite tests="8" failures="0" time="852.309572703">
+      <testcase name="MongoDB Test General - should run successfully" classname="e2e Suite" time="65.211635265"></testcase>
+      <testcase name="MongoDB Test General With PVC should run successfully" classname="e2e Suite" time="55.058420077"></testcase>
+      <testcase name="MongoDB Test DoNotPause should work successfully" classname="e2e Suite" time="60.070145411"></testcase>
+      <testcase name="MongoDB Test Initialize With Script should run successfully" classname="e2e Suite" time="65.063446376"></testcase>
+      <testcase name="MongoDB Test Resume - should resume DormantDatabase successfully" classname="e2e Suite" time="125.101478722"></testcase>
+      <testcase name="MongoDB Test Resume With Init should resume DormantDatabase successfully" classname="e2e Suite" time="115.131797941"></testcase>
+      <testcase name="MongoDB Test Resume With original MongoDB should resume DormantDatabase successfully" classname="e2e Suite" time="120.150138528"></testcase>
+      <testcase name="MongoDB Test Resume With original MongoDB with init and pvc should resume DormantDatabase successfully" classname="e2e Suite" time="245.427877241"></testcase>
   </testsuite>
