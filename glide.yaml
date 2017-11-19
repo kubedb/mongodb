@@ -2,7 +2,7 @@ package: github.com/k8sdb/mongodb
 import:
 - package: github.com/appscode/go
 - package: github.com/appscode/kutil
-- package: github.com/appscode/log
+  version: release-5.0
 - package: github.com/appscode/pat
 - package: github.com/coreos/prometheus-operator
   repo: https://github.com/appscode/prometheus-operator.git
@@ -21,13 +21,19 @@ import:
 - package: github.com/spf13/pflag
   version: v1.0.0
 - package: k8s.io/api
-  version: fe29995db37613b9c5b2a647544cf627bfa8d299
-- package: k8s.io/apiextensions-apiserver
   version: release-1.8
 - package: k8s.io/apimachinery
-  version: 019ae5ada31de202164b118aee88ee2d14075c31
+  repo: https://github.com/tamalsaha/apimachinery.git
+  version: release-1.8
+  vcs: git
 - package: k8s.io/client-go
-  version: v5.0.0
+  version: kubernetes-1.8.3-beta.0
+- package: k8s.io/apiextensions-apiserver
+  version: release-1.8
+- package: k8s.io/kubernetes
+  repo: https://github.com/appscode/kubernetes.git
+  version: v1.8.3
+  vcs: git
 testImport:
 - package: github.com/stretchr/testify
   version: v1.1.4
