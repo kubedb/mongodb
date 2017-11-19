@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/appscode/go/types"
-	tapi "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
+	api "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/k8sdb/mongodb/test/e2e/framework"
 	"github.com/k8sdb/mongodb/test/e2e/matcher"
 	. "github.com/onsi/ginkgo"
@@ -24,8 +24,8 @@ var _ = Describe("MongoDB", func() {
 	var (
 		err      error
 		f        *framework.Invocation
-		mongodb  *tapi.MongoDB
-		snapshot *tapi.Snapshot
+		mongodb  *api.MongoDB
+		snapshot *api.Snapshot
 		//secret      *core.Secret
 		skipMessage string
 	)
@@ -55,7 +55,7 @@ var _ = Describe("MongoDB", func() {
 		f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
 
 		By("WipeOut mongodb")
-		_, err := f.TryPatchDormantDatabase(mongodb.ObjectMeta, func(in *tapi.DormantDatabase) *tapi.DormantDatabase {
+		_, err := f.TryPatchDormantDatabase(mongodb.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
 			in.Spec.WipeOut = true
 			return in
 		})
@@ -126,7 +126,7 @@ var _ = Describe("MongoDB", func() {
 				f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
 
 				By("Update mongodb to set DoNotPause=false")
-				f.TryPatchMongoDB(mongodb.ObjectMeta, func(in *tapi.MongoDB) *tapi.MongoDB {
+				f.TryPatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
 					in.Spec.DoNotPause = false
 					return in
 				})
@@ -245,8 +245,8 @@ var _ = Describe("MongoDB", func() {
 		Context("Initialize", func() {
 			Context("With Script", func() {
 				BeforeEach(func() {
-					mongodb.Spec.Init = &tapi.InitSpec{
-						ScriptSource: &tapi.ScriptSourceSpec{
+					mongodb.Spec.Init = &api.InitSpec{
+						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
 									Repository: "https://github.com/the-redback/k8s-mongodb-init-script.git",
@@ -332,7 +332,7 @@ var _ = Describe("MongoDB", func() {
 				By("Wait for mongodb to be paused")
 				f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
 
-				_, err = f.TryPatchDormantDatabase(mongodb.ObjectMeta, func(in *tapi.DormantDatabase) *tapi.DormantDatabase {
+				_, err = f.TryPatchDormantDatabase(mongodb.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
 					in.Spec.Resume = true
 					return in
 				})
@@ -349,7 +349,7 @@ var _ = Describe("MongoDB", func() {
 
 				if usedInitSpec {
 					Expect(mongodb.Spec.Init).Should(BeNil())
-					Expect(mongodb.Annotations[tapi.MongoDBInitSpec]).ShouldNot(BeEmpty())
+					Expect(mongodb.Annotations[api.MongoDBInitSpec]).ShouldNot(BeEmpty())
 				}
 
 				// Delete test resource
@@ -363,8 +363,8 @@ var _ = Describe("MongoDB", func() {
 			Context("With Init", func() {
 				BeforeEach(func() {
 					usedInitSpec = true
-					mongodb.Spec.Init = &tapi.InitSpec{
-						ScriptSource: &tapi.ScriptSourceSpec{
+					mongodb.Spec.Init = &api.InitSpec{
+						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
 									Repository: "https://github.com/the-redback/k8s-mongodb-init-script.git",
@@ -404,7 +404,7 @@ var _ = Describe("MongoDB", func() {
 
 					if usedInitSpec {
 						Expect(mongodb.Spec.Init).Should(BeNil())
-						Expect(mongodb.Annotations[tapi.MongoDBInitSpec]).ShouldNot(BeEmpty())
+						Expect(mongodb.Annotations[api.MongoDBInitSpec]).ShouldNot(BeEmpty())
 					}
 
 					// Delete test resource
@@ -414,8 +414,8 @@ var _ = Describe("MongoDB", func() {
 				Context("with init and pvc", func() {
 					BeforeEach(func() {
 						usedInitSpec = true
-						mongodb.Spec.Init = &tapi.InitSpec{
-							ScriptSource: &tapi.ScriptSourceSpec{
+						mongodb.Spec.Init = &api.InitSpec{
+							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
 										Repository: "https://github.com/the-redback/k8s-mongodb-init-script.git",

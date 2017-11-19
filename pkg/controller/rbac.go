@@ -4,14 +4,14 @@ import (
 	kutilcore "github.com/appscode/kutil/core/v1"
 	kutilrbac "github.com/appscode/kutil/rbac/v1beta1"
 	"github.com/k8sdb/apimachinery/apis/kubedb"
-	tapi "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
+	api "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
 	core "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1beta1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (c *Controller) deleteRole(mongodb *tapi.MongoDB) error {
+func (c *Controller) deleteRole(mongodb *api.MongoDB) error {
 	// Delete existing Roles
 	if err := c.Client.RbacV1beta1().Roles(mongodb.Namespace).Delete(mongodb.OffshootName(), nil); err != nil {
 		if !kerr.IsNotFound(err) {
@@ -21,7 +21,7 @@ func (c *Controller) deleteRole(mongodb *tapi.MongoDB) error {
 	return nil
 }
 
-func (c *Controller) createRole(mongodb *tapi.MongoDB) error {
+func (c *Controller) createRole(mongodb *api.MongoDB) error {
 	// Create new Roles
 	_, err := kutilrbac.CreateOrPatchRole(
 		c.Client,
@@ -33,7 +33,7 @@ func (c *Controller) createRole(mongodb *tapi.MongoDB) error {
 			in.Rules = []rbac.PolicyRule{
 				{
 					APIGroups:     []string{kubedb.GroupName},
-					Resources:     []string{tapi.ResourceTypeMongoDB},
+					Resources:     []string{api.ResourceTypeMongoDB},
 					ResourceNames: []string{mongodb.Name},
 					Verbs:         []string{"get"},
 				},
@@ -51,7 +51,7 @@ func (c *Controller) createRole(mongodb *tapi.MongoDB) error {
 	return err
 }
 
-func (c *Controller) deleteServiceAccount(mongodb *tapi.MongoDB) error {
+func (c *Controller) deleteServiceAccount(mongodb *api.MongoDB) error {
 	// Delete existing ServiceAccount
 	if err := c.Client.CoreV1().ServiceAccounts(mongodb.Namespace).Delete(mongodb.OffshootName(), nil); err != nil {
 		if !kerr.IsNotFound(err) {
@@ -61,7 +61,7 @@ func (c *Controller) deleteServiceAccount(mongodb *tapi.MongoDB) error {
 	return nil
 }
 
-func (c *Controller) createServiceAccount(mongodb *tapi.MongoDB) error {
+func (c *Controller) createServiceAccount(mongodb *api.MongoDB) error {
 	// Create new ServiceAccount
 	_, err := kutilcore.CreateOrPatchServiceAccount(
 		c.Client,
@@ -76,7 +76,7 @@ func (c *Controller) createServiceAccount(mongodb *tapi.MongoDB) error {
 	return err
 }
 
-func (c *Controller) deleteRoleBinding(mongodb *tapi.MongoDB) error {
+func (c *Controller) deleteRoleBinding(mongodb *api.MongoDB) error {
 	// Delete existing RoleBindings
 	if err := c.Client.RbacV1beta1().RoleBindings(mongodb.Namespace).Delete(mongodb.OffshootName(), nil); err != nil {
 		if !kerr.IsNotFound(err) {
@@ -86,7 +86,7 @@ func (c *Controller) deleteRoleBinding(mongodb *tapi.MongoDB) error {
 	return nil
 }
 
-func (c *Controller) createRoleBinding(mongodb *tapi.MongoDB) error {
+func (c *Controller) createRoleBinding(mongodb *api.MongoDB) error {
 	// Ensure new RoleBindings
 	_, err := kutilrbac.CreateOrPatchRoleBinding(
 		c.Client,
@@ -113,7 +113,7 @@ func (c *Controller) createRoleBinding(mongodb *tapi.MongoDB) error {
 	return err
 }
 
-func (c *Controller) createRBACStuff(mongodb *tapi.MongoDB) error {
+func (c *Controller) createRBACStuff(mongodb *api.MongoDB) error {
 	// Delete Existing Role
 	if err := c.deleteRole(mongodb); err != nil {
 		return err
@@ -140,7 +140,7 @@ func (c *Controller) createRBACStuff(mongodb *tapi.MongoDB) error {
 	return nil
 }
 
-func (c *Controller) deleteRBACStuff(mongodb *tapi.MongoDB) error {
+func (c *Controller) deleteRBACStuff(mongodb *api.MongoDB) error {
 	// Delete Existing Role
 	if err := c.deleteRole(mongodb); err != nil {
 		return err
