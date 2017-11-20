@@ -73,7 +73,6 @@ func (c *Controller) WipeOutDatabase(dormantDb *api.DormantDatabase) error {
 	return nil
 }
 
-
 func (c *Controller) deleteSecret(dormantDb *api.DormantDatabase) error {
 
 	var secretFound bool = false

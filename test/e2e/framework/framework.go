@@ -14,7 +14,6 @@ type Framework struct {
 	StorageClass string
 }
 
-
 func New(kubeClient kubernetes.Interface, extClient cs.KubedbV1alpha1Interface, storageClass string) *Framework {
 	return &Framework{
 		kubeClient:   kubeClient,

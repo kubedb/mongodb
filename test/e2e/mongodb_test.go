@@ -126,7 +126,6 @@ var _ = Describe("MongoDB", func() {
 				f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
 
 				By("Update mongodb to set DoNotPause=false")
-
 				f.TryPatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
 					in.Spec.DoNotPause = false
 					return in
@@ -350,7 +349,6 @@ var _ = Describe("MongoDB", func() {
 
 				if usedInitSpec {
 					Expect(mongodb.Spec.Init).Should(BeNil())
-
 					Expect(mongodb.Annotations[api.MongoDBInitSpec]).ShouldNot(BeEmpty())
 				}
 

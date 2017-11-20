@@ -52,7 +52,6 @@ func (f *Framework) EventuallySnapshotPhase(meta metav1.ObjectMeta) GomegaAsyncA
 	)
 }
 
-
 func (f *Framework) EventuallySnapshotDataFound(snapshot *api.Snapshot) GomegaAsyncAssertion {
 	return Eventually(
 		func() bool {
@@ -85,7 +84,6 @@ func (f *Framework) EventuallySnapshotCount(meta metav1.ObjectMeta) GomegaAsyncA
 		time.Second*5,
 	)
 }
-
 
 func (f *Framework) checkSnapshotData(snapshot *api.Snapshot) (bool, error) {
 	storageSpec := snapshot.Spec.SnapshotStorageSpec

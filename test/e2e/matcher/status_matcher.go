@@ -18,7 +18,6 @@ func HaveWipedOut() types.GomegaMatcher {
 }
 
 type statusMatcher struct {
-
 	expected api.DormantDatabasePhase
 }
 

@@ -18,7 +18,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-
 func (c *Controller) create(mongodb *api.MongoDB) error {
 	_, err := util.TryPatchMongoDB(c.ExtClient, mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
 		t := metav1.Now()
@@ -50,7 +49,6 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 		return err
 	}
 	if matched {
-
 		//TODO: Use Annotation Key
 		mongodb.Annotations = map[string]string{
 			"kubedb.com/ignore": "",

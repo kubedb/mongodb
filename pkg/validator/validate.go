@@ -10,7 +10,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-
 func ValidateMongoDB(client kubernetes.Interface, mongodb *api.MongoDB) error {
 	if mongodb.Spec.Version == "" {
 		return fmt.Errorf(`Object 'Version' is missing in '%v'`, mongodb.Spec)

@@ -32,7 +32,6 @@ func (f *Framework) CreateMongoDB(obj *api.MongoDB) error {
 	return err
 }
 
-
 func (f *Framework) GetMongoDB(meta metav1.ObjectMeta) (*api.MongoDB, error) {
 	return f.extClient.MongoDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
 }
