@@ -8,8 +8,8 @@ import (
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
-	tapi "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
-	kutildb "github.com/k8sdb/apimachinery/client/typed/kubedb/v1alpha1/util"
+	api "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
+	"github.com/k8sdb/apimachinery/client/typed/kubedb/v1alpha1/util"
 	"github.com/k8sdb/apimachinery/pkg/docker"
 	"github.com/k8sdb/apimachinery/pkg/eventer"
 	"github.com/k8sdb/apimachinery/pkg/storage"
@@ -28,7 +28,7 @@ const (
 	durationCheckStatefulSet = time.Minute * 30
 )
 
-func (c *Controller) findService(mongodb *tapi.MongoDB) (bool, error) {
+func (c *Controller) findService(mongodb *api.MongoDB) (bool, error) {
 	name := mongodb.OffshootName()
 	service, err := c.Client.CoreV1().Services(mongodb.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
@@ -39,14 +39,14 @@ func (c *Controller) findService(mongodb *tapi.MongoDB) (bool, error) {
 		}
 	}
 
-	if service.Spec.Selector[tapi.LabelDatabaseName] != name {
+	if service.Spec.Selector[api.LabelDatabaseName] != name {
 		return false, fmt.Errorf(`Intended service "%v" already exists`, name)
 	}
 
 	return true, nil
 }
 
-func (c *Controller) createService(mongodb *tapi.MongoDB) error {
+func (c *Controller) createService(mongodb *api.MongoDB) error {
 	svc := &core.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   mongodb.OffshootName(),
@@ -64,12 +64,12 @@ func (c *Controller) createService(mongodb *tapi.MongoDB) error {
 		},
 	}
 	if mongodb.Spec.Monitor != nil &&
-		mongodb.Spec.Monitor.Agent == tapi.AgentCoreosPrometheus &&
+		mongodb.Spec.Monitor.Agent == api.AgentCoreosPrometheus &&
 		mongodb.Spec.Monitor.Prometheus != nil {
 		svc.Spec.Ports = append(svc.Spec.Ports, core.ServicePort{
-			Name:       tapi.PrometheusExporterPortName,
-			Port:       tapi.PrometheusExporterPortNumber,
-			TargetPort: intstr.FromString(tapi.PrometheusExporterPortName),
+			Name:       api.PrometheusExporterPortName,
+			Port:       api.PrometheusExporterPortNumber,
+			TargetPort: intstr.FromString(api.PrometheusExporterPortName),
 		})
 	}
 
@@ -80,7 +80,7 @@ func (c *Controller) createService(mongodb *tapi.MongoDB) error {
 	return nil
 }
 
-func (c *Controller) findStatefulSet(mongodb *tapi.MongoDB) (bool, error) {
+func (c *Controller) findStatefulSet(mongodb *api.MongoDB) (bool, error) {
 	// SatatefulSet for MongoDB database
 	statefulSet, err := c.Client.AppsV1beta1().StatefulSets(mongodb.Namespace).Get(mongodb.OffshootName(), metav1.GetOptions{})
 	if err != nil {
@@ -91,14 +91,14 @@ func (c *Controller) findStatefulSet(mongodb *tapi.MongoDB) (bool, error) {
 		}
 	}
 
-	if statefulSet.Labels[tapi.LabelDatabaseKind] != tapi.ResourceKindMongoDB {
+	if statefulSet.Labels[api.LabelDatabaseKind] != api.ResourceKindMongoDB {
 		return false, fmt.Errorf(`Intended statefulSet "%v" already exists`, mongodb.OffshootName())
 	}
 
 	return true, nil
 }
 
-func (c *Controller) createStatefulSet(mongodb *tapi.MongoDB) (*apps.StatefulSet, error) {
+func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet, error) {
 	// SatatefulSet for MongoDB database
 	statefulSet := &apps.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -117,7 +117,7 @@ func (c *Controller) createStatefulSet(mongodb *tapi.MongoDB) (*apps.StatefulSet
 				Spec: core.PodSpec{
 					Containers: []core.Container{
 						{
-							Name:            tapi.ResourceNameMongoDB,
+							Name:            api.ResourceNameMongoDB,
 							Image:           fmt.Sprintf("%s:%s", docker.ImageMongoDB, mongodb.Spec.Version),
 							ImagePullPolicy: core.PullIfNotPresent,
 							Ports: []core.ContainerPort{
@@ -154,22 +154,22 @@ func (c *Controller) createStatefulSet(mongodb *tapi.MongoDB) (*apps.StatefulSet
 	}
 
 	if mongodb.Spec.Monitor != nil &&
-		mongodb.Spec.Monitor.Agent == tapi.AgentCoreosPrometheus &&
+		mongodb.Spec.Monitor.Agent == api.AgentCoreosPrometheus &&
 		mongodb.Spec.Monitor.Prometheus != nil {
 		exporter := core.Container{
 			Name: "exporter",
 			Args: []string{
 				"export",
-				fmt.Sprintf("--address=:%d", tapi.PrometheusExporterPortNumber),
+				fmt.Sprintf("--address=:%d", api.PrometheusExporterPortNumber),
 				"--v=3",
 			},
 			Image:           docker.ImageOperator + ":" + c.opt.ExporterTag,
 			ImagePullPolicy: core.PullIfNotPresent,
 			Ports: []core.ContainerPort{
 				{
-					Name:          tapi.PrometheusExporterPortName,
+					Name:          api.PrometheusExporterPortName,
 					Protocol:      core.ProtocolTCP,
-					ContainerPort: int32(tapi.PrometheusExporterPortNumber),
+					ContainerPort: int32(api.PrometheusExporterPortNumber),
 				},
 			},
 		}
@@ -182,7 +182,7 @@ func (c *Controller) createStatefulSet(mongodb *tapi.MongoDB) (*apps.StatefulSet
 			return nil, err
 		}
 
-		_mongodb, err := kutildb.TryPatchMongoDB(c.ExtClient, mongodb.ObjectMeta, func(in *tapi.MongoDB) *tapi.MongoDB {
+		_mongodb, err := util.TryPatchMongoDB(c.ExtClient, mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
 			in.Spec.DatabaseSecret = secretVolumeSource
 			return in
 		})
@@ -199,15 +199,10 @@ func (c *Controller) createStatefulSet(mongodb *tapi.MongoDB) (*apps.StatefulSet
 	// Add Data volume for StatefulSet
 	addDataVolume(statefulSet, mongodb.Spec.Storage)
 
-	// ---> Start
-	//TODO: Use following if supported
-	// otherwise remove
-
 	// Add InitialScript to run at startup
 	if mongodb.Spec.Init != nil && mongodb.Spec.Init.ScriptSource != nil {
 		addInitialScript(statefulSet, mongodb.Spec.Init.ScriptSource)
 	}
-	// ---> End
 
 	if c.opt.EnableRbac {
 		// Ensure ClusterRoles for database statefulsets
@@ -258,7 +253,7 @@ func (c *Controller) findSecret(secretName, namespace string) (bool, error) {
 	return true, nil
 }
 
-func (c *Controller) createDatabaseSecret(mongodb *tapi.MongoDB) (*core.SecretVolumeSource, error) {
+func (c *Controller) createDatabaseSecret(mongodb *api.MongoDB) (*core.SecretVolumeSource, error) {
 	authSecretName := mongodb.Name + "-admin-auth"
 
 	found, err := c.findSecret(authSecretName, mongodb.Namespace)
@@ -276,7 +271,7 @@ func (c *Controller) createDatabaseSecret(mongodb *tapi.MongoDB) (*core.SecretVo
 			ObjectMeta: metav1.ObjectMeta{
 				Name: authSecretName,
 				Labels: map[string]string{
-					tapi.LabelDatabaseKind: tapi.ResourceKindMongoDB,
+					api.LabelDatabaseKind: api.ResourceKindMongoDB,
 				},
 			},
 			Type: core.SecretTypeOpaque,
@@ -327,7 +322,7 @@ func addDataVolume(statefulSet *apps.StatefulSet, pvcSpec *core.PersistentVolume
 	}
 }
 
-func addInitialScript(statefulSet *apps.StatefulSet, script *tapi.ScriptSourceSpec) {
+func addInitialScript(statefulSet *apps.StatefulSet, script *api.ScriptSourceSpec) {
 	statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts,
 		core.VolumeMount{
 			Name:      "initial-script",
@@ -343,24 +338,24 @@ func addInitialScript(statefulSet *apps.StatefulSet, script *tapi.ScriptSourceSp
 	)
 }
 
-func (c *Controller) createDormantDatabase(mongodb *tapi.MongoDB) (*tapi.DormantDatabase, error) {
-	dormantDb := &tapi.DormantDatabase{
+func (c *Controller) createDormantDatabase(mongodb *api.MongoDB) (*api.DormantDatabase, error) {
+	dormantDb := &api.DormantDatabase{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      mongodb.Name,
 			Namespace: mongodb.Namespace,
 			Labels: map[string]string{
-				tapi.LabelDatabaseKind: tapi.ResourceKindMongoDB,
+				api.LabelDatabaseKind: api.ResourceKindMongoDB,
 			},
 		},
-		Spec: tapi.DormantDatabaseSpec{
-			Origin: tapi.Origin{
+		Spec: api.DormantDatabaseSpec{
+			Origin: api.Origin{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        mongodb.Name,
 					Namespace:   mongodb.Namespace,
 					Labels:      mongodb.Labels,
 					Annotations: mongodb.Annotations,
 				},
-				Spec: tapi.OriginSpec{
+				Spec: api.OriginSpec{
 					MongoDB: &mongodb.Spec,
 				},
 			},
@@ -370,7 +365,7 @@ func (c *Controller) createDormantDatabase(mongodb *tapi.MongoDB) (*tapi.Dormant
 	initSpec, _ := json.Marshal(mongodb.Spec.Init)
 	if mongodb.Spec.Init != nil {
 		dormantDb.Annotations = map[string]string{
-			tapi.MongoDBInitSpec: string(initSpec),
+			api.MongoDBInitSpec: string(initSpec),
 		}
 	}
 
@@ -379,8 +374,8 @@ func (c *Controller) createDormantDatabase(mongodb *tapi.MongoDB) (*tapi.Dormant
 	return c.ExtClient.DormantDatabases(dormantDb.Namespace).Create(dormantDb)
 }
 
-func (c *Controller) reCreateMongoDB(mongodb *tapi.MongoDB) error {
-	_mongodb := &tapi.MongoDB{
+func (c *Controller) reCreateMongoDB(mongodb *api.MongoDB) error {
+	_mongodb := &api.MongoDB{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        mongodb.Name,
 			Namespace:   mongodb.Namespace,
@@ -403,12 +398,12 @@ const (
 	snapshotType_DumpRestore = "dump-restore"
 )
 
-func (c *Controller) createRestoreJob(mongodb *tapi.MongoDB, snapshot *tapi.Snapshot) (*batch.Job, error) {
+func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapshot) (*batch.Job, error) {
 	databaseName := mongodb.Name
 	jobName := snapshot.OffshootName()
 	jobLabel := map[string]string{
-		tapi.LabelDatabaseName: databaseName,
-		tapi.LabelJobType:      SnapshotProcess_Restore,
+		api.LabelDatabaseName: databaseName,
+		api.LabelJobType:      SnapshotProcess_Restore,
 	}
 	backupSpec := snapshot.Spec.SnapshotStorageSpec
 	bucket, err := backupSpec.Container()
@@ -438,9 +433,8 @@ func (c *Controller) createRestoreJob(mongodb *tapi.MongoDB, snapshot *tapi.Snap
 				Spec: core.PodSpec{
 					Containers: []core.Container{
 						{
-							Name: SnapshotProcess_Restore,
-							//TODO: Use appropriate image
-							Image: fmt.Sprintf("%s:%s", docker.ImageMongoDB, mongodb.Spec.Version),
+							Name:  SnapshotProcess_Restore,
+							Image: fmt.Sprintf("%s:%s", docker.ImageMongoDB, mongodb.Spec.Version), //Fixed in later PRs.
 							Args: []string{
 								fmt.Sprintf(`--process=%s`, SnapshotProcess_Restore),
 								fmt.Sprintf(`--host=%s`, databaseName),
@@ -452,7 +446,7 @@ func (c *Controller) createRestoreJob(mongodb *tapi.MongoDB, snapshot *tapi.Snap
 							VolumeMounts: []core.VolumeMount{
 								{
 									Name:      "secret",
-									MountPath: "/srv/" + tapi.ResourceNameMySQL + "/secrets",
+									MountPath: "/srv/" + api.ResourceNameMySQL + "/secrets",
 								},
 								{
 									Name:      persistentVolume.Name,
