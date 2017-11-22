@@ -91,7 +91,6 @@ var _ = Describe("MongoDB", func() {
 
 			Context("With PVC", func() {
 				BeforeEach(func() {
-					fmt.Println(f.StorageClass)
 					if f.StorageClass == "" {
 						skipMessage = "Missing StorageClassName. Provide as flag to test this."
 					}
@@ -595,6 +594,5 @@ var _ = Describe("MongoDB", func() {
 				})
 			})
 		})
-
 	})
 })
