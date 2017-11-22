@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	logs "github.com/appscode/log/golog"
+	logs "github.com/appscode/go/log/golog"
 	api "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
 	cs "github.com/k8sdb/apimachinery/client/typed/kubedb/v1alpha1"
 	amc "github.com/k8sdb/apimachinery/pkg/controller"
