@@ -351,7 +351,7 @@ func (c *Controller) initialize(mongodb *api.MongoDB) error {
 		return err
 	}
 
-	jobSuccess := c.CheckDatabaseRestoreJob(job, mongodb, c.recorder, durationCheckRestoreJob)
+	jobSuccess := c.CheckDatabaseRestoreJob(snapshot, job, mongodb, c.recorder, durationCheckRestoreJob)
 	if jobSuccess {
 		c.recorder.Event(
 			mongodb.ObjectReference(),

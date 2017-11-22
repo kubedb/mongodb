@@ -190,7 +190,7 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 			c.recorder.Eventf(mongodb.ObjectReference(), core.EventTypeWarning, eventer.EventReasonFailedToUpdate, err.Error())
 			return nil, err
 		}
-		mongodb = _mongodb
+		mongodb.Spec = _mongodb.Spec
 	}
 
 	//Set root user password from Secret
@@ -433,8 +433,9 @@ func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapsh
 				Spec: core.PodSpec{
 					Containers: []core.Container{
 						{
-							Name:  SnapshotProcess_Restore,
-							Image: fmt.Sprintf("%s:%s-util", docker.ImageMongoDB, mongodb.Spec.Version), //Fixed in later PRs.
+							Name: SnapshotProcess_Restore,
+							//Image: fmt.Sprintf("%s:%s-util", docker.ImageMongoDB, mongodb.Spec.Version), //todo
+							Image: fmt.Sprintf("kubedb/mongodb:3.4-util"), //todo
 							Args: []string{
 								fmt.Sprintf(`--process=%s`, SnapshotProcess_Restore),
 								fmt.Sprintf(`--host=%s`, databaseName),
@@ -477,7 +478,7 @@ func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapsh
 							Name: "osmconfig",
 							VolumeSource: core.VolumeSource{
 								Secret: &core.SecretVolumeSource{
-									SecretName: snapshot.Name,
+									SecretName: snapshot.OSMSecretName(),
 								},
 							},
 						},

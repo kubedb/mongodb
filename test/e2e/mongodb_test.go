@@ -314,7 +314,6 @@ var _ = Describe("MongoDB", func() {
 
 					By("Create mongodb from snapshot")
 					mongodb = f.MongoDB()
-					mongodb.Spec.DatabaseSecret = oldMongoDB.Spec.DatabaseSecret
 					mongodb.Spec.Init = &api.InitSpec{
 						SnapshotSource: &api.SnapshotSourceSpec{
 							Namespace: snapshot.Namespace,
