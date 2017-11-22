@@ -8,51 +8,55 @@ GOPATH=$(go env GOPATH)
 SRC=$GOPATH/src
 BIN=$GOPATH/bin
 ROOT=$GOPATH
-REPO_ROOT=$GOPATH/src/github.com/k8sdb/mongodb 
+REPO_ROOT=$GOPATH/src/github.com/k8sdb/mongodb
 
-source "$REPO_ROOT/hack/libbuild/common/lib.sh"
-source "$REPO_ROOT/hack/libbuild/common/public_image.sh"
+source "$REPO_ROOT/hack/libbuild/common/kubedb_image.sh"
 
 APPSCODE_ENV=${APPSCODE_ENV:-dev}
-IMG=k8s-x
+IMG=mg-operator
 
-DIST=$GOPATH/src/github.com/k8sdb/mongodb /dist
+DIST=$GOPATH/src/github.com/k8sdb/mongodb/dist
 mkdir -p $DIST
 if [ -f "$DIST/.tag" ]; then
-	export $(cat $DIST/.tag | xargs)
+    export $(cat $DIST/.tag | xargs)
 fi
 
 clean() {
-    pushd $REPO_ROOT/hack/docker/k8s-x
-    rm -f k8s-x Dockerfile
+    pushd $REPO_ROOT/hack/docker/mg-operator
+    rm -f mg-operator Dockerfile
     popd
 }
 
 build_binary() {
     pushd $REPO_ROOT
     ./hack/builddeps.sh
-    ./hack/make.py build k8s-x
+    ./hack/make.py build mg-operator
     detect_tag $DIST/.tag
     popd
 }
 
 build_docker() {
-    pushd $REPO_ROOT/hack/docker/k8s-x
-    cp $DIST/k8s-x/k8s-x-linux-amd64 k8s-x
-    chmod 755 k8s-x
+    pushd $REPO_ROOT/hack/docker/mg-operator
+    cp $DIST/mg-operator/mg-operator-alpine-amd64 mg-operator
+    chmod 755 mg-operator
 
     cat >Dockerfile <<EOL
 FROM alpine
 
-COPY k8s-x /k8s-x
+RUN set -x \
+  && apk update \
+  && apk add ca-certificates \
+  && rm -rf /var/cache/apk/*
+
+COPY mg-operator /mg-operator
 
 USER nobody:nobody
-ENTRYPOINT ["/k8s-x"]
+ENTRYPOINT ["/mg-operator"]
 EOL
-    local cmd="docker build -t appscode/$IMG:$TAG ."
+    local cmd="docker build -t kubedb/$IMG:$TAG ."
     echo $cmd; $cmd
 
-    rm k8s-x Dockerfile
+    rm mg-operator Dockerfile
     popd
 }
 
@@ -64,12 +68,13 @@ build() {
 docker_push() {
     if [ "$APPSCODE_ENV" = "prod" ]; then
         echo "Nothing to do in prod env. Are you trying to 'release' binaries to prod?"
-        exit 0
+        exit 1
     fi
-
-    if [[ "$(docker images -q appscode/$IMG:$TAG 2> /dev/null)" != "" ]]; then
-        docker_up $IMG:$TAG
+    if [ "$TAG_STRATEGY" = "git_tag" ]; then
+        echo "Are you trying to 'release' binaries to prod?"
+        exit 1
     fi
+    hub_canary
 }
 
 docker_release() {
@@ -81,10 +86,7 @@ docker_release() {
         echo "'apply_tag' to release binaries and/or docker images."
         exit 1
     fi
-
-    if [[ "$(docker images -q appscode/$IMG:$TAG 2> /dev/null)" != "" ]]; then
-        docker push appscode/$IMG:$TAG
-    fi
+    hub_up
 }
 
 source_repo $@

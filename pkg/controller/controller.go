@@ -87,8 +87,6 @@ func (c *Controller) Run() {
 
 	// Start Cron
 	c.cronController.StartCron()
-	// Stop Cron
-	//defer c.cronController.StopCron()
 
 	// Watch x  TPR objects
 	go c.watchMongoDB()

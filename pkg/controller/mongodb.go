@@ -7,9 +7,9 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/appscode/log"
-	tapi "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
-	kutildb "github.com/k8sdb/apimachinery/client/typed/kubedb/v1alpha1/util"
+	"github.com/appscode/go/log"
+	api "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
+	"github.com/k8sdb/apimachinery/client/typed/kubedb/v1alpha1/util"
 	"github.com/k8sdb/apimachinery/pkg/eventer"
 	"github.com/k8sdb/apimachinery/pkg/storage"
 	"github.com/k8sdb/mongodb/pkg/validator"
@@ -18,11 +18,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (c *Controller) create(mongodb *tapi.MongoDB) error {
-	_, err := kutildb.TryPatchMongoDB(c.ExtClient, mongodb.ObjectMeta, func(in *tapi.MongoDB) *tapi.MongoDB {
+func (c *Controller) create(mongodb *api.MongoDB) error {
+	_, err := util.TryPatchMongoDB(c.ExtClient, mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
 		t := metav1.Now()
 		in.Status.CreationTime = &t
-		in.Status.Phase = tapi.DatabasePhaseCreating
+		in.Status.Phase = api.DatabasePhaseCreating
 		return in
 	})
 
@@ -49,7 +49,6 @@ func (c *Controller) create(mongodb *tapi.MongoDB) error {
 		return err
 	}
 	if matched {
-
 		//TODO: Use Annotation Key
 		mongodb.Annotations = map[string]string{
 			"kubedb.com/ignore": "",
@@ -63,7 +62,7 @@ func (c *Controller) create(mongodb *tapi.MongoDB) error {
 			)
 		}
 
-		_, err := kutildb.TryPatchDormantDatabase(c.ExtClient, mongodb.ObjectMeta, func(in *tapi.DormantDatabase) *tapi.DormantDatabase {
+		_, err := util.TryPatchDormantDatabase(c.ExtClient, mongodb.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
 			in.Spec.Resume = true
 			return in
 		})
@@ -133,7 +132,7 @@ func (c *Controller) create(mongodb *tapi.MongoDB) error {
 	return nil
 }
 
-func (c *Controller) matchDormantDatabase(mongodb *tapi.MongoDB) (bool, error) {
+func (c *Controller) matchDormantDatabase(mongodb *api.MongoDB) (bool, error) {
 	// Check if DormantDatabase exists or not
 	dormantDb, err := c.ExtClient.DormantDatabases(mongodb.Namespace).Get(mongodb.Name, metav1.GetOptions{})
 	if err != nil {
@@ -161,14 +160,14 @@ func (c *Controller) matchDormantDatabase(mongodb *tapi.MongoDB) (bool, error) {
 		return false, errors.New(message)
 	}
 
-	if dormantDb.Labels[tapi.LabelDatabaseKind] != tapi.ResourceKindMongoDB {
+	if dormantDb.Labels[api.LabelDatabaseKind] != api.ResourceKindMongoDB {
 		return sendEvent(fmt.Sprintf(`Invalid MongoDB: "%v". Exists DormantDatabase "%v" of different Kind`,
 			mongodb.Name, dormantDb.Name))
 	}
 
-	initSpecAnnotationStr := dormantDb.Annotations[tapi.MongoDBInitSpec]
+	initSpecAnnotationStr := dormantDb.Annotations[api.MongoDBInitSpec]
 	if initSpecAnnotationStr != "" {
-		var initSpecAnnotation *tapi.InitSpec
+		var initSpecAnnotation *api.InitSpec
 		if err := json.Unmarshal([]byte(initSpecAnnotationStr), &initSpecAnnotation); err != nil {
 			return sendEvent(err.Error())
 		}
@@ -198,7 +197,7 @@ func (c *Controller) matchDormantDatabase(mongodb *tapi.MongoDB) (bool, error) {
 	return true, nil
 }
 
-func (c *Controller) ensureService(mongodb *tapi.MongoDB) error {
+func (c *Controller) ensureService(mongodb *api.MongoDB) error {
 	// Check if service name exists
 	found, err := c.findService(mongodb)
 	if err != nil {
@@ -222,7 +221,7 @@ func (c *Controller) ensureService(mongodb *tapi.MongoDB) error {
 	return nil
 }
 
-func (c *Controller) ensureStatefulSet(mongodb *tapi.MongoDB) error {
+func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB) error {
 	found, err := c.findStatefulSet(mongodb)
 	if err != nil {
 		return err
@@ -244,12 +243,6 @@ func (c *Controller) ensureStatefulSet(mongodb *tapi.MongoDB) error {
 		return err
 	}
 
-	_mongodb, err := c.ExtClient.MongoDBs(mongodb.Namespace).Get(mongodb.Name, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	mongodb = _mongodb
-
 	// Check StatefulSet Pod status
 	if err := c.CheckStatefulSetPodStatus(statefulSet, durationCheckStatefulSet); err != nil {
 		c.recorder.Eventf(
@@ -270,8 +263,8 @@ func (c *Controller) ensureStatefulSet(mongodb *tapi.MongoDB) error {
 	}
 
 	if mongodb.Spec.Init != nil && mongodb.Spec.Init.SnapshotSource != nil {
-		_, err := kutildb.TryPatchMongoDB(c.ExtClient, mongodb.ObjectMeta, func(in *tapi.MongoDB) *tapi.MongoDB {
-			in.Status.Phase = tapi.DatabasePhaseInitializing
+		_, err := util.TryPatchMongoDB(c.ExtClient, mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
+			in.Status.Phase = api.DatabasePhaseInitializing
 			return in
 		})
 		if err != nil {
@@ -290,8 +283,8 @@ func (c *Controller) ensureStatefulSet(mongodb *tapi.MongoDB) error {
 		}
 	}
 
-	_, err = kutildb.TryPatchMongoDB(c.ExtClient, mongodb.ObjectMeta, func(in *tapi.MongoDB) *tapi.MongoDB {
-		in.Status.Phase = tapi.DatabasePhaseRunning
+	_, err = util.TryPatchMongoDB(c.ExtClient, mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
+		in.Status.Phase = api.DatabasePhaseRunning
 		return in
 	})
 	if err != nil {
@@ -301,7 +294,7 @@ func (c *Controller) ensureStatefulSet(mongodb *tapi.MongoDB) error {
 	return nil
 }
 
-func (c *Controller) ensureBackupScheduler(mongodb *tapi.MongoDB) {
+func (c *Controller) ensureBackupScheduler(mongodb *api.MongoDB) {
 	// Setup Schedule backup
 	if mongodb.Spec.BackupSchedule != nil {
 		err := c.cronController.ScheduleBackup(mongodb, mongodb.ObjectMeta, mongodb.Spec.BackupSchedule)
@@ -324,7 +317,7 @@ const (
 	durationCheckRestoreJob = time.Minute * 30
 )
 
-func (c *Controller) initialize(mongodb *tapi.MongoDB) error {
+func (c *Controller) initialize(mongodb *api.MongoDB) error {
 	snapshotSource := mongodb.Spec.Init.SnapshotSource
 	// Event for notification that kubernetes objects are creating
 	c.recorder.Eventf(
@@ -377,7 +370,7 @@ func (c *Controller) initialize(mongodb *tapi.MongoDB) error {
 	return nil
 }
 
-func (c *Controller) pause(mongodb *tapi.MongoDB) error {
+func (c *Controller) pause(mongodb *api.MongoDB) error {
 	if mongodb.Annotations != nil {
 		if val, found := mongodb.Annotations["kubedb.com/ignore"]; found {
 			c.recorder.Event(mongodb.ObjectReference(), core.EventTypeNormal, "Ignored", val)
@@ -453,7 +446,7 @@ func (c *Controller) pause(mongodb *tapi.MongoDB) error {
 	return nil
 }
 
-func (c *Controller) update(oldMongoDB, updatedMongoDB *tapi.MongoDB) error {
+func (c *Controller) update(oldMongoDB, updatedMongoDB *api.MongoDB) error {
 	if err := validator.ValidateMongoDB(c.Client, updatedMongoDB); err != nil {
 		c.recorder.Event(updatedMongoDB.ObjectReference(), core.EventTypeWarning, eventer.EventReasonInvalid, err.Error())
 		return err

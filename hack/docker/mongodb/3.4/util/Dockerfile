@@ -8,7 +8,7 @@ FROM appscode/python:2.7
 ENV MONGO_MAJOR 3.4
 ENV MONGO_VERSION 3.4.10
 ## osm version
-ENV OSM_VERSION 0.5.0
+ENV OSM_VERSION 0.6.0
 
 RUN groupadd -r mongodb && useradd -r -g mongodb mongodb
 RUN apt-key adv --keyserver ha.pool.sks-keyservers.net --recv-keys 0C49F3730359A14518585931BC711F9BA15703C6
@@ -18,7 +18,9 @@ ARG MONGO_REPO=repo.mongodb.org
 ENV MONGO_PACKAGE=${MONGO_PACKAGE} MONGO_REPO=${MONGO_REPO}
 
 
+
 RUN echo "deb http://$MONGO_REPO/apt/debian jessie/${MONGO_PACKAGE%-unstable}/$MONGO_MAJOR main" | tee "/etc/apt/sources.list.d/${MONGO_PACKAGE%-unstable}.list"
+
 
 RUN set -x \
   && apt-get update \

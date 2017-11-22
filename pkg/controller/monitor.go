@@ -3,11 +3,12 @@ package controller
 import (
 	"fmt"
 
-	tapi "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
-	"github.com/k8sdb/apimachinery/pkg/monitor"
+	"github.com/appscode/kutil/tools/monitoring/agents"
+	mona "github.com/appscode/kutil/tools/monitoring/api"
+	api "github.com/k8sdb/apimachinery/apis/kubedb/v1alpha1"
 )
 
-func (c *Controller) newMonitorController(mongodb *tapi.MongoDB) (monitor.Monitor, error) {
+func (c *Controller) newMonitorController(mongodb *api.MongoDB) (mona.Agent, error) {
 	monitorSpec := mongodb.Spec.Monitor
 
 	if monitorSpec == nil {
@@ -15,38 +16,38 @@ func (c *Controller) newMonitorController(mongodb *tapi.MongoDB) (monitor.Monito
 	}
 
 	if monitorSpec.Prometheus != nil {
-		return monitor.NewPrometheusController(c.Client, c.ApiExtKubeClient, c.promClient, c.opt.OperatorNamespace), nil
+		return agents.New(monitorSpec.Agent, c.Client, c.ApiExtKubeClient, c.promClient), nil
 	}
 
-	return nil, fmt.Errorf("Monitoring controller not found for %v", monitorSpec)
+	return nil, fmt.Errorf("monitoring controller not found for %v", monitorSpec)
 }
 
-func (c *Controller) addMonitor(mongodb *tapi.MongoDB) error {
-	ctrl, err := c.newMonitorController(mongodb)
+func (c *Controller) addMonitor(mongodb *api.MongoDB) error {
+	agent, err := c.newMonitorController(mongodb)
 	if err != nil {
 		return err
 	}
-	return ctrl.AddMonitor(mongodb.ObjectMeta, mongodb.Spec.Monitor)
+	return agent.Add(mongodb.StatsAccessor(), mongodb.Spec.Monitor)
 }
 
-func (c *Controller) deleteMonitor(mongodb *tapi.MongoDB) error {
-	ctrl, err := c.newMonitorController(mongodb)
+func (c *Controller) deleteMonitor(mongodb *api.MongoDB) error {
+	agent, err := c.newMonitorController(mongodb)
 	if err != nil {
 		return err
 	}
-	return ctrl.DeleteMonitor(mongodb.ObjectMeta, mongodb.Spec.Monitor)
+	return agent.Delete(mongodb.StatsAccessor(), mongodb.Spec.Monitor)
 }
 
-func (c *Controller) updateMonitor(oldMongoDB, updatedMongoDB *tapi.MongoDB) error {
+func (c *Controller) updateMonitor(oldMongoDB, updatedMongoDB *api.MongoDB) error {
 	var err error
-	var ctrl monitor.Monitor
+	var agent mona.Agent
 	if updatedMongoDB.Spec.Monitor == nil {
-		ctrl, err = c.newMonitorController(oldMongoDB)
+		agent, err = c.newMonitorController(oldMongoDB)
 	} else {
-		ctrl, err = c.newMonitorController(updatedMongoDB)
+		agent, err = c.newMonitorController(updatedMongoDB)
 	}
 	if err != nil {
 		return err
 	}
-	return ctrl.UpdateMonitor(updatedMongoDB.ObjectMeta, oldMongoDB.Spec.Monitor, updatedMongoDB.Spec.Monitor)
+	return agent.Update(updatedMongoDB.StatsAccessor(), oldMongoDB.Spec.Monitor, updatedMongoDB.Spec.Monitor)
 }
