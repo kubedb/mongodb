@@ -124,6 +124,7 @@ func (c *Controller) watchMongoDB() {
 			AddFunc: func(obj interface{}) {
 				mongodb := obj.(*api.MongoDB)
 				kutildb.AssignTypeKind(mongodb)
+				setMonitoringPort(mongodb)
 				if mongodb.Status.CreationTime == nil {
 					if err := c.create(mongodb); err != nil {
 						log.Errorln(err)
@@ -134,6 +135,7 @@ func (c *Controller) watchMongoDB() {
 			DeleteFunc: func(obj interface{}) {
 				mongodb := obj.(*api.MongoDB)
 				kutildb.AssignTypeKind(mongodb)
+				setMonitoringPort(mongodb)
 				if err := c.pause(mongodb); err != nil {
 					log.Errorln(err)
 				}
@@ -149,6 +151,8 @@ func (c *Controller) watchMongoDB() {
 				}
 				kutildb.AssignTypeKind(oldObj)
 				kutildb.AssignTypeKind(newObj)
+				setMonitoringPort(oldObj)
+				setMonitoringPort(newObj)
 				if !reflect.DeepEqual(oldObj.Spec, newObj.Spec) {
 					if err := c.update(oldObj, newObj); err != nil {
 						log.Errorln(err)
@@ -158,6 +162,15 @@ func (c *Controller) watchMongoDB() {
 		},
 	)
 	cacheController.Run(wait.NeverStop)
+}
+
+func setMonitoringPort(mongodb *api.MongoDB) {
+	if mongodb.Spec.Monitor != nil &&
+		mongodb.Spec.Monitor.Prometheus != nil {
+		if mongodb.Spec.Monitor.Prometheus.Port == 0 {
+			mongodb.Spec.Monitor.Prometheus.Port = api.PrometheusExporterPortNumber
+		}
+	}
 }
 
 func (c *Controller) watchDatabaseSnapshot() {

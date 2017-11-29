@@ -68,7 +68,7 @@ func (c *Controller) createService(mongodb *api.MongoDB) error {
 		mongodb.Spec.Monitor.Prometheus != nil {
 		svc.Spec.Ports = append(svc.Spec.Ports, core.ServicePort{
 			Name:       api.PrometheusExporterPortName,
-			Port:       api.PrometheusExporterPortNumber,
+			Port:       mongodb.Spec.Monitor.Prometheus.Port,
 			TargetPort: intstr.FromString(api.PrometheusExporterPortName),
 		})
 	}
@@ -160,7 +160,7 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 			Name: "exporter",
 			Args: []string{
 				"export",
-				fmt.Sprintf("--address=:%d", api.PrometheusExporterPortNumber),
+				fmt.Sprintf("--address=:%d", mongodb.Spec.Monitor.Prometheus.Port),
 				"--v=3",
 			},
 			Image:           docker.ImageOperator + ":" + c.opt.ExporterTag,
@@ -169,7 +169,7 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 				{
 					Name:          api.PrometheusExporterPortName,
 					Protocol:      core.ProtocolTCP,
-					ContainerPort: int32(api.PrometheusExporterPortNumber),
+					ContainerPort: mongodb.Spec.Monitor.Prometheus.Port,
 				},
 			},
 		}
@@ -190,7 +190,7 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 			c.recorder.Eventf(mongodb.ObjectReference(), core.EventTypeWarning, eventer.EventReasonFailedToUpdate, err.Error())
 			return nil, err
 		}
-		mongodb.Spec = _mongodb.Spec
+		mongodb.Spec.DatabaseSecret = _mongodb.Spec.DatabaseSecret
 	}
 
 	//Set root user password from Secret
