@@ -1,4 +1,4 @@
-package: github.com/k8sdb/mongodb
+package: github.com/kubedb/mongodb
 import:
 - package: github.com/appscode/go
 - package: github.com/appscode/kutil
@@ -9,7 +9,7 @@ import:
   vcs: git
   version: client-go-5
 - package: github.com/jpillora/go-ogle-analytics
-- package: github.com/k8sdb/apimachinery
+- package: github.com/kubedb/apimachinery
   version: master
 - package: github.com/prometheus/client_golang
   version: v0.8.0
