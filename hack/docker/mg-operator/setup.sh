@@ -44,14 +44,12 @@ build_docker() {
 FROM alpine
 
 RUN set -x \
-  && apk update \
-  && apk add ca-certificates \
-  && rm -rf /var/cache/apk/*
+  && apk add --update --no-cache ca-certificates
 
-COPY mg-operator /mg-operator
+COPY mg-operator /usr/bin/mg-operator
 
 USER nobody:nobody
-ENTRYPOINT ["/mg-operator"]
+ENTRYPOINT ["mg-operator"]
 EOL
     local cmd="docker build -t kubedb/$IMG:$TAG ."
     echo $cmd; $cmd
