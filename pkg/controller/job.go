@@ -16,7 +16,6 @@ const (
 
 	snapshotProcessBackup  = "backup"
 	snapshotTypeDumpBackup = "dump-backup"
-
 )
 
 func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapshot) (*batch.Job, error) {

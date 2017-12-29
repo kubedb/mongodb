@@ -380,7 +380,7 @@ func (c *Controller) pause(mongodb *api.MongoDB) error {
 	c.cronController.StopBackupScheduling(mongodb.ObjectMeta)
 
 	if mongodb.Spec.Monitor != nil {
-		if vt, err := c.deleteMonitor(mongodb); err != nil {
+		if _, err := c.deleteMonitor(mongodb); err != nil {
 			c.recorder.Eventf(
 				mongodb.ObjectReference(),
 				core.EventTypeWarning,
@@ -390,14 +390,6 @@ func (c *Controller) pause(mongodb *api.MongoDB) error {
 			)
 			log.Errorln(err)
 			return nil
-		} else if vt != kutil.VerbUnchanged {
-			c.recorder.Eventf(
-				mongodb.ObjectReference(),
-				core.EventTypeNormal,
-				eventer.EventReasonSuccessfulMonitorDelete,
-				"Successfully %s monitoring system.",
-				vt,
-			)
 		}
 	}
 	return nil

@@ -547,7 +547,7 @@ var _ = Describe("MongoDB", func() {
 
 					It("should run schedular successfully", shouldStartupSchedular)
 				})
-				FContext("with GCS and PVC", func() {
+				Context("with GCS and PVC", func() {
 					BeforeEach(func() {
 						secret = f.SecretForGCSBackend()
 						mongodb.Spec.BackupSchedule = &api.BackupScheduleSpec{
@@ -576,7 +576,7 @@ var _ = Describe("MongoDB", func() {
 				})
 			})
 
-			FContext("With Update", func() {
+			Context("With Update", func() {
 				BeforeEach(func() {
 					secret = f.SecretForLocalBackend()
 				})
