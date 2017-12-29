@@ -5,6 +5,7 @@ import (
 
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/go/encoding/json/types"
+	core_util "github.com/appscode/kutil/core/v1"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/apimachinery/client/typed/kubedb/v1alpha1/util"
 	. "github.com/onsi/gomega"
@@ -36,8 +37,13 @@ func (f *Framework) GetMongoDB(meta metav1.ObjectMeta) (*api.MongoDB, error) {
 	return f.extClient.MongoDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
 }
 
-func (f *Framework) TryPatchMongoDB(meta metav1.ObjectMeta, transform func(*api.MongoDB) *api.MongoDB) (*api.MongoDB, error) {
-	return util.TryPatchMongoDB(f.extClient, meta, transform)
+func (f *Framework) PatchMongoDB(meta metav1.ObjectMeta, transform func(*api.MongoDB) *api.MongoDB) (*api.MongoDB, error) {
+	mongodb, err := f.extClient.MongoDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	mongodb, _, err = util.PatchMongoDB(f.extClient, mongodb, transform)
+	return mongodb, err
 }
 
 func (f *Framework) DeleteMongoDB(meta metav1.ObjectMeta) error {
@@ -72,4 +78,17 @@ func (f *Framework) EventuallyMongoDBRunning(meta metav1.ObjectMeta) GomegaAsync
 		time.Minute*5,
 		time.Second*5,
 	)
+}
+
+func (f *Framework) CleanMongoDB() {
+	mongodbList, err := f.extClient.MongoDBs(f.namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return
+	}
+	for _, e := range mongodbList.Items {
+		util.PatchMongoDB(f.extClient, &e, func(in *api.MongoDB) *api.MongoDB {
+			in.ObjectMeta = core_util.RemoveFinalizer(in.ObjectMeta, "kubedb.com")
+			return in
+		})
+	}
 }

@@ -6,7 +6,6 @@
 
 
 
-
 ### Options
 
 ```
@@ -24,6 +23,7 @@
 ```
 
 ### SEE ALSO
+
 * [mongodb-operator run](mongodb-operator_run.md)	 - Run MongoDB in Kubernetes
 * [mongodb-operator version](mongodb-operator_version.md)	 - Prints binary version number.
 

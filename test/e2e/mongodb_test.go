@@ -56,7 +56,7 @@ var _ = Describe("MongoDB", func() {
 		f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
 
 		By("WipeOut mongodb")
-		_, err := f.TryPatchDormantDatabase(mongodb.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
+		_, err := f.PatchDormantDatabase(mongodb.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
 			in.Spec.WipeOut = true
 			return in
 		})
@@ -97,7 +97,7 @@ var _ = Describe("MongoDB", func() {
 					mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
 						Resources: core.ResourceRequirements{
 							Requests: core.ResourceList{
-								core.ResourceStorage: resource.MustParse("5Gi"),
+								core.ResourceStorage: resource.MustParse("100Mi"),
 							},
 						},
 						StorageClassName: types.StringP(f.StorageClass),
@@ -107,35 +107,35 @@ var _ = Describe("MongoDB", func() {
 			})
 		})
 
-		Context("DoNotPause", func() {
-			BeforeEach(func() {
-				mongodb.Spec.DoNotPause = true
-			})
-
-			It("should work successfully", func() {
-				// Create and wait for running MongoDB
-				createAndWaitForRunning()
-
-				By("Delete mongodb")
-				err = f.DeleteMongoDB(mongodb.ObjectMeta)
-				Expect(err).NotTo(HaveOccurred())
-
-				By("MongoDB is not paused. Check for mongodb")
-				f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeTrue())
-
-				By("Check for Running mongodb")
-				f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
-
-				By("Update mongodb to set DoNotPause=false")
-				f.TryPatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
-					in.Spec.DoNotPause = false
-					return in
-				})
-
-				// Delete test resource
-				deleteTestResource()
-			})
-		})
+		//Context("DoNotPause", func() {
+		//	BeforeEach(func() {
+		//		mongodb.Spec.DoNotPause = true
+		//	})
+		//
+		//	It("should work successfully", func() {
+		//		// Create and wait for running MongoDB
+		//		createAndWaitForRunning()
+		//
+		//		By("Delete mongodb")
+		//		err = f.DeleteMongoDB(mongodb.ObjectMeta)
+		//		Expect(err).NotTo(HaveOccurred())
+		//
+		//		By("MongoDB is not paused. Check for mongodb")
+		//		f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeTrue())
+		//
+		//		By("Check for Running mongodb")
+		//		f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+		//
+		//		By("Update mongodb to set DoNotPause=false")
+		//		f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
+		//			in.Spec.DoNotPause = false
+		//			return in
+		//		})
+		//
+		//		// Delete test resource
+		//		deleteTestResource()
+		//	})
+		//})
 
 		Context("Snapshot", func() {
 			var skipDataCheck bool
@@ -184,27 +184,45 @@ var _ = Describe("MongoDB", func() {
 					snapshot.Spec.Local = &api.LocalSpec{
 						Path: "/repo",
 						VolumeSource: core.VolumeSource{
-							HostPath: &core.HostPathVolumeSource{
-								Path: "/repo",
-							},
+							EmptyDir: &core.EmptyDirVolumeSource{},
 						},
 					}
 				})
 
 				It("should take Snapshot successfully", shouldTakeSnapshot)
-			})
 
-			Context("In S3", func() {
-				BeforeEach(func() {
-					secret = f.SecretForS3Backend()
-					snapshot.Spec.StorageSecretName = secret.Name
-					snapshot.Spec.S3 = &api.S3Spec{
-						Bucket: os.Getenv(S3_BUCKET_NAME),
-					}
+				// Additional
+				Context("With PVC", func() {
+					BeforeEach(func() {
+						// set f.storage from cli flag. Example:
+						// ginkgo test/e2e/ -- -storageclass="standard"
+						if f.StorageClass == "" {
+							skipMessage = "Missing StorageClassName. Provide as flag to test this."
+						}
+						mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
+							Resources: core.ResourceRequirements{
+								Requests: core.ResourceList{
+									core.ResourceStorage: resource.MustParse("100Mi"),
+								},
+							},
+							StorageClassName: types.StringP(f.StorageClass),
+						}
+					})
+					It("should run successfully", shouldTakeSnapshot)
 				})
-
-				It("should take Snapshot successfully", shouldTakeSnapshot)
 			})
+
+			//Context("In S3", func() {
+			//	BeforeEach(func() {
+			//		secret = f.SecretForS3Backend()
+			//		snapshot.Spec.StorageSecretName = secret.Name
+			//		snapshot.Spec.S3 = &api.S3Spec{
+			//			Bucket: os.Getenv(S3_BUCKET_NAME),
+			//		}
+			//	})
+			//
+			//	It("should take Snapshot successfully", shouldTakeSnapshot)
+			//})
 
 			Context("In GCS", func() {
 				BeforeEach(func() {
@@ -223,7 +241,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/the-redback/k8s-mongodb-init-script.git",
+										Repository: "https://github.com/kubedb/mongodb-init-scripts",
 										Directory:  ".",
 									},
 								},
@@ -235,29 +253,29 @@ var _ = Describe("MongoDB", func() {
 				})
 			})
 
-			Context("In Azure", func() {
-				BeforeEach(func() {
-					secret = f.SecretForAzureBackend()
-					snapshot.Spec.StorageSecretName = secret.Name
-					snapshot.Spec.Azure = &api.AzureSpec{
-						Container: os.Getenv(AZURE_CONTAINER_NAME),
-					}
-				})
+			//Context("In Azure", func() {
+			//	BeforeEach(func() {
+			//		secret = f.SecretForAzureBackend()
+			//		snapshot.Spec.StorageSecretName = secret.Name
+			//		snapshot.Spec.Azure = &api.AzureSpec{
+			//			Container: os.Getenv(AZURE_CONTAINER_NAME),
+			//		}
+			//	})
+			//
+			//	It("should take Snapshot successfully", shouldTakeSnapshot)
+			//})
 
-				It("should take Snapshot successfully", shouldTakeSnapshot)
-			})
-
-			Context("In Swift", func() {
-				BeforeEach(func() {
-					secret = f.SecretForSwiftBackend()
-					snapshot.Spec.StorageSecretName = secret.Name
-					snapshot.Spec.Swift = &api.SwiftSpec{
-						Container: os.Getenv(SWIFT_CONTAINER_NAME),
-					}
-				})
-
-				It("should take Snapshot successfully", shouldTakeSnapshot)
-			})
+			//Context("In Swift", func() {
+			//	BeforeEach(func() {
+			//		secret = f.SecretForSwiftBackend()
+			//		snapshot.Spec.StorageSecretName = secret.Name
+			//		snapshot.Spec.Swift = &api.SwiftSpec{
+			//			Container: os.Getenv(SWIFT_CONTAINER_NAME),
+			//		}
+			//	})
+			//
+			//	It("should take Snapshot successfully", shouldTakeSnapshot)
+			//})
 		})
 
 		Context("Initialize", func() {
@@ -267,7 +285,7 @@ var _ = Describe("MongoDB", func() {
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
-									Repository: "https://github.com/the-redback/k8s-mongodb-init-script.git",
+									Repository: "https://github.com/kubedb/mongodb-init-scripts",
 									Directory:  ".",
 								},
 							},
@@ -331,6 +349,7 @@ var _ = Describe("MongoDB", func() {
 					deleteTestResource()
 				})
 			})
+
 		})
 
 		Context("Resume", func() {
@@ -349,7 +368,7 @@ var _ = Describe("MongoDB", func() {
 				By("Wait for mongodb to be paused")
 				f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
 
-				_, err = f.TryPatchDormantDatabase(mongodb.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
+				_, err = f.PatchDormantDatabase(mongodb.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
 					in.Spec.Resume = true
 					return in
 				})
@@ -384,7 +403,7 @@ var _ = Describe("MongoDB", func() {
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
-									Repository: "https://github.com/the-redback/k8s-mongodb-init-script.git",
+									Repository: "https://github.com/kubedb/mongodb-init-scripts",
 									Directory:  ".",
 								},
 							},
@@ -399,6 +418,7 @@ var _ = Describe("MongoDB", func() {
 				It("should resume DormantDatabase successfully", func() {
 					// Create and wait for running MongoDB
 					createAndWaitForRunning()
+
 					By("Delete mongodb")
 					f.DeleteMongoDB(mongodb.ObjectMeta)
 
@@ -428,14 +448,14 @@ var _ = Describe("MongoDB", func() {
 					deleteTestResource()
 				})
 
-				Context("with init and pvc", func() {
+				Context("Multiple times with init", func() {
 					BeforeEach(func() {
 						usedInitSpec = true
 						mongodb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/the-redback/k8s-mongodb-init-script.git",
+										Repository: "https://github.com/kubedb/mongodb-init-scripts",
 										Directory:  ".",
 									},
 								},
@@ -453,8 +473,6 @@ var _ = Describe("MongoDB", func() {
 							StorageClassName: types.StringP(f.StorageClass),
 						}
 					})
-
-					By("Running Multiple Times.")
 
 					It("should resume DormantDatabase successfully", func() {
 						// Create and wait for running MongoDB
@@ -520,9 +538,7 @@ var _ = Describe("MongoDB", func() {
 								Local: &api.LocalSpec{
 									Path: "/repo",
 									VolumeSource: core.VolumeSource{
-										HostPath: &core.HostPathVolumeSource{
-											Path: "/repo",
-										},
+										EmptyDir: &core.EmptyDirVolumeSource{},
 									},
 								},
 							},
@@ -561,6 +577,9 @@ var _ = Describe("MongoDB", func() {
 			})
 
 			Context("With Update", func() {
+				BeforeEach(func() {
+					secret = f.SecretForLocalBackend()
+				})
 				It("should run schedular successfully", func() {
 					// Create and wait for running MongoDB
 					createAndWaitForRunning()
@@ -569,7 +588,7 @@ var _ = Describe("MongoDB", func() {
 					f.CreateSecret(secret)
 
 					By("Update mongodb")
-					_, err = f.TryPatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
+					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
 						in.Spec.BackupSchedule = &api.BackupScheduleSpec{
 							CronExpression: "@every 1m",
 							SnapshotStorageSpec: api.SnapshotStorageSpec{
@@ -577,9 +596,7 @@ var _ = Describe("MongoDB", func() {
 								Local: &api.LocalSpec{
 									Path: "/repo",
 									VolumeSource: core.VolumeSource{
-										HostPath: &core.HostPathVolumeSource{
-											Path: "/repo",
-										},
+										EmptyDir: &core.EmptyDirVolumeSource{},
 									},
 								},
 							},
