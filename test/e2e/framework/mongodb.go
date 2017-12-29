@@ -23,7 +23,7 @@ func (f *Invocation) MongoDB() *api.MongoDB {
 			},
 		},
 		Spec: api.MongoDBSpec{
-			Version: types.StrYo("3.4"),
+			Version: types.StrYo("3.6"),
 		},
 	}
 }

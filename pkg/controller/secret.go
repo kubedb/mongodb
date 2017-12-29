@@ -46,7 +46,7 @@ func (c *Controller) ensureDatabaseSecret(mongodb *api.MongoDB) error {
 }
 
 func (c *Controller) createDatabaseSecret(mongodb *api.MongoDB) (*core.SecretVolumeSource, error) {
-	authSecretName := mongodb.Name + "-admin-auth"
+	authSecretName := mongodb.Name + "-auth"
 
 	sc, err := c.checkSecret(authSecretName, mongodb)
 	if err != nil {

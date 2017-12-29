@@ -107,35 +107,35 @@ var _ = Describe("MongoDB", func() {
 			})
 		})
 
-		//Context("DoNotPause", func() {
-		//	BeforeEach(func() {
-		//		mongodb.Spec.DoNotPause = true
-		//	})
-		//
-		//	It("should work successfully", func() {
-		//		// Create and wait for running MongoDB
-		//		createAndWaitForRunning()
-		//
-		//		By("Delete mongodb")
-		//		err = f.DeleteMongoDB(mongodb.ObjectMeta)
-		//		Expect(err).NotTo(HaveOccurred())
-		//
-		//		By("MongoDB is not paused. Check for mongodb")
-		//		f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeTrue())
-		//
-		//		By("Check for Running mongodb")
-		//		f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
-		//
-		//		By("Update mongodb to set DoNotPause=false")
-		//		f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
-		//			in.Spec.DoNotPause = false
-		//			return in
-		//		})
-		//
-		//		// Delete test resource
-		//		deleteTestResource()
-		//	})
-		//})
+		XContext("DoNotPause", func() {
+			BeforeEach(func() {
+				mongodb.Spec.DoNotPause = true
+			})
+
+			It("should work successfully", func() {
+				// Create and wait for running MongoDB
+				createAndWaitForRunning()
+
+				By("Delete mongodb")
+				err = f.DeleteMongoDB(mongodb.ObjectMeta)
+				Expect(err).NotTo(HaveOccurred())
+
+				By("MongoDB is not paused. Check for mongodb")
+				f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeTrue())
+
+				By("Check for Running mongodb")
+				f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+
+				By("Update mongodb to set DoNotPause=false")
+				f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
+					in.Spec.DoNotPause = false
+					return in
+				})
+
+				// Delete test resource
+				deleteTestResource()
+			})
+		})
 
 		Context("Snapshot", func() {
 			var skipDataCheck bool
@@ -212,17 +212,17 @@ var _ = Describe("MongoDB", func() {
 				})
 			})
 
-			//Context("In S3", func() {
-			//	BeforeEach(func() {
-			//		secret = f.SecretForS3Backend()
-			//		snapshot.Spec.StorageSecretName = secret.Name
-			//		snapshot.Spec.S3 = &api.S3Spec{
-			//			Bucket: os.Getenv(S3_BUCKET_NAME),
-			//		}
-			//	})
-			//
-			//	It("should take Snapshot successfully", shouldTakeSnapshot)
-			//})
+			Context("In S3", func() {
+				BeforeEach(func() {
+					secret = f.SecretForS3Backend()
+					snapshot.Spec.StorageSecretName = secret.Name
+					snapshot.Spec.S3 = &api.S3Spec{
+						Bucket: os.Getenv(S3_BUCKET_NAME),
+					}
+				})
+
+				It("should take Snapshot successfully", shouldTakeSnapshot)
+			})
 
 			Context("In GCS", func() {
 				BeforeEach(func() {
@@ -241,7 +241,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts",
+										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -253,29 +253,29 @@ var _ = Describe("MongoDB", func() {
 				})
 			})
 
-			//Context("In Azure", func() {
-			//	BeforeEach(func() {
-			//		secret = f.SecretForAzureBackend()
-			//		snapshot.Spec.StorageSecretName = secret.Name
-			//		snapshot.Spec.Azure = &api.AzureSpec{
-			//			Container: os.Getenv(AZURE_CONTAINER_NAME),
-			//		}
-			//	})
-			//
-			//	It("should take Snapshot successfully", shouldTakeSnapshot)
-			//})
+			Context("In Azure", func() {
+				BeforeEach(func() {
+					secret = f.SecretForAzureBackend()
+					snapshot.Spec.StorageSecretName = secret.Name
+					snapshot.Spec.Azure = &api.AzureSpec{
+						Container: os.Getenv(AZURE_CONTAINER_NAME),
+					}
+				})
 
-			//Context("In Swift", func() {
-			//	BeforeEach(func() {
-			//		secret = f.SecretForSwiftBackend()
-			//		snapshot.Spec.StorageSecretName = secret.Name
-			//		snapshot.Spec.Swift = &api.SwiftSpec{
-			//			Container: os.Getenv(SWIFT_CONTAINER_NAME),
-			//		}
-			//	})
-			//
-			//	It("should take Snapshot successfully", shouldTakeSnapshot)
-			//})
+				It("should take Snapshot successfully", shouldTakeSnapshot)
+			})
+
+			Context("In Swift", func() {
+				BeforeEach(func() {
+					secret = f.SecretForSwiftBackend()
+					snapshot.Spec.StorageSecretName = secret.Name
+					snapshot.Spec.Swift = &api.SwiftSpec{
+						Container: os.Getenv(SWIFT_CONTAINER_NAME),
+					}
+				})
+
+				It("should take Snapshot successfully", shouldTakeSnapshot)
+			})
 		})
 
 		Context("Initialize", func() {
@@ -285,7 +285,7 @@ var _ = Describe("MongoDB", func() {
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
-									Repository: "https://github.com/kubedb/mongodb-init-scripts",
+									Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
 									Directory:  ".",
 								},
 							},
@@ -403,7 +403,7 @@ var _ = Describe("MongoDB", func() {
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
-									Repository: "https://github.com/kubedb/mongodb-init-scripts",
+									Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
 									Directory:  ".",
 								},
 							},
@@ -455,7 +455,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts",
+										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -547,7 +547,7 @@ var _ = Describe("MongoDB", func() {
 
 					It("should run schedular successfully", shouldStartupSchedular)
 				})
-				Context("with GCS and PVC", func() {
+				FContext("with GCS and PVC", func() {
 					BeforeEach(func() {
 						secret = f.SecretForGCSBackend()
 						mongodb.Spec.BackupSchedule = &api.BackupScheduleSpec{
@@ -576,7 +576,7 @@ var _ = Describe("MongoDB", func() {
 				})
 			})
 
-			Context("With Update", func() {
+			FContext("With Update", func() {
 				BeforeEach(func() {
 					secret = f.SecretForLocalBackend()
 				})

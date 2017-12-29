@@ -243,7 +243,7 @@ func (c *Controller) matchDormantDatabase(mongodb *api.MongoDB) error {
 
 	if originalSpec.DatabaseSecret == nil {
 		originalSpec.DatabaseSecret = &core.SecretVolumeSource{
-			SecretName: mongodb.Name + "-admin-auth",
+			SecretName: mongodb.Name + "-auth",
 		}
 	}
 

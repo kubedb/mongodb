@@ -13,10 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-const (
-	SnapshotProcess_Backup  = "backup"
-	snapshotType_DumpBackup = "dump-backup"
-)
 
 func (c *Controller) ValidateSnapshot(snapshot *api.Snapshot) error {
 	// Database name can't empty
@@ -47,7 +43,6 @@ func (c *Controller) GetDatabase(snapshot *api.Snapshot) (runtime.Object, error)
 
 func (c *Controller) GetSnapshotter(snapshot *api.Snapshot) (*batch.Job, error) {
 	return c.getSnapshotterJob(snapshot)
-
 }
 
 func (c *Controller) WipeOutSnapshot(snapshot *api.Snapshot) error {

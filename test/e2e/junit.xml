@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <testsuite tests="1" failures="0" time="286.25493638">
+  <testsuite tests="2" failures="0" time="499.450536915">
       <testcase name="MongoDB Test General - should run successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
@@ -30,4 +30,15 @@
       <testcase name="MongoDB Test Resume With Init should resume DormantDatabase successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
+      <testcase name="MongoDB Test Resume With original MongoDB should resume DormantDatabase successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test Resume With original MongoDB Multiple times with init should resume DormantDatabase successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test SnapshotScheduler With Startup with local should run schedular successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test SnapshotScheduler With Startup with GCS and PVC should run schedular successfully" classname="e2e Suite" time="305.188783776"></testcase>
+      <testcase name="MongoDB Test SnapshotScheduler With Update should run schedular successfully" classname="e2e Suite" time="190.122616526"></testcase>
   </testsuite>
