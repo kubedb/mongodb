@@ -182,7 +182,7 @@ var _ = Describe("MongoDB", func() {
 					secret = f.SecretForLocalBackend()
 					snapshot.Spec.StorageSecretName = secret.Name
 					snapshot.Spec.Local = &api.LocalSpec{
-						Path: "/repo",
+						MountPath: "/repo",
 						VolumeSource: core.VolumeSource{
 							EmptyDir: &core.EmptyDirVolumeSource{},
 						},
@@ -385,7 +385,7 @@ var _ = Describe("MongoDB", func() {
 
 				if usedInitSpec {
 					Expect(mongodb.Spec.Init).Should(BeNil())
-					Expect(mongodb.Annotations[api.MongoDBInitSpec]).ShouldNot(BeEmpty())
+					Expect(mongodb.Annotations[api.GenericInitSpec]).ShouldNot(BeEmpty())
 				}
 
 				// Delete test resource
@@ -441,7 +441,7 @@ var _ = Describe("MongoDB", func() {
 
 					if usedInitSpec {
 						Expect(mongodb.Spec.Init).Should(BeNil())
-						Expect(mongodb.Annotations[api.MongoDBInitSpec]).ShouldNot(BeEmpty())
+						Expect(mongodb.Annotations[api.GenericInitSpec]).ShouldNot(BeEmpty())
 					}
 
 					// Delete test resource
@@ -536,7 +536,7 @@ var _ = Describe("MongoDB", func() {
 							SnapshotStorageSpec: api.SnapshotStorageSpec{
 								StorageSecretName: secret.Name,
 								Local: &api.LocalSpec{
-									Path: "/repo",
+									MountPath: "/repo",
 									VolumeSource: core.VolumeSource{
 										EmptyDir: &core.EmptyDirVolumeSource{},
 									},
@@ -594,7 +594,7 @@ var _ = Describe("MongoDB", func() {
 							SnapshotStorageSpec: api.SnapshotStorageSpec{
 								StorageSecretName: secret.Name,
 								Local: &api.LocalSpec{
-									Path: "/repo",
+									MountPath: "/repo",
 									VolumeSource: core.VolumeSource{
 										EmptyDir: &core.EmptyDirVolumeSource{},
 									},

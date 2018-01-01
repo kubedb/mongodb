@@ -81,6 +81,7 @@ func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapsh
 							},
 						},
 					},
+					ImagePullSecrets: mongodb.Spec.ImagePullSecrets,
 					Volumes: []core.Volume{
 						{
 							Name: "secret",
@@ -190,6 +191,7 @@ func (c *Controller) getSnapshotterJob(snapshot *api.Snapshot) (*batch.Job, erro
 							},
 						},
 					},
+					ImagePullSecrets: mongodb.Spec.ImagePullSecrets,
 					Volumes: []core.Volume{
 						{
 							Name: "secret",

@@ -152,6 +152,7 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 		in.Spec.Template.Spec.Affinity = mongodb.Spec.Affinity
 		in.Spec.Template.Spec.SchedulerName = mongodb.Spec.SchedulerName
 		in.Spec.Template.Spec.Tolerations = mongodb.Spec.Tolerations
+		in.Spec.Template.Spec.ImagePullSecrets = mongodb.Spec.ImagePullSecrets
 		if c.opt.EnableRbac {
 			in.Spec.Template.Spec.ServiceAccountName = mongodb.Name
 		}
