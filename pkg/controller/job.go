@@ -53,15 +53,20 @@ func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapsh
 				Spec: core.PodSpec{
 					Containers: []core.Container{
 						{
-							Name: snapshotProcessRestore,
-							//Image: fmt.Sprintf("%s:%s-util", docker.ImageMongoDB, mongodb.Spec.Version), //todo
-							Image: fmt.Sprintf("kubedb/mongodb:3.4-util"), //todo
+							Name:  snapshotProcessRestore,
+							Image: c.opt.Docker.GetToolsImageWithTag(mongodb),
 							Args: []string{
 								fmt.Sprintf(`--process=%s`, snapshotProcessRestore),
 								fmt.Sprintf(`--host=%s`, databaseName),
 								fmt.Sprintf(`--bucket=%s`, bucket),
 								fmt.Sprintf(`--folder=%s`, folderName),
 								fmt.Sprintf(`--snapshot=%s`, snapshot.Name),
+							},
+							Env: []core.EnvVar{
+								{
+									Name:  "APPSCODE_ANALYTICS_CLIENT_ID",
+									Value: c.opt.AnalyticsClientID,
+								},
 							},
 							Resources: snapshot.Spec.Resources,
 							VolumeMounts: []core.VolumeMount{
@@ -163,15 +168,20 @@ func (c *Controller) getSnapshotterJob(snapshot *api.Snapshot) (*batch.Job, erro
 				Spec: core.PodSpec{
 					Containers: []core.Container{
 						{
-							Name: snapshotProcessBackup,
-							//Image: fmt.Sprintf("%s:%s-util", docker.ImageMongoDB, mongodb.Spec.Version), //todo
-							Image: fmt.Sprintf("kubedb/mongodb:3.4-util"),
+							Name:  snapshotProcessBackup,
+							Image: c.opt.Docker.GetToolsImageWithTag(mongodb),
 							Args: []string{
 								fmt.Sprintf(`--process=%s`, snapshotProcessBackup),
 								fmt.Sprintf(`--host=%s`, databaseName),
 								fmt.Sprintf(`--bucket=%s`, bucket),
 								fmt.Sprintf(`--folder=%s`, folderName),
 								fmt.Sprintf(`--snapshot=%s`, snapshot.Name),
+							},
+							Env: []core.EnvVar{
+								{
+									Name:  "APPSCODE_ANALYTICS_CLIENT_ID",
+									Value: c.opt.AnalyticsClientID,
+								},
 							},
 							Resources: snapshot.Spec.Resources,
 							VolumeMounts: []core.VolumeMount{

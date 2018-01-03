@@ -8,7 +8,7 @@ FROM appscode/python:2.7
 ENV MONGO_MAJOR 3.6
 ENV MONGO_VERSION 3.6.1
 ## osm version
-ENV OSM_VERSION 0.6.0
+ENV OSM_VERSION 0.6.2
 
 RUN groupadd -r mongodb && useradd -r -g mongodb mongodb
 RUN apt-key adv --keyserver ha.pool.sks-keyservers.net --recv-keys 2930ADAE8CAF5059EE73BB4B58712A2291FA4AD5
