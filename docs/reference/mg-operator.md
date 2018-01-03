@@ -1,26 +1,17 @@
-## mongodb-operator version
+## mg-operator
 
-Prints binary version number.
+
 
 ### Synopsis
 
-Prints binary version number.
 
-```
-mongodb-operator version [flags]
-```
 
 ### Options
 
 ```
-  -h, --help   help for version
-```
-
-### Options inherited from parent commands
-
-```
       --alsologtostderr                  log to standard error as well as files
       --analytics                        Send analytical events to Google Analytics (default true)
+  -h, --help                             help for mg-operator
       --log.format logFormatFlag         Set the log target and format. Example: "logger:syslog?appname=bob&local=7" or "logger:stdout?json=true" (default "logger:stderr")
       --log.level levelFlag              Only log messages with the given severity or above. Valid levels: [debug, info, warn, error, fatal] (default "info")
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
@@ -33,5 +24,6 @@ mongodb-operator version [flags]
 
 ### SEE ALSO
 
-* [mongodb-operator](mongodb-operator.md)	 - 
+* [mg-operator run](mg-operator_run.md)	 - Run MongoDB in Kubernetes
+* [mg-operator version](mg-operator_version.md)	 - Prints binary version number.
 
