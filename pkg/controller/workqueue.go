@@ -143,7 +143,7 @@ func (c *Controller) processNextItem() bool {
 	}
 
 	c.queue.Forget(key)
-	log.Debugln("Finished Processing key: %v", key)
+	log.Debugln("Finished Processing key:", key)
 	// Report to an external entity that, even after several retries, we could not successfully process this key
 	runtime.HandleError(err)
 	log.Infof("Dropping deployment %q out of the queue: %v", key, err)
