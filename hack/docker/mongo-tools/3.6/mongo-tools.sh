@@ -91,7 +91,7 @@ backup() {
     # ref: http://unix.stackexchange.com/a/5279
     while ! nc -q 1 $1 27017 </dev/null; do echo "Waiting... Master pod is not ready yet"; sleep 5; done
 
-    mongodump --host $1 --port 27017 --username $2 --password "$3" --out $path
+    try_until_success "mongodump --host $1 --port 27017 --username $2 --password $3 --out $path"
     retval=$?
     if [ "$retval" -ne 0 ]; then
         echo "Fail to take backup"
@@ -113,7 +113,7 @@ restore() {
     # ref: http://unix.stackexchange.com/a/5279
     while ! nc -q 1 $1 27017 </dev/null; do echo "Waiting... Master pod is not ready yet"; sleep 5; done
 
-    mongorestore --host $1 --port 27017 --username $2 --password "$3"  $path
+    try_until_success "mongorestore --host $1 --port 27017 --username $2 --password $3  $path"
     retval=$?
     if [ "$retval" -ne 0 ]; then
         echo "Fail to restore"
@@ -159,12 +159,12 @@ pull() {
 
 case "$cmd" in
     backup)
-        try_until_success "backup $MONGO_HOST $MONGO_USER $MONGO_PASSWORD"
+        backup "$MONGO_HOST" "$MONGO_USER" "$MONGO_PASSWORD"
         push "$MONGO_BUCKET" "$MONGO_FOLDER" "$MONGO_SNAPSHOT"
         ;;
     restore)
         pull "$MONGO_HOST" "$MONGO_USER" "$MONGO_PASSWORD"
-        try_until_success "restore $MONGO_BUCKET $MONGO_FOLDER $MONGO_SNAPSHOT"
+        restore "$MONGO_BUCKET" "$MONGO_FOLDER" "$MONGO_SNAPSHOT"
         ;;
     *)  (10)
         echo $"Unknown cmd!"
