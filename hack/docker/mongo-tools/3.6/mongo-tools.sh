@@ -70,8 +70,6 @@ if [ -n "$DEBUG" ]; then
     echo ""
 fi
 
-env | sort | grep MONGO_*
-
 # Wait for mongodb to start
 # ref: http://unix.stackexchange.com/a/5279
 while ! nc -q 1 $MONGO_HOST 27017 </dev/null; do echo "Waiting... database is not ready yet"; sleep 5; done
