@@ -10,5 +10,4 @@ IMG=mongo-tools
 TAG=3.4
 
 pushd "$REPO_ROOT/hack/docker/mongo-tools/$TAG"
-
 binary_repo $@

@@ -1,5 +1,5 @@
 FROM mongo:3.4-jessie
 
-COPY docker-entrypoint.sh /usr/bin/docker-entrypoint.sh
+COPY mongo-tools.sh /usr/bin/mongo-tools.sh
 
-ENTRYPOINT ["docker-entrypoint.sh"]
+ENTRYPOINT ["mongo-tools.sh"]
