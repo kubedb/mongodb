@@ -9,4 +9,6 @@ source "$REPO_ROOT/hack/libbuild/common/kubedb_image.sh"
 IMG=mongo-tools
 TAG=3.6
 
+pushd "$REPO_ROOT/hack/docker/mongo-tools/$TAG"
+
 binary_repo $@

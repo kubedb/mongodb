@@ -64,7 +64,7 @@ while test $# -gt 0; do
     esac
 done
 
-if [ -n "$DEBUG" ]
+if [ -n "$DEBUG" ]; then
     env | sort | grep MONGO_*
     echo ""
 fi
