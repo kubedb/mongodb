@@ -1,5 +1,12 @@
 FROM mongo:3.4-jessie
 
+RUN set -x \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    netcat \
+  && rm -rf /var/lib/apt/lists/* /usr/share/doc /usr/share/man /tmp/*
+
 COPY mongo-tools.sh /usr/bin/mongo-tools.sh
 
 ENTRYPOINT ["mongo-tools.sh"]
