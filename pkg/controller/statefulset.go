@@ -223,7 +223,7 @@ func upsertEnv(statefulSet *apps.StatefulSet, mongodb *api.MongoDB) *apps.Statef
 					LocalObjectReference: core.LocalObjectReference{
 						Name: mongodb.Spec.DatabaseSecret.SecretName,
 					},
-					Key: ".admin",
+					Key: keyMongoDBPassword,
 				},
 			},
 		},

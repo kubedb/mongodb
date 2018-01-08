@@ -13,6 +13,13 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
+var (
+	mongoDBUser = "root"
+
+	keyMongoDBUser     = "user"
+	keyMongoDBPassword = ".password"
+)
+
 func (c *Controller) ensureDatabaseSecret(mongodb *api.MongoDB) error {
 	if mongodb.Spec.DatabaseSecret == nil {
 		secretVolumeSource, err := c.createDatabaseSecret(mongodb)
@@ -55,7 +62,8 @@ func (c *Controller) createDatabaseSecret(mongodb *api.MongoDB) (*core.SecretVol
 	if sc == nil {
 		MONGO_PASSWORD := fmt.Sprintf("%s", rand.GeneratePassword())
 		data := map[string][]byte{
-			".admin": []byte(MONGO_PASSWORD),
+			keyMongoDBPassword: []byte(MONGO_PASSWORD),
+			keyMongoDBUser:     []byte(mongoDBUser),
 		}
 
 		secret := &core.Secret{

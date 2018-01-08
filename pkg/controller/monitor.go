@@ -3,11 +3,11 @@ package controller
 import (
 	"fmt"
 
+	"github.com/appscode/go/log"
 	"github.com/appscode/kube-mon/agents"
 	mona "github.com/appscode/kube-mon/api"
 	"github.com/appscode/kutil"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
-	"github.com/appscode/go/log"
 )
 
 func (c *Controller) newMonitorController(mongodb *api.MongoDB) (mona.Agent, error) {

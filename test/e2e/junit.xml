@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <testsuite tests="1" failures="0" time="189.898629531">
+  <testsuite tests="1" failures="1" time="33.181424069">
       <testcase name="MongoDB Test General - should run successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
@@ -33,7 +33,10 @@
       <testcase name="MongoDB Test Initialize With Script should run successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
-      <testcase name="MongoDB Test Initialize With Snapshot should run successfully" classname="e2e Suite" time="185.810521028"></testcase>
+      <testcase name="MongoDB Test Initialize With Snapshot should run successfully" classname="e2e Suite" time="30.051100845">
+          <failure type="Failure">/home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:314&#xA;Expected&#xA;    &lt;v1alpha1.SnapshotPhase&gt;: Failed&#xA;not to equal&#xA;    &lt;v1alpha1.SnapshotPhase&gt;: Failed&#xA;/home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/framework/snapshot.go:49</failure>
+          <system-out>[BeforeEach] MongoDB&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:34&#xA;[BeforeEach] With Snapshot&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:305&#xA;[It] should run successfully&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:314&#xA;�[1mSTEP�[0m: Create MongoDB: mongodb-khkdcj&#xA;�[1mSTEP�[0m: Wait for Running mongodb&#xA;�[1mSTEP�[0m: Create Secret&#xA;�[1mSTEP�[0m: Create Snapshot&#xA;�[1mSTEP�[0m: Check for Successed snapshot&#xA;[AfterEach] With Snapshot&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:301&#xA;</system-out>
+      </testcase>
       <testcase name="MongoDB Test Resume - should resume DormantDatabase successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
