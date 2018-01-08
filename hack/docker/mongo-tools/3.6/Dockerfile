@@ -7,6 +7,7 @@ RUN set -x \
     netcat \
   && rm -rf /var/lib/apt/lists/* /usr/share/doc /usr/share/man /tmp/*
 
-COPY mongo-tools.sh /usr/bin/mongo-tools.sh
+COPY osm /usr/local/bin/osm
+COPY mongo-tools.sh /usr/local/bin/mongo-tools.sh
 
 ENTRYPOINT ["mongo-tools.sh"]

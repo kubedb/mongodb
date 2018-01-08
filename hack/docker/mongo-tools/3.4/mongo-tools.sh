@@ -1,4 +1,5 @@
 #!/bin/bash
+set -xeou pipefail
 
 # ref: https://stackoverflow.com/a/7069755/244009
 # ref: https://jonalmeida.com/posts/2013/05/26/different-ways-to-implement-flags-in-bash/
@@ -69,102 +70,28 @@ if [ -n "$DEBUG" ]; then
     echo ""
 fi
 
-try_until_success() {
-    $1
-    while [ $? -ne 0 ]; do
-        sleep 2
-        $1
-    done
-}
+env | sort | grep MONGO_*
 
-backup() {
-    # 1 - host
-    # 2 - username
-    # 3 - password
-
-    path=/var/dump-backup
-    mkdir -p "$path"
-    cd "$path"
-    rm -rf "$path"/*
-
-    # Wait for mongodb to start
-    # ref: http://unix.stackexchange.com/a/5279
-    while ! nc -q 1 $1 27017 </dev/null; do echo "Waiting... Master pod is not ready yet"; sleep 5; done
-
-    try_until_success "mongodump --host $1 --port 27017 --username $2 --password $3 --out $path"
-    retval=$?
-    if [ "$retval" -ne 0 ]; then
-        echo "Fail to take backup"
-        exit 1
-    fi
-    exit 0
-}
-
-restore() {
-    # 1 - Host
-    # 2 - username
-    # 3 - password
-
-    path=/var/dump-restore/
-    mkdir -p "$path"
-    cd "$path"
-
-    # Wait for mongodb to start
-    # ref: http://unix.stackexchange.com/a/5279
-    while ! nc -q 1 $1 27017 </dev/null; do echo "Waiting... Master pod is not ready yet"; sleep 5; done
-
-    try_until_success "mongorestore --host $1 --port 27017 --username $2 --password $3  $path"
-    retval=$?
-    if [ "$retval" -ne 0 ]; then
-        echo "Fail to restore"
-        exit 1
-    fi
-    exit 0
-}
-
-push() {
-    # 1 - bucket
-    # 2 - folder
-    # 3 - snapshot-name
-
-    src_path=/var/dump-backup
-    osm push --osmconfig=/etc/osm/config -c "$1" "$src_path" "$2/$3"
-    retval=$?
-    if [ "$retval" -ne 0 ]; then
-        echo "Fail to push data to cloud"
-        exit 1
-    fi
-
-    exit 0
-}
-
-pull() {
-    # 1 - bucket
-    # 2 - folder
-    # 3 - snapshot-name
-
-    dst_path=/var/dump-restore/
-    mkdir -p "$dst_path"
-    rm -rf "$dst_path"
-
-    osm pull --osmconfig=/etc/osm/config -c "$1" "$2/$3" "$dst_path"
-    retval=$?
-    if [ "$retval" -ne 0 ]; then
-        echo "Fail to pull data from cloud"
-        exit 1
-    fi
-
-    exit 0
-}
+# Wait for mongodb to start
+# ref: http://unix.stackexchange.com/a/5279
+while ! nc -q 1 $MONGO_HOST 27017 </dev/null; do echo "Waiting... database is not ready yet"; sleep 5; done
 
 case "$cmd" in
     backup)
-        backup "$MONGO_HOST" "$MONGO_USER" "$MONGO_PASSWORD"
-        push "$MONGO_BUCKET" "$MONGO_FOLDER" "$MONGO_SNAPSHOT"
+        path=/var/dump-backup
+        mkdir -p "$path"
+        cd "$path"
+        rm -rf *
+        mongodump --host "$MONGO_HOST" --port 27017 --username "$MONGO_USER" --password "$MONGO_PASSWORD" --out $path
+        osm push --osmconfig=/etc/osm/config -c "$MONGO_BUCKET" "$path" "$MONGO_FOLDER/$MONGO_SNAPSHOT"
         ;;
     restore)
-        pull "$MONGO_HOST" "$MONGO_USER" "$MONGO_PASSWORD"
-        restore "$MONGO_BUCKET" "$MONGO_FOLDER" "$MONGO_SNAPSHOT"
+        path=/var/dump-restore
+        mkdir -p "$path"
+        cd "$path"
+        rm -rf *
+        osm pull --osmconfig=/etc/osm/config -c "$MONGO_BUCKET" "$MONGO_FOLDER/$MONGO_SNAPSHOT" "$path"
+        mongorestore --host "$MONGO_HOST" --port 27017 --username "$MONGO_USER" --password "$MONGO_PASSWORD"  $path
         ;;
     *)  (10)
         echo $"Unknown cmd!"
