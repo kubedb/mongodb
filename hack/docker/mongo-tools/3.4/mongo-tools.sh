@@ -1,5 +1,5 @@
 #!/bin/bash
-set -xeou pipefail
+set -eou pipefail
 
 # ref: https://stackoverflow.com/a/7069755/244009
 # ref: https://jonalmeida.com/posts/2013/05/26/different-ways-to-implement-flags-in-bash/
@@ -21,15 +21,14 @@ show_help() {
 
 RETVAL=0
 DEBUG=${DEBUG:-}
+DB_HOST=${DB_HOST:-}
+DB_USER=${DB_USER:-}
+DB_PASSWORD=${DB_PASSWORD:-}
+DB_BUCKET=${DB_BUCKET:-}
+DB_FOLDER=${DB_FOLDER:-}
+DB_SNAPSHOT=${DB_SNAPSHOT:-}
 
-MONGO_HOST=${MONGO_HOST:-}
-MONGO_USER=${MONGO_USER:-}
-MONGO_PASSWORD=${MONGO_PASSWORD:-}
-MONGO_BUCKET=${MONGO_BUCKET:-}
-MONGO_FOLDER=${MONGO_FOLDER:-}
-MONGO_SNAPSHOT=${MONGO_SNAPSHOT:-}
-
-cmd=$1
+op=$1
 shift
 
 while test $# -gt 0; do
@@ -39,23 +38,23 @@ while test $# -gt 0; do
             exit 0
             ;;
         --host*)
-            export MONGO_HOST=`echo $1 | sed -e 's/^[^=]*=//g'`
+            export DB_HOST=`echo $1 | sed -e 's/^[^=]*=//g'`
             shift
             ;;
         --user*)
-            export MONGO_USER=`echo $1 | sed -e 's/^[^=]*=//g'`
+            export DB_USER=`echo $1 | sed -e 's/^[^=]*=//g'`
             shift
             ;;
         --bucket*)
-            export MONGO_BUCKET=`echo $1 | sed -e 's/^[^=]*=//g'`
+            export DB_BUCKET=`echo $1 | sed -e 's/^[^=]*=//g'`
             shift
             ;;
         --folder*)
-            export MONGO_FOLDER=`echo $1 | sed -e 's/^[^=]*=//g'`
+            export DB_FOLDER=`echo $1 | sed -e 's/^[^=]*=//g'`
             shift
             ;;
         --snapshot*)
-            export MONGO_SNAPSHOT=`echo $1 | sed -e 's/^[^=]*=//g'`
+            export DB_SNAPSHOT=`echo $1 | sed -e 's/^[^=]*=//g'`
             shift
             ;;
         *)
@@ -66,33 +65,33 @@ while test $# -gt 0; do
 done
 
 if [ -n "$DEBUG" ]; then
-    env | sort | grep MONGO_*
+    env | sort | grep DB_*
     echo ""
 fi
 
 # Wait for mongodb to start
 # ref: http://unix.stackexchange.com/a/5279
-while ! nc -q 1 $MONGO_HOST 27017 </dev/null; do echo "Waiting... database is not ready yet"; sleep 5; done
+while ! nc -q 1 $DB_HOST 27017 </dev/null; do echo "Waiting... database is not ready yet"; sleep 5; done
 
-case "$cmd" in
+case "$op" in
     backup)
         path=/var/dump-backup
         mkdir -p "$path"
         cd "$path"
         rm -rf *
-        mongodump --host "$MONGO_HOST" --port 27017 --username "$MONGO_USER" --password "$MONGO_PASSWORD" --out $path
-        osm push --osmconfig=/etc/osm/config -c "$MONGO_BUCKET" "$path" "$MONGO_FOLDER/$MONGO_SNAPSHOT"
+        mongodump --host "$DB_HOST" --port 27017 --username "$DB_USER" --password "$DB_PASSWORD" --out $path
+        osm push --osmconfig=/etc/osm/config -c "$DB_BUCKET" "$path" "$DB_FOLDER/$DB_SNAPSHOT"
         ;;
     restore)
         path=/var/dump-restore
         mkdir -p "$path"
         cd "$path"
         rm -rf *
-        osm pull --osmconfig=/etc/osm/config -c "$MONGO_BUCKET" "$MONGO_FOLDER/$MONGO_SNAPSHOT" "$path"
-        mongorestore --host "$MONGO_HOST" --port 27017 --username "$MONGO_USER" --password "$MONGO_PASSWORD"  $path
+        osm pull --osmconfig=/etc/osm/config -c "$DB_BUCKET" "$DB_FOLDER/$DB_SNAPSHOT" "$path"
+        mongorestore --host "$DB_HOST" --port 27017 --username "$DB_USER" --password "$DB_PASSWORD"  $path
         ;;
     *)  (10)
-        echo $"Unknown cmd!"
+        echo $"Unknown op!"
         RETVAL=1
 esac
 exit "$RETVAL"
