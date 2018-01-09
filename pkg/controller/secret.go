@@ -13,7 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
-var (
+const (
 	mongoDBUser = "root"
 
 	keyMongoDBUser     = "user"
@@ -60,12 +60,6 @@ func (c *Controller) createDatabaseSecret(mongodb *api.MongoDB) (*core.SecretVol
 		return nil, err
 	}
 	if sc == nil {
-		MONGO_PASSWORD := fmt.Sprintf("%s", rand.GeneratePassword())
-		data := map[string][]byte{
-			keyMongoDBPassword: []byte(MONGO_PASSWORD),
-			keyMongoDBUser:     []byte(mongoDBUser),
-		}
-
 		secret := &core.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: authSecretName,
@@ -75,7 +69,10 @@ func (c *Controller) createDatabaseSecret(mongodb *api.MongoDB) (*core.SecretVol
 				},
 			},
 			Type: core.SecretTypeOpaque,
-			Data: data, // Add secret data
+			StringData: map[string]string{
+				keyMongoDBUser:     mongoDBUser,
+				keyMongoDBPassword: rand.GeneratePassword(),
+			},
 		}
 		if _, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Create(secret); err != nil {
 			return nil, err
