@@ -12,6 +12,7 @@ show_help() {
     echo " "
     echo "options:"
     echo "-h, --help                         show brief help"
+    echo "    --data-dir=DIR                 path to directory holding db data (default: /var/data)"
     echo "    --host=HOST                    database host"
     echo "    --user=USERNAME                database username"
     echo "    --bucket=BUCKET                name of bucket"
@@ -22,11 +23,14 @@ show_help() {
 RETVAL=0
 DEBUG=${DEBUG:-}
 DB_HOST=${DB_HOST:-}
+DB_PORT=${DB_PORT:-27017}
 DB_USER=${DB_USER:-}
 DB_PASSWORD=${DB_PASSWORD:-}
 DB_BUCKET=${DB_BUCKET:-}
 DB_FOLDER=${DB_FOLDER:-}
 DB_SNAPSHOT=${DB_SNAPSHOT:-}
+DB_DATA_DIR=${DB_DATA_DIR:-/var/data}
+OSM_CONFIG_FILE=/etc/osm/config
 
 op=$1
 shift
@@ -36,6 +40,10 @@ while test $# -gt 0; do
         -h|--help)
             show_help
             exit 0
+            ;;
+        --data-dir*)
+            export DB_DATA_DIR=`echo $1 | sed -e 's/^[^=]*=//g'`
+            shift
             ;;
         --host*)
             export DB_HOST=`echo $1 | sed -e 's/^[^=]*=//g'`
@@ -71,24 +79,21 @@ fi
 
 # Wait for mongodb to start
 # ref: http://unix.stackexchange.com/a/5279
-while ! nc -q 1 $DB_HOST 27017 </dev/null; do echo "Waiting... database is not ready yet"; sleep 5; done
+while ! nc -q 1 $DB_HOST $DB_PORT </dev/null; do echo "Waiting... database is not ready yet"; sleep 5; done
+
+# cleanup data dump dir
+mkdir -p "$DB_DATA_DIR"
+cd "$DB_DATA_DIR"
+rm -rf *
 
 case "$op" in
     backup)
-        path=/var/dump-backup
-        mkdir -p "$path"
-        cd "$path"
-        rm -rf *
-        mongodump --host "$DB_HOST" --port 27017 --username "$DB_USER" --password "$DB_PASSWORD" --out $path
-        osm push --osmconfig=/etc/osm/config -c "$DB_BUCKET" "$path" "$DB_FOLDER/$DB_SNAPSHOT"
+        mongodump --host "$DB_HOST" --port $DB_PORT --username "$DB_USER" --password "$DB_PASSWORD" --out "$DB_DATA_DIR"
+        osm push --osmconfig="$OSM_CONFIG_FILE" -c "$DB_BUCKET" "$DB_DATA_DIR" "$DB_FOLDER/$DB_SNAPSHOT"
         ;;
     restore)
-        path=/var/dump-restore
-        mkdir -p "$path"
-        cd "$path"
-        rm -rf *
-        osm pull --osmconfig=/etc/osm/config -c "$DB_BUCKET" "$DB_FOLDER/$DB_SNAPSHOT" "$path"
-        mongorestore --host "$DB_HOST" --port 27017 --username "$DB_USER" --password "$DB_PASSWORD"  $path
+        osm pull --osmconfig="$OSM_CONFIG_FILE" -c "$DB_BUCKET" "$DB_FOLDER/$DB_SNAPSHOT" "$DB_DATA_DIR"
+        mongorestore --host "$DB_HOST" --port $DB_PORT --username "$DB_USER" --password "$DB_PASSWORD"  "$DB_DATA_DIR"
         ;;
     *)  (10)
         echo $"Unknown op!"
