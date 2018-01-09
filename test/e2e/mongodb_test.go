@@ -311,7 +311,7 @@ var _ = Describe("MongoDB", func() {
 					snapshot.Spec.DatabaseName = mongodb.Name
 				})
 
-				FIt("should run successfully", func() {
+				It("should run successfully", func() {
 					// Create and wait for running MongoDB
 					createAndWaitForRunning()
 
