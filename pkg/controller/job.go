@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	snapshotDumpDir        = "/var/data/"
+	snapshotDumpDir        = "/var/data"
 	snapshotProcessRestore = "restore"
 	snapshotProcessBackup  = "backup"
 )
