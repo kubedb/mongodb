@@ -22,6 +22,10 @@ func New(k8sClient kubernetes.Interface) api.Agent {
 	return &PrometheusBuiltin{k8sClient: k8sClient}
 }
 
+func (agent *PrometheusBuiltin) GetType() api.AgentType {
+	return api.AgentPrometheusBuiltin
+}
+
 func (agent *PrometheusBuiltin) CreateOrUpdate(sp api.StatsAccessor, new *api.AgentSpec) (kutil.VerbType, error) {
 	svc, e2 := agent.k8sClient.CoreV1().Services(sp.GetNamespace()).Get(sp.ServiceName(), metav1.GetOptions{})
 	if kerr.IsNotFound(e2) {

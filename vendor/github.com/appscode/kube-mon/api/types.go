@@ -36,6 +36,7 @@ type PrometheusSpec struct {
 }
 
 type Agent interface {
+	GetType() AgentType
 	CreateOrUpdate(sp StatsAccessor, spec *AgentSpec) (kutil.VerbType, error)
 	Delete(sp StatsAccessor) (kutil.VerbType, error)
 }

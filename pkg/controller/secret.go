@@ -17,7 +17,7 @@ var (
 	mongoDBUser = "root"
 
 	keyMongoDBUser     = "user"
-	keyMongoDBPassword = ".password"
+	keyMongoDBPassword = "password"
 )
 
 func (c *Controller) ensureDatabaseSecret(mongodb *api.MongoDB) error {

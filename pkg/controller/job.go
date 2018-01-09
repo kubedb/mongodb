@@ -12,11 +12,9 @@ import (
 )
 
 const (
-	snapshotProcessRestore  = "restore"
-	snapshotTypeDumpRestore = "dump-restore"
-
+	snapshotDumpDir        = "/var/data/"
+	snapshotProcessRestore = "restore"
 	snapshotProcessBackup  = "backup"
-	snapshotTypeDumpBackup = "dump-backup"
 )
 
 func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapshot) (*batch.Job, error) {
@@ -60,6 +58,7 @@ func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapsh
 								snapshotProcessRestore,
 								fmt.Sprintf(`--host=%s`, databaseName),
 								fmt.Sprintf(`--user=%s`, mongoDBUser),
+								fmt.Sprintf(`--data-dir=%s`, snapshotDumpDir),
 								fmt.Sprintf(`--bucket=%s`, bucket),
 								fmt.Sprintf(`--folder=%s`, folderName),
 								fmt.Sprintf(`--snapshot=%s`, snapshot.Name),
@@ -70,7 +69,7 @@ func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapsh
 									Value: c.opt.AnalyticsClientID,
 								},
 								{
-									Name: "MONGO_PASSWORD",
+									Name: "DB_PASSWORD",
 									ValueFrom: &core.EnvVarSource{
 										SecretKeyRef: &core.SecretKeySelector{
 											LocalObjectReference: core.LocalObjectReference{
@@ -85,7 +84,7 @@ func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapsh
 							VolumeMounts: []core.VolumeMount{
 								{
 									Name:      persistentVolume.Name,
-									MountPath: "/var/" + snapshotTypeDumpRestore + "/",
+									MountPath: snapshotDumpDir,
 								},
 								{
 									Name:      "osmconfig",
@@ -175,6 +174,7 @@ func (c *Controller) getSnapshotterJob(snapshot *api.Snapshot) (*batch.Job, erro
 								snapshotProcessBackup,
 								fmt.Sprintf(`--host=%s`, databaseName),
 								fmt.Sprintf(`--user=%s`, mongoDBUser),
+								fmt.Sprintf(`--data-dir=%s`, snapshotDumpDir),
 								fmt.Sprintf(`--bucket=%s`, bucket),
 								fmt.Sprintf(`--folder=%s`, folderName),
 								fmt.Sprintf(`--snapshot=%s`, snapshot.Name),
@@ -185,7 +185,7 @@ func (c *Controller) getSnapshotterJob(snapshot *api.Snapshot) (*batch.Job, erro
 									Value: c.opt.AnalyticsClientID,
 								},
 								{
-									Name: "MONGO_PASSWORD",
+									Name: "DB_PASSWORD",
 									ValueFrom: &core.EnvVarSource{
 										SecretKeyRef: &core.SecretKeySelector{
 											LocalObjectReference: core.LocalObjectReference{
@@ -200,7 +200,7 @@ func (c *Controller) getSnapshotterJob(snapshot *api.Snapshot) (*batch.Job, erro
 							VolumeMounts: []core.VolumeMount{
 								{
 									Name:      persistentVolume.Name,
-									MountPath: "/var/" + snapshotTypeDumpBackup + "/",
+									MountPath: snapshotDumpDir,
 								},
 								{
 									Name:      "osmconfig",

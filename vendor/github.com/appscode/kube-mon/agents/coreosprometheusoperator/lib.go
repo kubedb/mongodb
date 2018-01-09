@@ -29,6 +29,10 @@ func New(k8sClient kubernetes.Interface, extClient ecs.ApiextensionsV1beta1Inter
 	}
 }
 
+func (agent *PrometheusCoreosOperator) GetType() api.AgentType {
+	return api.AgentCoreOSPrometheus
+}
+
 func (agent *PrometheusCoreosOperator) CreateOrUpdate(sp api.StatsAccessor, new *api.AgentSpec) (kutil.VerbType, error) {
 	if !agent.supportsCoreOSOperator() {
 		return kutil.VerbUnchanged, errors.New("cluster does not support CoreOS Prometheus operator")
