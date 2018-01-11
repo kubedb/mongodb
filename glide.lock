@@ -1,5 +1,5 @@
 hash: eab6e107a7423dfe37aab2a958a35fd7bc84e34075136c2dd8d9d1661fd8db0b
-updated: 2018-01-11T10:53:10.833561838+06:00
+updated: 2018-01-11T14:52:27.682840152+06:00
 imports:
 - name: cloud.google.com/go
   version: fe3d41e1ecb2ce36ad3a979037c9b9a2b726226f
@@ -7,7 +7,7 @@ imports:
   - compute/metadata
   - internal
 - name: github.com/appscode/go
-  version: e731bc60d873562a50f77ff809308ef53baee17f
+  version: 979b75cb554996ed0e5c2ba4a3538ca163a329b8
   subpackages:
   - analytics
   - context
@@ -20,6 +20,7 @@ imports:
   - log
   - log/golog
   - runtime
+  - sets
   - strings
   - types
   - version
@@ -238,7 +239,7 @@ imports:
   - pkg/storage
   - pkg/validator
 - name: github.com/kubernetes/apimachinery
-  version: 91d8586aac31d9086939d077ba556d2c7fb157b4
+  version: d86399872a1f1082d33982f7f9b37a2ce7c2e307
   subpackages:
   - pkg/conversion
 - name: github.com/mailru/easyjson

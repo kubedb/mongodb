@@ -18,6 +18,8 @@ const (
 
 	KeyMongoDBUser     = "user"
 	KeyMongoDBPassword = "password"
+
+	ExporterSecretPath = "/etc/exporter/secrets"
 )
 
 func (c *Controller) ensureDatabaseSecret(mongodb *api.MongoDB) error {
