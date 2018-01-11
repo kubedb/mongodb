@@ -14,10 +14,10 @@ import (
 )
 
 const (
-	mongoDBUser = "root"
+	mongodbUser = "root"
 
-	keyMongoDBUser     = "user"
-	keyMongoDBPassword = "password"
+	KeyMongoDBUser     = "user"
+	KeyMongoDBPassword = "password"
 )
 
 func (c *Controller) ensureDatabaseSecret(mongodb *api.MongoDB) error {
@@ -70,8 +70,8 @@ func (c *Controller) createDatabaseSecret(mongodb *api.MongoDB) (*core.SecretVol
 			},
 			Type: core.SecretTypeOpaque,
 			StringData: map[string]string{
-				keyMongoDBUser:     mongoDBUser,
-				keyMongoDBPassword: rand.GeneratePassword(),
+				KeyMongoDBUser:     mongodbUser,
+				KeyMongoDBPassword: rand.GeneratePassword(),
 			},
 		}
 		if _, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Create(secret); err != nil {
