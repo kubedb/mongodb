@@ -26,6 +26,12 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB) (kutil.VerbType, er
 		return kutil.VerbUnchanged, err
 	}
 
+	if isMonitoringCoreOSOperator(mongodb) && c.opt.EnableRbac {
+		if err := c.ensureRBACStuff(mongodb); err != nil {
+			return kutil.VerbUnchanged, err
+		}
+	}
+
 	// Create statefulSet for MongoDB database
 	statefulSet, vt, err := c.createStatefulSet(mongodb)
 	if err != nil {
@@ -119,9 +125,7 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 			},
 			Resources: mongodb.Spec.Resources,
 		})
-		if mongodb.Spec.Monitor != nil &&
-			mongodb.Spec.Monitor.Agent == api.AgentCoreosPrometheus &&
-			mongodb.Spec.Monitor.Prometheus != nil {
+		if isMonitoringCoreOSOperator(mongodb) {
 			in.Spec.Template.Spec.Containers = core_util.UpsertContainer(in.Spec.Template.Spec.Containers, core.Container{
 				Name: "exporter",
 				Args: []string{
@@ -156,6 +160,10 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 					},
 				},
 			)
+
+			if c.opt.EnableRbac {
+				in.Spec.Template.Spec.ServiceAccountName = mongodb.Name
+			}
 		}
 		// Set Admin Secret as MYSQL_ROOT_PASSWORD env variable
 		in = upsertEnv(in, mongodb)

@@ -71,11 +71,9 @@ func (c *Controller) setNewAgent(mongodb *api.MongoDB) error {
 func (c *Controller) manageMonitor(mongodb *api.MongoDB) error {
 	oldAgent := c.getOldAgent(mongodb)
 	if mongodb.Spec.Monitor != nil {
-		if oldAgent != nil {
-			if oldAgent.GetType() != mongodb.Spec.Monitor.Agent {
-				if _, err := oldAgent.Delete(mongodb.StatsAccessor()); err != nil {
-					log.Debugf("error in deleting Prometheus agent:", err)
-				}
+		if oldAgent != nil && oldAgent.GetType() != mongodb.Spec.Monitor.Agent {
+			if _, err := oldAgent.Delete(mongodb.StatsAccessor()); err != nil {
+				log.Debugf("error in deleting Prometheus agent:", err)
 			}
 		}
 		if _, err := c.addOrUpdateMonitor(mongodb); err != nil {
@@ -88,4 +86,14 @@ func (c *Controller) manageMonitor(mongodb *api.MongoDB) error {
 		}
 	}
 	return nil
+}
+
+// check if the monitoring agent is "coreos-prometheus-operator"
+func isMonitoringCoreOSOperator(mongodb *api.MongoDB) bool {
+	if mongodb.Spec.Monitor != nil &&
+		mongodb.Spec.Monitor.Agent == api.AgentCoreosPrometheus &&
+		mongodb.Spec.Monitor.Prometheus != nil {
+		return true
+	}
+	return false
 }

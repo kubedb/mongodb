@@ -1,5 +1,5 @@
 hash: eab6e107a7423dfe37aab2a958a35fd7bc84e34075136c2dd8d9d1661fd8db0b
-updated: 2018-01-12T12:50:38.491139738+06:00
+updated: 2018-01-15T15:54:17.621928195+06:00
 imports:
 - name: cloud.google.com/go
   version: fe3d41e1ecb2ce36ad3a979037c9b9a2b726226f
@@ -7,7 +7,7 @@ imports:
   - compute/metadata
   - internal
 - name: github.com/appscode/go
-  version: 979b75cb554996ed0e5c2ba4a3538ca163a329b8
+  version: 702364e848d80e8f4d6af7045aef800f36b3db80
   subpackages:
   - analytics
   - context
@@ -38,6 +38,7 @@ imports:
   - apps/v1beta1
   - core/v1
   - meta
+  - rbac/v1beta1
   - tools/analytics
 - name: github.com/appscode/mergo
   version: e3000cb3d28c72b837601cac94debd91032d19fe
@@ -131,7 +132,7 @@ imports:
 - name: github.com/ghodss/yaml
   version: 0ca9ea5df5451ffdf184b4428c902747c2c11cd7
 - name: github.com/go-ini/ini
-  version: d3de07a94d22b4a0972deb4b96d790c2c0ce8333
+  version: 2e44421e256d82ebbf3d4d4fcabe8930b905eff3
 - name: github.com/go-openapi/jsonpointer
   version: 46af16f9f7b149af66e5d1bd010e3574dc06de98
 - name: github.com/go-openapi/jsonreference
@@ -224,7 +225,7 @@ imports:
 - name: github.com/juju/ratelimit
   version: 5b9ff866471762aa2ab2dced63c9fb6f53921342
 - name: github.com/kubedb/apimachinery
-  version: 712463a1911f85de9304e43d634fafdacadb9371
+  version: 0fbe2f9c300e9af33fb64b4edc11ea9de226ce6d
   subpackages:
   - apis/kubedb
   - apis/kubedb/v1alpha1
@@ -239,7 +240,7 @@ imports:
   - pkg/storage
   - pkg/validator
 - name: github.com/kubernetes/apimachinery
-  version: d86399872a1f1082d33982f7f9b37a2ce7c2e307
+  version: d40b72863885248607ceac2631cd78de166f51c3
   subpackages:
   - pkg/conversion
 - name: github.com/mailru/easyjson
@@ -376,7 +377,7 @@ imports:
   - unicode/norm
   - width
 - name: google.golang.org/api
-  version: 37df4fabefb044819e927f44b8487d4cd926d06c
+  version: 8124d1ac69f14d76f852b3c28a59418989a4bdbe
   subpackages:
   - gensupport
   - googleapi
