@@ -5,6 +5,7 @@ import (
 
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
+	mon_api "github.com/appscode/kube-mon/api"
 	"github.com/appscode/kutil"
 	app_util "github.com/appscode/kutil/apps/v1beta1"
 	core_util "github.com/appscode/kutil/core/v1"
@@ -26,7 +27,7 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB) (kutil.VerbType, er
 		return kutil.VerbUnchanged, err
 	}
 
-	if isMonitoringCoreOSOperator(mongodb) && c.opt.EnableRbac {
+	if c.opt.EnableRbac && mongodb.GetMonitoringVendor() == mon_api.VendorPrometheus {
 		if err := c.ensureRBACStuff(mongodb); err != nil {
 			return kutil.VerbUnchanged, err
 		}
@@ -125,7 +126,7 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 			},
 			Resources: mongodb.Spec.Resources,
 		})
-		if isMonitoringCoreOSOperator(mongodb) {
+		if mongodb.GetMonitoringVendor() == mon_api.VendorPrometheus {
 			in.Spec.Template.Spec.Containers = core_util.UpsertContainer(in.Spec.Template.Spec.Containers, core.Container{
 				Name: "exporter",
 				Args: []string{
