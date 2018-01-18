@@ -10,6 +10,7 @@ import (
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/runtime"
 	stringz "github.com/appscode/go/strings"
+	"github.com/appscode/kutil/tools/analytics"
 	pcm "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
 	cs "github.com/kubedb/apimachinery/client/typed/kubedb/v1alpha1"
 	snapc "github.com/kubedb/apimachinery/pkg/controller/snapshot"
@@ -25,6 +26,19 @@ import (
 var (
 	prometheusCrdGroup = pcm.Group
 	prometheusCrdKinds = pcm.DefaultCrdKinds
+
+	opt = controller.Options{
+		Docker: docker.Docker{
+			Registry:    "kubedb",
+			ExporterTag: "canary",
+		},
+		OperatorNamespace: namespace(),
+		GoverningService:  "kubedb",
+		Address:           ":8080",
+		MaxNumRequeues:    5,
+		EnableAnalytics:   true,
+		AnalyticsClientID: analytics.ClientID(),
+	}
 )
 
 func getPrometheusFlags() *flag.FlagSet {
@@ -40,18 +54,7 @@ func NewCmdRun(version string) *cobra.Command {
 		kubeconfigPath string
 	)
 
-	opt := controller.Options{
-		Docker: docker.Docker{
-			Registry:    "kubedb",
-			ExporterTag: stringz.Val(version, "canary"),
-		},
-		OperatorNamespace: namespace(),
-		GoverningService:  "kubedb",
-		Address:           ":8080",
-		EnableRbac:        false,
-		MaxNumRequeues:    5,
-		AnalyticsClientID: analyticsClientID,
-	}
+	opt.Docker.ExporterTag = stringz.Val(version, opt.Docker.ExporterTag)
 
 	cmd := &cobra.Command{
 		Use:   "run",
@@ -97,7 +100,6 @@ func NewCmdRun(version string) *cobra.Command {
 	cmd.Flags().StringVar(&opt.Docker.Registry, "docker-registry", opt.Docker.Registry, "User provided docker repository")
 	cmd.Flags().StringVar(&opt.Docker.ExporterTag, "exporter-tag", opt.Docker.ExporterTag, "Tag of kubedb/operator used as exporter")
 	cmd.Flags().StringVar(&opt.Address, "address", opt.Address, "Address to listen on for web interface and telemetry.")
-	cmd.Flags().BoolVar(&opt.EnableRbac, "rbac", opt.EnableRbac, "Enable RBAC for database workloads")
 
 	cmd.Flags().AddGoFlagSet(getPrometheusFlags())
 
