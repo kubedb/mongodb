@@ -54,8 +54,6 @@ func NewCmdRun(version string) *cobra.Command {
 		kubeconfigPath string
 	)
 
-	opt.Docker.ExporterTag = stringz.Val(version, opt.Docker.ExporterTag)
-
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Run MongoDB in Kubernetes",
@@ -98,7 +96,7 @@ func NewCmdRun(version string) *cobra.Command {
 	cmd.Flags().StringVar(&kubeconfigPath, "kubeconfig", "", "Path to kubeconfig file with authorization information (the master location is set by the master flag).")
 	cmd.Flags().StringVar(&opt.GoverningService, "governing-service", opt.GoverningService, "Governing service for database statefulset")
 	cmd.Flags().StringVar(&opt.Docker.Registry, "docker-registry", opt.Docker.Registry, "User provided docker repository")
-	cmd.Flags().StringVar(&opt.Docker.ExporterTag, "exporter-tag", opt.Docker.ExporterTag, "Tag of kubedb/operator used as exporter")
+	cmd.Flags().StringVar(&opt.Docker.ExporterTag, "exporter-tag", stringz.Val(version, opt.Docker.ExporterTag), "Tag of kubedb/operator used as exporter")
 	cmd.Flags().StringVar(&opt.Address, "address", opt.Address, "Address to listen on for web interface and telemetry.")
 
 	cmd.Flags().AddGoFlagSet(getPrometheusFlags())
