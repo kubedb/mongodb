@@ -75,7 +75,7 @@ func (f *Framework) EventuallyMongoDBRunning(meta metav1.ObjectMeta) GomegaAsync
 			Expect(err).NotTo(HaveOccurred())
 			return mongodb.Status.Phase == api.DatabasePhaseRunning
 		},
-		time.Minute*5,
+		time.Minute*15,
 		time.Second*5,
 	)
 }

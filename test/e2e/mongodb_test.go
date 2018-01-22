@@ -448,6 +448,77 @@ var _ = Describe("MongoDB", func() {
 					deleteTestResource()
 				})
 
+				Context("With Snapshot Init", func() {
+					AfterEach(func() {
+						f.DeleteSecret(secret.ObjectMeta)
+					})
+					BeforeEach(func() {
+						secret = f.SecretForGCSBackend()
+						snapshot.Spec.StorageSecretName = secret.Name
+						snapshot.Spec.GCS = &api.GCSSpec{
+							Bucket: os.Getenv(GCS_BUCKET_NAME),
+						}
+						snapshot.Spec.DatabaseName = mongodb.Name
+					})
+					FIt("should resume successfully", func() {
+						// Create and wait for running MongoDB
+						createAndWaitForRunning()
+
+						By("Create Secret")
+						f.CreateSecret(secret)
+
+						By("Create Snapshot")
+						f.CreateSnapshot(snapshot)
+
+						By("Check for Successed snapshot")
+						f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSuccessed))
+
+						By("Check for snapshot data")
+						f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
+
+						oldMongoDB, err := f.GetMongoDB(mongodb.ObjectMeta)
+						Expect(err).NotTo(HaveOccurred())
+
+						By("Create mongodb from snapshot")
+						mongodb = f.MongoDB()
+						mongodb.Spec.Init = &api.InitSpec{
+							SnapshotSource: &api.SnapshotSourceSpec{
+								Namespace: snapshot.Namespace,
+								Name:      snapshot.Name,
+							},
+						}
+
+						// Create and wait for running MongoDB
+						createAndWaitForRunning()
+
+						By("Delete mongodb")
+						f.DeleteMongoDB(mongodb.ObjectMeta)
+
+						By("Wait for mongodb to be paused")
+						f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
+
+						// Create MongoDB object again to resume it
+						By("Create MongoDB: " + mongodb.Name)
+						err = f.CreateMongoDB(mongodb)
+						Expect(err).NotTo(HaveOccurred())
+
+						By("Wait for DormantDatabase to be deleted")
+						f.EventuallyDormantDatabase(mongodb.ObjectMeta).Should(BeFalse())
+
+						By("Wait for Running mongodb")
+						f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+
+						mongodb, err = f.GetMongoDB(mongodb.ObjectMeta)
+						Expect(err).NotTo(HaveOccurred())
+
+						// Delete test resource
+						deleteTestResource()
+						mongodb = oldMongoDB
+						// Delete test resource
+						deleteTestResource()
+					})
+				})
+
 				Context("Multiple times with init", func() {
 					BeforeEach(func() {
 						usedInitSpec = true

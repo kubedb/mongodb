@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"time"
@@ -9,12 +8,15 @@ import (
 	"github.com/appscode/go/log"
 	mon_api "github.com/appscode/kube-mon/api"
 	"github.com/appscode/kutil"
+	core_util "github.com/appscode/kutil/core/v1"
+	meta_util "github.com/appscode/kutil/meta"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/apimachinery/client/typed/kubedb/v1alpha1/util"
 	"github.com/kubedb/apimachinery/pkg/docker"
 	"github.com/kubedb/apimachinery/pkg/eventer"
 	"github.com/kubedb/apimachinery/pkg/storage"
 	"github.com/kubedb/mongodb/pkg/validator"
+	"github.com/the-redback/go-oneliners"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -104,8 +106,10 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 		)
 	}
 
-	if vt2 == kutil.VerbCreated && mongodb.Spec.Init != nil && mongodb.Spec.Init.SnapshotSource != nil {
-		es, _, err := util.PatchMongoDB(c.ExtClient, mongodb, func(in *api.MongoDB) *api.MongoDB {
+	if _, err := meta_util.GetString(mongodb.Annotations, api.GenericInitSpec); err == kutil.ErrNotFound &&
+		mongodb.Spec.Init != nil && mongodb.Spec.Init.SnapshotSource != nil {
+		fmt.Println(">>>>>>>>>>>>>>>>>> Initialize!!!!!!!!!!!!")
+		ms, _, err := util.PatchMongoDB(c.ExtClient, mongodb, func(in *api.MongoDB) *api.MongoDB {
 			in.Status.Phase = api.DatabasePhaseInitializing
 			return in
 		})
@@ -118,7 +122,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 			)
 			return err
 		}
-		mongodb.Status = es.Status
+		mongodb.Status = ms.Status
 
 		if err := c.initialize(mongodb); err != nil {
 			c.recorder.Eventf(
@@ -130,7 +134,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 			)
 		}
 
-		es, _, err = util.PatchMongoDB(c.ExtClient, mongodb, func(in *api.MongoDB) *api.MongoDB {
+		ms, _, err = util.PatchMongoDB(c.ExtClient, mongodb, func(in *api.MongoDB) *api.MongoDB {
 			in.Status.Phase = api.DatabasePhaseRunning
 			return in
 		})
@@ -143,7 +147,12 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 			)
 			return err
 		}
-		mongodb.Status = es.Status
+		mongodb.Status = ms.Status
+	}
+
+	if err := c.setInitAnnotation(mongodb); err != nil {
+		c.recorder.Eventf(mongodb.ObjectReference(), core.EventTypeWarning, eventer.EventReasonFailedToUpdate, err.Error())
+		return err
 	}
 
 	// Ensure Schedule backup
@@ -192,6 +201,22 @@ func (c *Controller) setMonitoringPort(mongodb *api.MongoDB) error {
 	return nil
 }
 
+func (c *Controller) setInitAnnotation(mongodb *api.MongoDB) error {
+	if _, err := meta_util.GetString(mongodb.Annotations, api.GenericInitSpec); err == kutil.ErrNotFound && mongodb.Spec.Init != nil {
+		mg, _, err := util.PatchMongoDB(c.ExtClient, mongodb, func(in *api.MongoDB) *api.MongoDB {
+			in.Annotations = core_util.UpsertMap(in.Annotations, map[string]string{
+				api.GenericInitSpec: "",
+			})
+			return in
+		})
+		if err != nil {
+			return err
+		}
+		mongodb.Annotations = mg.Annotations
+	}
+	return nil
+}
+
 func (c *Controller) matchDormantDatabase(mongodb *api.MongoDB) error {
 	// Check if DormantDatabase exists or not
 	dormantDb, err := c.ExtClient.DormantDatabases(mongodb.Namespace).Get(mongodb.Name, metav1.GetOptions{})
@@ -227,25 +252,9 @@ func (c *Controller) matchDormantDatabase(mongodb *api.MongoDB) error {
 			mongodb.Name, dormantDb.Name))
 	}
 
-	// Check InitSpec
-	initSpecAnnotationStr := dormantDb.Annotations[api.GenericInitSpec]
-	if initSpecAnnotationStr != "" {
-		var initSpecAnnotation *api.InitSpec
-		if err := json.Unmarshal([]byte(initSpecAnnotationStr), &initSpecAnnotation); err != nil {
-			return sendEvent(err.Error())
-		}
-
-		if mongodb.Spec.Init != nil {
-			if !reflect.DeepEqual(initSpecAnnotation, mongodb.Spec.Init) {
-				return sendEvent("InitSpec mismatches with DormantDatabase annotation")
-			}
-		}
-	}
-
 	// Check Origin Spec
 	drmnOriginSpec := dormantDb.Spec.Origin.Spec.MongoDB
 	originalSpec := mongodb.Spec
-	originalSpec.Init = nil
 
 	if originalSpec.DatabaseSecret == nil {
 		originalSpec.DatabaseSecret = &core.SecretVolumeSource{
@@ -256,6 +265,13 @@ func (c *Controller) matchDormantDatabase(mongodb *api.MongoDB) error {
 	if !reflect.DeepEqual(drmnOriginSpec, &originalSpec) {
 		return sendEvent("MongoDB spec mismatches with OriginSpec in DormantDatabases")
 	}
+
+	if err := c.setInitAnnotation(mongodb); err != nil {
+		c.recorder.Eventf(mongodb.ObjectReference(), core.EventTypeWarning, eventer.EventReasonFailedToUpdate, err.Error())
+		return err
+	}
+
+	oneliners.PrettyJson(mongodb, "New MongoDB")
 
 	return util.DeleteDormantDatabase(c.ExtClient, dormantDb.ObjectMeta)
 }
