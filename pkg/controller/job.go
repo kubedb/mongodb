@@ -21,7 +21,7 @@ func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapsh
 	databaseName := mongodb.Name
 	jobName := fmt.Sprintf("%s-%s", api.DatabaseNamePrefix, snapshot.OffshootName())
 	jobLabel := map[string]string{
-		api.LabelDatabaseKind: api.ResourceKindPostgres,
+		api.LabelDatabaseKind: api.ResourceKindMongoDB,
 	}
 	jobAnnotation := map[string]string{
 		api.AnnotationJobType: snapshotProcessRestore,
@@ -74,7 +74,7 @@ func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapsh
 								fmt.Sprintf(`--bucket=%s`, bucket),
 								fmt.Sprintf(`--folder=%s`, folderName),
 								fmt.Sprintf(`--snapshot=%s`, snapshot.Name),
-								fmt.Sprintf("--analytics=%v", c.opt.EnableAnalytics),
+								fmt.Sprintf(`--analytics=%v`, c.opt.EnableAnalytics),
 							},
 							Env: []core.EnvVar{
 								{
@@ -146,7 +146,7 @@ func (c *Controller) getSnapshotterJob(snapshot *api.Snapshot) (*batch.Job, erro
 	databaseName := snapshot.Spec.DatabaseName
 	jobName := fmt.Sprintf("%s-%s", api.DatabaseNamePrefix, snapshot.OffshootName())
 	jobLabel := map[string]string{
-		api.LabelDatabaseKind: api.ResourceKindPostgres,
+		api.LabelDatabaseKind: api.ResourceKindMongoDB,
 	}
 	jobAnnotation := map[string]string{
 		api.AnnotationJobType: snapshotProcessBackup,
@@ -202,7 +202,7 @@ func (c *Controller) getSnapshotterJob(snapshot *api.Snapshot) (*batch.Job, erro
 								fmt.Sprintf(`--bucket=%s`, bucket),
 								fmt.Sprintf(`--folder=%s`, folderName),
 								fmt.Sprintf(`--snapshot=%s`, snapshot.Name),
-								fmt.Sprintf("--analytics=%v", c.opt.EnableAnalytics),
+								fmt.Sprintf(`--analytics=%v`, c.opt.EnableAnalytics),
 							},
 							Env: []core.EnvVar{
 								{

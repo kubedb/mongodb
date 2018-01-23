@@ -249,7 +249,7 @@ var _ = Describe("MongoDB", func() {
 						}
 					})
 
-					FIt("should resume DormantDatabase successfully", shouldTakeSnapshot)
+					It("should resume DormantDatabase successfully", shouldTakeSnapshot)
 				})
 			})
 
@@ -293,7 +293,7 @@ var _ = Describe("MongoDB", func() {
 					}
 				})
 
-				FIt("should run successfully", shouldSuccessfullyRunning)
+				It("should run successfully", shouldSuccessfullyRunning)
 
 			})
 
@@ -311,7 +311,7 @@ var _ = Describe("MongoDB", func() {
 					snapshot.Spec.DatabaseName = mongodb.Name
 				})
 
-				FIt("should run successfully", func() {
+				It("should run successfully", func() {
 					// Create and wait for running MongoDB
 					createAndWaitForRunning()
 
@@ -393,7 +393,7 @@ var _ = Describe("MongoDB", func() {
 			}
 
 			Context("Without Init", func() {
-				FIt("should resume DormantDatabase successfully", shouldResumeSuccessfully)
+				It("should resume DormantDatabase successfully", shouldResumeSuccessfully)
 			})
 
 			Context("With Init", func() {
@@ -411,11 +411,11 @@ var _ = Describe("MongoDB", func() {
 					}
 				})
 
-				FIt("should resume DormantDatabase successfully", shouldResumeSuccessfully)
+				It("should resume DormantDatabase successfully", shouldResumeSuccessfully)
 			})
 
 			Context("With original MongoDB", func() {
-				FIt("should resume DormantDatabase successfully", func() {
+				It("should resume DormantDatabase successfully", func() {
 					// Create and wait for running MongoDB
 					createAndWaitForRunning()
 
