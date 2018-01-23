@@ -392,7 +392,7 @@ var _ = Describe("MongoDB", func() {
 				deleteTestResource()
 			}
 
-			Context("-", func() {
+			Context("Without Init", func() {
 				It("should resume DormantDatabase successfully", shouldResumeSuccessfully)
 			})
 
@@ -449,10 +449,12 @@ var _ = Describe("MongoDB", func() {
 				})
 
 				Context("With Snapshot Init", func() {
+					var skipDataCheck bool
 					AfterEach(func() {
 						f.DeleteSecret(secret.ObjectMeta)
 					})
 					BeforeEach(func() {
+						skipDataCheck = false
 						secret = f.SecretForGCSBackend()
 						snapshot.Spec.StorageSecretName = secret.Name
 						snapshot.Spec.GCS = &api.GCSSpec{
@@ -516,6 +518,10 @@ var _ = Describe("MongoDB", func() {
 						mongodb = oldMongoDB
 						// Delete test resource
 						deleteTestResource()
+						if !skipDataCheck {
+							By("Check for snapshot data")
+							f.EventuallySnapshotDataFound(snapshot).Should(BeFalse())
+						}
 					})
 				})
 

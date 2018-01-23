@@ -16,7 +16,6 @@ import (
 	"github.com/kubedb/apimachinery/pkg/eventer"
 	"github.com/kubedb/apimachinery/pkg/storage"
 	"github.com/kubedb/mongodb/pkg/validator"
-	"github.com/the-redback/go-oneliners"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -108,7 +107,6 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 
 	if _, err := meta_util.GetString(mongodb.Annotations, api.GenericInitSpec); err == kutil.ErrNotFound &&
 		mongodb.Spec.Init != nil && mongodb.Spec.Init.SnapshotSource != nil {
-		fmt.Println(">>>>>>>>>>>>>>>>>> Initialize!!!!!!!!!!!!")
 		ms, _, err := util.PatchMongoDB(c.ExtClient, mongodb, func(in *api.MongoDB) *api.MongoDB {
 			in.Status.Phase = api.DatabasePhaseInitializing
 			return in
@@ -271,8 +269,6 @@ func (c *Controller) matchDormantDatabase(mongodb *api.MongoDB) error {
 		return err
 	}
 
-	oneliners.PrettyJson(mongodb, "New MongoDB")
-
 	return util.DeleteDormantDatabase(c.ExtClient, dormantDb.ObjectMeta)
 }
 
@@ -357,29 +353,6 @@ func (c *Controller) initialize(mongodb *api.MongoDB) error {
 }
 
 func (c *Controller) pause(mongodb *api.MongoDB) error {
-	//if mongodb.Spec.DoNotPause {
-	//	c.recorder.Eventf(
-	//		mongodb.ObjectReference(),
-	//		core.EventTypeWarning,
-	//		eventer.EventReasonFailedToPause,
-	//		`MongoDB "%v" is locked.`,
-	//		mongodb.Name,
-	//	)
-	//
-	//	if err := c.reCreateMongoDB(mongodb); err != nil {
-	//		c.recorder.Eventf(
-	//			mongodb.ObjectReference(),
-	//			core.EventTypeWarning,
-	//			eventer.EventReasonFailedToCreate,
-	//			`Failed to recreate MongoDB: "%v". Reason: %v`,
-	//			mongodb.Name,
-	//			err,
-	//		)
-	//		return err
-	//	}
-	//	return nil
-	//}
-
 	if _, err := c.createDormantDatabase(mongodb); err != nil {
 		c.recorder.Eventf(
 			mongodb.ObjectReference(),

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <testsuite tests="1" failures="0" time="268.004871894">
+  <testsuite tests="1" failures="0" time="337.935041575">
       <testcase name="MongoDB Test General - should run successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
@@ -36,13 +36,26 @@
       <testcase name="MongoDB Test Initialize With Snapshot should run successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
-      <testcase name="MongoDB Test Resume - should resume DormantDatabase successfully" classname="e2e Suite" time="0">
+      <testcase name="MongoDB Test Resume Without Init should resume DormantDatabase successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
       <testcase name="MongoDB Test Resume With Init should resume DormantDatabase successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
       <testcase name="MongoDB Test Resume With original MongoDB should resume DormantDatabase successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test Resume With original MongoDB With Snapshot Init should resume successfully" classname="e2e Suite" time="333.453872545"></testcase>
+      <testcase name="MongoDB Test Resume With original MongoDB Multiple times with init should resume DormantDatabase successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test SnapshotScheduler With Startup with local should run schedular successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test SnapshotScheduler With Startup with GCS and PVC should run schedular successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test SnapshotScheduler With Update should run schedular successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
   </testsuite>
