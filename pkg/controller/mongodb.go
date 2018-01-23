@@ -3,7 +3,6 @@ package controller
 import (
 	"fmt"
 	"reflect"
-	"time"
 
 	"github.com/appscode/go/log"
 	mon_api "github.com/appscode/kube-mon/api"
@@ -105,7 +104,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 		)
 	}
 
-	if _, err := meta_util.GetString(mongodb.Annotations, api.GenericInitSpec); err == kutil.ErrNotFound &&
+	if _, err := meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized); err == kutil.ErrNotFound &&
 		mongodb.Spec.Init != nil && mongodb.Spec.Init.SnapshotSource != nil {
 		ms, _, err := util.PatchMongoDB(c.ExtClient, mongodb, func(in *api.MongoDB) *api.MongoDB {
 			in.Status.Phase = api.DatabasePhaseInitializing
@@ -200,10 +199,10 @@ func (c *Controller) setMonitoringPort(mongodb *api.MongoDB) error {
 }
 
 func (c *Controller) setInitAnnotation(mongodb *api.MongoDB) error {
-	if _, err := meta_util.GetString(mongodb.Annotations, api.GenericInitSpec); err == kutil.ErrNotFound && mongodb.Spec.Init != nil {
+	if _, err := meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized); err == kutil.ErrNotFound && mongodb.Spec.Init != nil {
 		mg, _, err := util.PatchMongoDB(c.ExtClient, mongodb, func(in *api.MongoDB) *api.MongoDB {
 			in.Annotations = core_util.UpsertMap(in.Annotations, map[string]string{
-				api.GenericInitSpec: "",
+				api.AnnotationInitialized: "",
 			})
 			return in
 		})
@@ -291,10 +290,6 @@ func (c *Controller) ensureBackupScheduler(mongodb *api.MongoDB) {
 	}
 }
 
-const (
-	durationCheckRestoreJob = time.Minute * 30
-)
-
 func (c *Controller) initialize(mongodb *api.MongoDB) error {
 	snapshotSource := mongodb.Spec.Init.SnapshotSource
 	// Event for notification that kubernetes objects are creating
@@ -323,7 +318,7 @@ func (c *Controller) initialize(mongodb *api.MongoDB) error {
 	if err != nil {
 		return err
 	}
-	_, err = c.Client.CoreV1().Secrets(secret.Namespace).Create(secret)
+	secret, err = c.Client.CoreV1().Secrets(secret.Namespace).Create(secret)
 	if err != nil && !kerr.IsAlreadyExists(err) {
 		return err
 	}
@@ -333,8 +328,16 @@ func (c *Controller) initialize(mongodb *api.MongoDB) error {
 		return err
 	}
 
-	jobSuccess := c.CheckDatabaseRestoreJob(snapshot, job, mongodb, c.recorder, durationCheckRestoreJob)
-	if jobSuccess {
+	if err := c.SetJobOwnerReference(snapshot, job); err != nil {
+		return err
+	}
+
+	snap, err := util.WaitUntilSnapshotCompletion(c.ExtClient, snapshot.ObjectMeta)
+	if err != nil {
+		return err
+	}
+
+	if snap.Status.Phase == api.SnapshotPhaseSucceeded {
 		c.recorder.Event(
 			mongodb.ObjectReference(),
 			core.EventTypeNormal,

@@ -29,7 +29,7 @@ func (c *Controller) initWatcher() {
 	}
 
 	// create the workqueue
-	c.queue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "mongodb")
+	c.queue = workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), api.ResourceNameMongoDB)
 
 	// Bind the workqueue to a cache with the help of an informer. This way we make sure that
 	// whenever the cache is updated, the MongoDB key is added to the workqueue.

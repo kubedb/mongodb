@@ -230,7 +230,7 @@ func upsertEnv(statefulSet *apps.StatefulSet, mongodb *api.MongoDB) *apps.Statef
 	envList := []core.EnvVar{
 		{
 			Name:  "MONGO_INITDB_ROOT_USERNAME",
-			Value: "root",
+			Value: mongodbUser,
 		},
 		{
 			Name: "MONGO_INITDB_ROOT_PASSWORD",

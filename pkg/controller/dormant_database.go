@@ -1,8 +1,6 @@
 package controller
 
 import (
-	"errors"
-
 	"github.com/appscode/go/log"
 	apps_util "github.com/appscode/kutil/apps/v1beta1"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
@@ -78,10 +76,6 @@ func (c *Controller) ResumeDatabase(dormantDb *api.DormantDatabase) error {
 	origin := dormantDb.Spec.Origin
 	objectMeta := origin.ObjectMeta
 
-	if origin.Spec.MongoDB.Init != nil {
-		return errors.New("do not support InitSpec in spec.origin.mongodb")
-	}
-
 	mongodb := &api.MongoDB{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        objectMeta.Name,
@@ -90,14 +84,6 @@ func (c *Controller) ResumeDatabase(dormantDb *api.DormantDatabase) error {
 			Annotations: objectMeta.Annotations,
 		},
 		Spec: *origin.Spec.MongoDB,
-	}
-
-	if mongodb.Annotations == nil {
-		mongodb.Annotations = make(map[string]string)
-	}
-
-	for key, val := range dormantDb.Annotations {
-		mongodb.Annotations[key] = val
 	}
 
 	_, err := c.ExtClient.MongoDBs(mongodb.Namespace).Create(mongodb)

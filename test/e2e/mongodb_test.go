@@ -160,7 +160,7 @@ var _ = Describe("MongoDB", func() {
 				f.CreateSnapshot(snapshot)
 
 				By("Check for Successed snapshot")
-				f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSuccessed))
+				f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
 
 				if !skipDataCheck {
 					By("Check for snapshot data")
@@ -249,7 +249,7 @@ var _ = Describe("MongoDB", func() {
 						}
 					})
 
-					It("should resume DormantDatabase successfully", shouldTakeSnapshot)
+					FIt("should resume DormantDatabase successfully", shouldTakeSnapshot)
 				})
 			})
 
@@ -293,7 +293,7 @@ var _ = Describe("MongoDB", func() {
 					}
 				})
 
-				It("should run successfully", shouldSuccessfullyRunning)
+				FIt("should run successfully", shouldSuccessfullyRunning)
 
 			})
 
@@ -311,7 +311,7 @@ var _ = Describe("MongoDB", func() {
 					snapshot.Spec.DatabaseName = mongodb.Name
 				})
 
-				It("should run successfully", func() {
+				FIt("should run successfully", func() {
 					// Create and wait for running MongoDB
 					createAndWaitForRunning()
 
@@ -322,7 +322,7 @@ var _ = Describe("MongoDB", func() {
 					f.CreateSnapshot(snapshot)
 
 					By("Check for Successed snapshot")
-					f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSuccessed))
+					f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
 
 					By("Check for snapshot data")
 					f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
@@ -385,7 +385,7 @@ var _ = Describe("MongoDB", func() {
 
 				if usedInitSpec {
 					Expect(mongodb.Spec.Init).Should(BeNil())
-					Expect(mongodb.Annotations[api.GenericInitSpec]).ShouldNot(BeEmpty())
+					Expect(mongodb.Annotations[api.AnnotationInitialized]).ShouldNot(BeEmpty())
 				}
 
 				// Delete test resource
@@ -393,7 +393,7 @@ var _ = Describe("MongoDB", func() {
 			}
 
 			Context("Without Init", func() {
-				It("should resume DormantDatabase successfully", shouldResumeSuccessfully)
+				FIt("should resume DormantDatabase successfully", shouldResumeSuccessfully)
 			})
 
 			Context("With Init", func() {
@@ -411,11 +411,11 @@ var _ = Describe("MongoDB", func() {
 					}
 				})
 
-				It("should resume DormantDatabase successfully", shouldResumeSuccessfully)
+				FIt("should resume DormantDatabase successfully", shouldResumeSuccessfully)
 			})
 
 			Context("With original MongoDB", func() {
-				It("should resume DormantDatabase successfully", func() {
+				FIt("should resume DormantDatabase successfully", func() {
 					// Create and wait for running MongoDB
 					createAndWaitForRunning()
 
@@ -441,7 +441,7 @@ var _ = Describe("MongoDB", func() {
 
 					if usedInitSpec {
 						Expect(mongodb.Spec.Init).Should(BeNil())
-						Expect(mongodb.Annotations[api.GenericInitSpec]).ShouldNot(BeEmpty())
+						Expect(mongodb.Annotations[api.AnnotationInitialized]).ShouldNot(BeEmpty())
 					}
 
 					// Delete test resource
@@ -473,7 +473,7 @@ var _ = Describe("MongoDB", func() {
 						f.CreateSnapshot(snapshot)
 
 						By("Check for Successed snapshot")
-						f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSuccessed))
+						f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
 
 						By("Check for snapshot data")
 						f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
@@ -551,7 +551,7 @@ var _ = Describe("MongoDB", func() {
 						}
 					})
 
-					It("should resume DormantDatabase successfully", func() {
+					FIt("should resume DormantDatabase successfully", func() {
 						// Create and wait for running MongoDB
 						createAndWaitForRunning()
 

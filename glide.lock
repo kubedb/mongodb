@@ -1,5 +1,5 @@
 hash: a0a77f9c8a083bf501084608580dff920383f322b5823d4904cb25d60b79e509
-updated: 2018-01-18T16:39:15.314932455+06:00
+updated: 2018-01-23T12:42:26.937059437+06:00
 imports:
 - name: cloud.google.com/go
   version: fe3d41e1ecb2ce36ad3a979037c9b9a2b726226f
@@ -25,7 +25,7 @@ imports:
   - types
   - version
 - name: github.com/appscode/kube-mon
-  version: bbf9306e9c161e411f0ddc5d946e67a3685530ee
+  version: fcafde645b3a37f2f99edd8c93abfa64c880df28
   subpackages:
   - agents
   - agents/coreosprometheusoperator
@@ -97,7 +97,7 @@ imports:
   subpackages:
   - pkg/client/monitoring/v1
 - name: github.com/cpuguy83/go-md2man
-  version: 8d868be6e9bf9d5350910bab97a050e49887600f
+  version: 20f5889cbdc3c73dbd2862796665e7c465ade7d1
   subpackages:
   - md2man
 - name: github.com/davecgh/go-spew
@@ -222,7 +222,7 @@ imports:
 - name: github.com/juju/ratelimit
   version: 5b9ff866471762aa2ab2dced63c9fb6f53921342
 - name: github.com/kubedb/apimachinery
-  version: 2d0777c52da98b5efaa6fbfcfd45dcbdabb2fa84
+  version: a76ad4331cea306b6996c488e0855f79552b2f2a
   subpackages:
   - apis/kubedb
   - apis/kubedb/v1alpha1
@@ -231,13 +231,14 @@ imports:
   - client/typed/kubedb/v1alpha1/util
   - pkg/controller
   - pkg/controller/dormant_database
+  - pkg/controller/job
   - pkg/controller/snapshot
   - pkg/docker
   - pkg/eventer
   - pkg/storage
   - pkg/validator
 - name: github.com/kubernetes/apimachinery
-  version: bc918d4f73e11cb3110730ec8e8ee02c58d6267c
+  version: 2f1e02d3e57b8fb5206c5326bcb65217edc63a8e
   subpackages:
   - pkg/conversion
 - name: github.com/mailru/easyjson
@@ -374,7 +375,7 @@ imports:
   - unicode/norm
   - width
 - name: google.golang.org/api
-  version: fa74edab4387514996aa08b9bc287882c18cb79a
+  version: 65b0d8655182691ad23b4fac11e6f7b897d9b634
   subpackages:
   - gensupport
   - googleapi

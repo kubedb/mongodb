@@ -19,11 +19,14 @@ const (
 
 func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapshot) (*batch.Job, error) {
 	databaseName := mongodb.Name
-	jobName := snapshot.OffshootName()
+	jobName := fmt.Sprintf("%s-%s", api.DatabaseNamePrefix, snapshot.OffshootName())
 	jobLabel := map[string]string{
-		api.LabelDatabaseName: databaseName,
-		api.LabelJobType:      snapshotProcessRestore,
+		api.LabelDatabaseKind: api.ResourceKindPostgres,
 	}
+	jobAnnotation := map[string]string{
+		api.AnnotationJobType: snapshotProcessRestore,
+	}
+
 	backupSpec := snapshot.Spec.SnapshotStorageSpec
 	bucket, err := backupSpec.Container()
 	if err != nil {
@@ -41,8 +44,17 @@ func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapsh
 
 	job := &batch.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   jobName,
-			Labels: jobLabel,
+			Name:        jobName,
+			Labels:      jobLabel,
+			Annotations: jobAnnotation,
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: api.SchemeGroupVersion.String(),
+					Kind:       api.ResourceKindSnapshot,
+					Name:       snapshot.Name,
+					UID:        snapshot.UID,
+				},
+			},
 		},
 		Spec: batch.JobSpec{
 			Template: core.PodTemplateSpec{
@@ -132,10 +144,12 @@ func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapsh
 
 func (c *Controller) getSnapshotterJob(snapshot *api.Snapshot) (*batch.Job, error) {
 	databaseName := snapshot.Spec.DatabaseName
-	jobName := snapshot.OffshootName()
+	jobName := fmt.Sprintf("%s-%s", api.DatabaseNamePrefix, snapshot.OffshootName())
 	jobLabel := map[string]string{
-		api.LabelDatabaseName: databaseName,
-		api.LabelJobType:      snapshotProcessBackup,
+		api.LabelDatabaseKind: api.ResourceKindPostgres,
+	}
+	jobAnnotation := map[string]string{
+		api.AnnotationJobType: snapshotProcessBackup,
 	}
 	backupSpec := snapshot.Spec.SnapshotStorageSpec
 	bucket, err := backupSpec.Container()
@@ -158,8 +172,17 @@ func (c *Controller) getSnapshotterJob(snapshot *api.Snapshot) (*batch.Job, erro
 
 	job := &batch.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   jobName,
-			Labels: jobLabel,
+			Name:        jobName,
+			Labels:      jobLabel,
+			Annotations: jobAnnotation,
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: api.SchemeGroupVersion.String(),
+					Kind:       api.ResourceKindSnapshot,
+					Name:       snapshot.Name,
+					UID:        snapshot.UID,
+				},
+			},
 		},
 		Spec: batch.JobSpec{
 			Template: core.PodTemplateSpec{
