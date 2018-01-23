@@ -13,7 +13,6 @@ import (
 )
 
 func (c *Controller) completeJob(job *batch.Job) error {
-	fmt.Println(">>>>>>>>>>>>>>>>>> Complete Job!!!!!!!!")
 	var snapshotName string
 	for _, o := range job.OwnerReferences {
 		if o.Kind == api.ResourceKindSnapshot {
@@ -30,7 +29,6 @@ func (c *Controller) completeJob(job *batch.Job) error {
 	}
 
 	jobSucceeded := job.Status.Succeeded > 0
-	fmt.Println(">>>>>>>>>>>>>>>>>> JobSucceeded", jobSucceeded)
 
 	_, _, err = util.PatchSnapshot(c.ExtClient, snapshot, func(in *api.Snapshot) *api.Snapshot {
 		t := metav1.Now()
@@ -43,14 +41,11 @@ func (c *Controller) completeJob(job *batch.Job) error {
 		delete(in.Labels, api.LabelSnapshotStatus)
 		return in
 	})
-	fmt.Println(">>>>>>>>>>>>>>>>>> 1")
 	if err != nil {
-		fmt.Println(">>>>>>>>>>>>>>>>>> 2",err)
 		c.eventRecorder.Eventf(snapshot.ObjectReference(), core.EventTypeWarning, eventer.EventReasonFailedToUpdate, err.Error())
 		return err
 	}
 
-	fmt.Println(">>>>>>>>>>>>>>>>>> 3")
 	deletePolicy := metav1.DeletePropagationBackground
 	err = c.Client.BatchV1().Jobs(job.Namespace).Delete(job.Name, &metav1.DeleteOptions{
 		PropagationPolicy: &deletePolicy,
@@ -59,7 +54,6 @@ func (c *Controller) completeJob(job *batch.Job) error {
 	if err != nil && !kerr.IsNotFound(err) {
 		return fmt.Errorf("failed to delete job: %s, reason: %s", job.Name, err)
 	}
-	fmt.Println(">>>>>>>>>>>>>>>>>> 4")
 
 	return nil
 }

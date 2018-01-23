@@ -36,7 +36,6 @@ func (c *Controller) initWatcher() {
 	// of the Job than the version which was responsible for triggering the update.
 	c.indexer, c.informer = cache.NewIndexerInformer(lw, &batch.Job{}, c.syncPeriod, cache.ResourceEventHandlerFuncs{
 		DeleteFunc: func(obj interface{}) {
-			fmt.Println(">>>>>>>>>>>>>>>>>>> Deleted!!!!!!!!!!!!!!!!!!!")
 			job, ok := obj.(*batch.Job)
 			if !ok {
 				log.Errorln("Invalid Job object")
@@ -53,7 +52,6 @@ func (c *Controller) initWatcher() {
 			}
 		},
 		UpdateFunc: func(_, obj interface{}) {
-			fmt.Println(">>>>>>>>>>>>>>>>>>> Updated!!!!!!!!!!!!!!!")
 			job, ok := obj.(*batch.Job)
 			if !ok {
 				log.Errorln("Invalid Job object")
@@ -70,7 +68,6 @@ func (c *Controller) initWatcher() {
 }
 
 func (c *Controller) runWatcher(threadiness int, stopCh chan struct{}) {
-	fmt.Println(">>>>>>>>>>>>>>>>>>> Run watch!!!!!!!!!!!")
 	defer runtime.HandleCrash()
 
 	// Let the workers stop when we are done
