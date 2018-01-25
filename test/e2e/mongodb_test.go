@@ -353,9 +353,11 @@ var _ = Describe("MongoDB", func() {
 		})
 
 		Context("Resume", func() {
-			var usedInitSpec bool
+			var usedInitScript bool
+			var usedInitSnapshot bool
 			BeforeEach(func() {
-				usedInitSpec = false
+				usedInitScript = false
+				usedInitSnapshot= false
 			})
 
 			var shouldResumeSuccessfully = func() {
@@ -383,8 +385,12 @@ var _ = Describe("MongoDB", func() {
 				mongodb, err = f.GetMongoDB(mongodb.ObjectMeta)
 				Expect(err).NotTo(HaveOccurred())
 
-				if usedInitSpec {
-					Expect(mongodb.Spec.Init).Should(BeNil())
+				if usedInitScript {
+					Expect(mongodb.Spec.Init).ShouldNot(BeNil())
+					Expect(mongodb.Annotations[api.AnnotationInitialized]).Should(BeEmpty())
+				}
+				if usedInitSnapshot {
+					Expect(mongodb.Spec.Init).ShouldNot(BeNil())
 					Expect(mongodb.Annotations[api.AnnotationInitialized]).ShouldNot(BeEmpty())
 				}
 
@@ -398,7 +404,7 @@ var _ = Describe("MongoDB", func() {
 
 			Context("With Init", func() {
 				BeforeEach(func() {
-					usedInitSpec = true
+										usedInitScript= true
 					mongodb.Spec.Init = &api.InitSpec{
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
@@ -439,13 +445,56 @@ var _ = Describe("MongoDB", func() {
 					_, err = f.GetMongoDB(mongodb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					if usedInitSpec {
-						Expect(mongodb.Spec.Init).Should(BeNil())
-						Expect(mongodb.Annotations[api.AnnotationInitialized]).ShouldNot(BeEmpty())
-					}
-
 					// Delete test resource
 					deleteTestResource()
+				})
+
+				Context("with init", func() {
+					BeforeEach(func() {
+						usedInitScript= true
+						mongodb.Spec.Init = &api.InitSpec{
+							ScriptSource: &api.ScriptSourceSpec{
+								VolumeSource: core.VolumeSource{
+									GitRepo: &core.GitRepoVolumeSource{
+										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+										Directory:  ".",
+									},
+								},
+							},
+						}
+					})
+
+					It("should resume DormantDatabase successfully", func() {
+						// Create and wait for running MongoDB
+						createAndWaitForRunning()
+
+						By("Delete mongodb")
+						f.DeleteMongoDB(mongodb.ObjectMeta)
+
+						By("Wait for mongodb to be paused")
+						f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
+
+						// Create MongoDB object again to resume it
+						By("Create MongoDB: " + mongodb.Name)
+						err = f.CreateMongoDB(mongodb)
+						Expect(err).NotTo(HaveOccurred())
+
+						By("Wait for DormantDatabase to be deleted")
+						f.EventuallyDormantDatabase(mongodb.ObjectMeta).Should(BeFalse())
+
+						By("Wait for Running mongodb")
+						f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+
+						_, err := f.GetMongoDB(mongodb.ObjectMeta)
+						Expect(err).NotTo(HaveOccurred())
+
+						// Delete test resource
+						deleteTestResource()
+						if usedInitScript{
+							Expect(mongodb.Spec.Init).ShouldNot(BeNil())
+							Expect(mongodb.Annotations[api.AnnotationInitialized]).ShouldNot(BeEmpty())
+						}
+					})
 				})
 
 				Context("With Snapshot Init", func() {
@@ -455,6 +504,7 @@ var _ = Describe("MongoDB", func() {
 					})
 					BeforeEach(func() {
 						skipDataCheck = false
+						usedInitSnapshot= true
 						secret = f.SecretForGCSBackend()
 						snapshot.Spec.StorageSecretName = secret.Name
 						snapshot.Spec.GCS = &api.GCSSpec{
@@ -462,7 +512,7 @@ var _ = Describe("MongoDB", func() {
 						}
 						snapshot.Spec.DatabaseName = mongodb.Name
 					})
-					FIt("should resume successfully", func() {
+					It("should resume successfully", func() {
 						// Create and wait for running MongoDB
 						createAndWaitForRunning()
 
@@ -509,6 +559,10 @@ var _ = Describe("MongoDB", func() {
 
 						By("Wait for Running mongodb")
 						f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+						if usedInitSnapshot {
+							Expect(mongodb.Spec.Init).ShouldNot(BeNil())
+							Expect(mongodb.Annotations[api.AnnotationInitialized]).ShouldNot(BeEmpty())
+						}
 
 						mongodb, err = f.GetMongoDB(mongodb.ObjectMeta)
 						Expect(err).NotTo(HaveOccurred())
@@ -527,7 +581,7 @@ var _ = Describe("MongoDB", func() {
 
 				Context("Multiple times with init", func() {
 					BeforeEach(func() {
-						usedInitSpec = true
+						usedInitScript= true
 						mongodb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
@@ -551,7 +605,7 @@ var _ = Describe("MongoDB", func() {
 						}
 					})
 
-					FIt("should resume DormantDatabase successfully", func() {
+					It("should resume DormantDatabase successfully", func() {
 						// Create and wait for running MongoDB
 						createAndWaitForRunning()
 
@@ -585,7 +639,7 @@ var _ = Describe("MongoDB", func() {
 			})
 		})
 
-		Context("SnapshotScheduler", func() {
+		XContext("SnapshotScheduler", func() {
 			AfterEach(func() {
 				f.DeleteSecret(secret.ObjectMeta)
 			})

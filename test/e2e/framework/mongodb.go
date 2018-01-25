@@ -87,7 +87,7 @@ func (f *Framework) CleanMongoDB() {
 	}
 	for _, e := range mongodbList.Items {
 		util.PatchMongoDB(f.extClient, &e, func(in *api.MongoDB) *api.MongoDB {
-			in.ObjectMeta = core_util.RemoveFinalizer(in.ObjectMeta, "kubedb.com")
+			in.ObjectMeta = core_util.RemoveFinalizer(in.ObjectMeta, api.GenericKey)
 			return in
 		})
 	}

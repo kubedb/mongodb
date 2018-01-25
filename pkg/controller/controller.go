@@ -143,7 +143,6 @@ func (c *Controller) watchDatabaseSnapshot() {
 	listOptions := metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(labelMap).String(),
 	}
-
 	snapc.NewController(c.Controller, c, listOptions, c.syncPeriod).Run()
 }
 

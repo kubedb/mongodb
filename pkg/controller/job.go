@@ -24,7 +24,7 @@ func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapsh
 		api.LabelDatabaseKind: api.ResourceKindMongoDB,
 	}
 	jobAnnotation := map[string]string{
-		api.AnnotationJobType: snapshotProcessRestore,
+		api.AnnotationJobType: api.JobTypeRestore,
 	}
 
 	backupSpec := snapshot.Spec.SnapshotStorageSpec
@@ -50,9 +50,9 @@ func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapsh
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion: api.SchemeGroupVersion.String(),
-					Kind:       api.ResourceKindSnapshot,
-					Name:       snapshot.Name,
-					UID:        snapshot.UID,
+					Kind:       api.ResourceKindMongoDB,
+					Name:       mongodb.Name,
+					UID:        mongodb.UID,
 				},
 			},
 		},
@@ -149,7 +149,7 @@ func (c *Controller) getSnapshotterJob(snapshot *api.Snapshot) (*batch.Job, erro
 		api.LabelDatabaseKind: api.ResourceKindMongoDB,
 	}
 	jobAnnotation := map[string]string{
-		api.AnnotationJobType: snapshotProcessBackup,
+		api.AnnotationJobType: api.JobTypeBackup,
 	}
 	backupSpec := snapshot.Spec.SnapshotStorageSpec
 	bucket, err := backupSpec.Container()

@@ -99,11 +99,7 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 		in.Annotations = core_util.UpsertMap(in.Annotations, mongodb.StatefulSetAnnotations())
 
 		in.Spec.Replicas = types.Int32P(1)
-		in.Spec.Template = core.PodTemplateSpec{
-			ObjectMeta: metav1.ObjectMeta{
-				Labels: in.ObjectMeta.Labels,
-			},
-		}
+		in.Spec.Template.ObjectMeta.Labels = in.ObjectMeta.Labels
 
 		in.Spec.Template.Spec.Containers = core_util.UpsertContainer(in.Spec.Template.Spec.Containers, core.Container{
 			Name:  api.ResourceNameMongoDB,
@@ -165,9 +161,11 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 
 		in.Spec.Template.Spec.NodeSelector = mongodb.Spec.NodeSelector
 		in.Spec.Template.Spec.Affinity = mongodb.Spec.Affinity
-		in.Spec.Template.Spec.SchedulerName = mongodb.Spec.SchedulerName
 		in.Spec.Template.Spec.Tolerations = mongodb.Spec.Tolerations
 		in.Spec.Template.Spec.ImagePullSecrets = mongodb.Spec.ImagePullSecrets
+		if mongodb.Spec.SchedulerName != "" {
+			in.Spec.Template.Spec.SchedulerName = mongodb.Spec.SchedulerName
+		}
 
 		in.Spec.UpdateStrategy.Type = apps.RollingUpdateStatefulSetStrategyType
 		return in

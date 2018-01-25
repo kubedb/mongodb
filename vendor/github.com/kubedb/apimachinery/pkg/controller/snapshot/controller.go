@@ -19,9 +19,11 @@ import (
 
 type Snapshotter interface {
 	ValidateSnapshot(*api.Snapshot) error
-	GetDatabase(*api.Snapshot) (runtime.Object, error)
+	GetDatabase(metav1.ObjectMeta) (runtime.Object, error)
 	GetSnapshotter(*api.Snapshot) (*batch.Job, error)
 	WipeOutSnapshot(*api.Snapshot) error
+	SetDatabaseStatus(metav1.ObjectMeta, api.DatabasePhase, string) error
+	UpsertDatabaseAnnotation(metav1.ObjectMeta, map[string]string) error
 }
 
 type Controller struct {
@@ -57,7 +59,7 @@ func NewController(
 		listOption:     listOption,
 		eventRecorder:  eventer.NewEventRecorder(controller.Client, "Snapshot Controller"),
 		syncPeriod:     syncPeriod,
-		maxNumRequests: 1,
+		maxNumRequests: 5,
 	}
 }
 
@@ -72,11 +74,10 @@ func (c *Controller) Run() {
 	// Watch Snapshot with provided ListOption
 	go c.watchSnapshot()
 	// Watch Job with provided ListOption
-	go jobc.NewController(c.Controller, c.listOption, c.syncPeriod).Run()
+	go jobc.NewController(c.Controller, c.snapshotter, c.listOption, c.syncPeriod).Run()
 }
 
 func (c *Controller) watchSnapshot() {
-
 	c.initWatcher()
 
 	stop := make(chan struct{})

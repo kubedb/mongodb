@@ -35,7 +35,7 @@ var (
 		OperatorNamespace: namespace(),
 		GoverningService:  "kubedb",
 		Address:           ":8080",
-		MaxNumRequeues:    5,
+		MaxNumRequeues:    1,
 		EnableAnalytics:   true,
 		AnalyticsClientID: analytics.ClientID(),
 	}
