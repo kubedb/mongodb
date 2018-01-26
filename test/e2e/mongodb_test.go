@@ -304,6 +304,16 @@ var _ = Describe("MongoDB", func() {
 				})
 
 				BeforeEach(func() {
+					if f.StorageClass != "" {
+						mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
+							Resources: core.ResourceRequirements{
+								Requests: core.ResourceList{
+									core.ResourceStorage: resource.MustParse("50Mi"),
+								},
+							},
+							StorageClassName: types.StringP(f.StorageClass),
+						}
+					}
 					secret = f.SecretForGCSBackend()
 					snapshot.Spec.StorageSecretName = secret.Name
 					snapshot.Spec.GCS = &api.GCSSpec{
@@ -312,7 +322,7 @@ var _ = Describe("MongoDB", func() {
 					snapshot.Spec.DatabaseName = mongodb.Name
 				})
 
-				It("should run successfully", func() {
+				FIt("should run successfully", func() {
 					// Create and wait for running MongoDB
 					createAndWaitForRunning()
 
@@ -333,6 +343,16 @@ var _ = Describe("MongoDB", func() {
 
 					By("Create mongodb from snapshot")
 					mongodb = f.MongoDB()
+					if f.StorageClass != "" {
+						mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
+							Resources: core.ResourceRequirements{
+								Requests: core.ResourceList{
+									core.ResourceStorage: resource.MustParse("50Mi"),
+								},
+							},
+							StorageClassName: types.StringP(f.StorageClass),
+						}
+					}
 					mongodb.Spec.Init = &api.InitSpec{
 						SnapshotSource: &api.SnapshotSourceSpec{
 							Namespace: snapshot.Namespace,
@@ -359,6 +379,18 @@ var _ = Describe("MongoDB", func() {
 			BeforeEach(func() {
 				usedInitScript = false
 				usedInitSnapshot = false
+
+				if f.StorageClass == "" {
+					skipMessage = "Missing StorageClassName. Provide as flag to test this."
+				}
+				mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
+					Resources: core.ResourceRequirements{
+						Requests: core.ResourceList{
+							core.ResourceStorage: resource.MustParse("50Mi"),
+						},
+					},
+					StorageClassName: types.StringP(f.StorageClass),
+				}
 			})
 
 			var shouldResumeSuccessfully = func() {
@@ -504,7 +536,7 @@ var _ = Describe("MongoDB", func() {
 					})
 				})
 
-				Context("With Snapshot Init", func() {
+				FContext("With Snapshot Init", func() {
 					var skipDataCheck bool
 					AfterEach(func() {
 						f.DeleteSecret(secret.ObjectMeta)
@@ -540,6 +572,17 @@ var _ = Describe("MongoDB", func() {
 
 						By("Create mongodb from snapshot")
 						mongodb = f.MongoDB()
+						mongodb = f.MongoDB()
+						if f.StorageClass != "" {
+							mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
+								Resources: core.ResourceRequirements{
+									Requests: core.ResourceList{
+										core.ResourceStorage: resource.MustParse("50Mi"),
+									},
+								},
+								StorageClassName: types.StringP(f.StorageClass),
+							}
+						}
 						mongodb.Spec.Init = &api.InitSpec{
 							SnapshotSource: &api.SnapshotSourceSpec{
 								Namespace: snapshot.Namespace,

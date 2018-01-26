@@ -2,11 +2,14 @@ package framework
 
 import (
 	"github.com/appscode/go/crypto/rand"
+	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	cs "github.com/kubedb/apimachinery/client/typed/kubedb/v1alpha1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 type Framework struct {
+	restConfig   *rest.Config
 	kubeClient   kubernetes.Interface
 	extClient    cs.KubedbV1alpha1Interface
 	namespace    string
@@ -14,12 +17,18 @@ type Framework struct {
 	StorageClass string
 }
 
-func New(kubeClient kubernetes.Interface, extClient cs.KubedbV1alpha1Interface, storageClass string) *Framework {
+func New(
+	restConfig *rest.Config,
+	kubeClient kubernetes.Interface,
+	extClient cs.KubedbV1alpha1Interface,
+	storageClass string,
+) *Framework {
 	return &Framework{
+		restConfig:   restConfig,
 		kubeClient:   kubeClient,
 		extClient:    extClient,
 		name:         "mongodb-operator",
-		namespace:    rand.WithUniqSuffix("mongodb"),
+		namespace:    rand.WithUniqSuffix(api.ResourceNameMongoDB),
 		StorageClass: storageClass,
 	}
 }

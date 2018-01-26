@@ -1,5 +1,5 @@
 hash: a0a77f9c8a083bf501084608580dff920383f322b5823d4904cb25d60b79e509
-updated: 2018-01-26T12:56:11.121843995+06:00
+updated: 2018-01-26T18:52:12.555949794+06:00
 imports:
 - name: cloud.google.com/go
   version: fe3d41e1ecb2ce36ad3a979037c9b9a2b726226f
@@ -39,6 +39,7 @@ imports:
   - core/v1
   - meta
   - tools/analytics
+  - tools/portforward
 - name: github.com/appscode/mergo
   version: e3000cb3d28c72b837601cac94debd91032d19fe
 - name: github.com/appscode/osm
@@ -118,6 +119,10 @@ imports:
   - uuid
 - name: github.com/docker/libtrust
   version: aabc10ec26b754e797f9028f4589c5b7bd90dc20
+- name: github.com/docker/spdystream
+  version: 449fdfce4d962303d702fec724ef0ad181c92528
+  subpackages:
+  - spdy
 - name: github.com/emicklei/go-restful
   version: ff4f55a206334ef123e4f79bbf348980da81ca46
   subpackages:
@@ -128,6 +133,10 @@ imports:
   version: 944e07253867aacae43c04b2e6a239005443f33a
 - name: github.com/ghodss/yaml
   version: 0ca9ea5df5451ffdf184b4428c902747c2c11cd7
+- name: github.com/go-bongo/bongo
+  version: b02e65079c431db9bed1118b72b1679cc8f624e0
+- name: github.com/go-bongo/go-dotaccess
+  version: ae070a2d2a38fd7233e255ded21fb26fe36b4796
 - name: github.com/go-ini/ini
   version: d3de07a94d22b4a0972deb4b96d790c2c0ce8333
 - name: github.com/go-openapi/jsonpointer
@@ -222,7 +231,7 @@ imports:
 - name: github.com/juju/ratelimit
   version: 5b9ff866471762aa2ab2dced63c9fb6f53921342
 - name: github.com/kubedb/apimachinery
-  version: e9a30c23ecf5f39c963364e5a229766575193716
+  version: 9c49c3997c24fffb116a24f852d085877a81f518
   subpackages:
   - apis/kubedb
   - apis/kubedb/v1alpha1
@@ -259,6 +268,8 @@ imports:
   - signal
 - name: github.com/ncw/swift
   version: ae9f0ea1605b9aa6434ed5c731ca35d83ba67c55
+- name: github.com/oleiade/reflections
+  version: 0e86b3c98b2ff33e30c85cfe97d9a63d439fe7eb
 - name: github.com/onsi/gomega
   version: c893efa28eb45626cdaa76c9f653b62488858837
   subpackages:
@@ -400,6 +411,8 @@ imports:
   subpackages:
   - bson
   - internal/json
+  - internal/sasl
+  - internal/scram
 - name: gopkg.in/robfig/cron.v2
   version: ca60c6d796d4b1f7bb2a8fd5271d8a59aeffb4bf
   repo: https://github.com/appscode/cron.git
@@ -473,6 +486,8 @@ imports:
   - pkg/util/diff
   - pkg/util/errors
   - pkg/util/framer
+  - pkg/util/httpstream
+  - pkg/util/httpstream/spdy
   - pkg/util/intstr
   - pkg/util/json
   - pkg/util/jsonmergepatch
@@ -488,6 +503,7 @@ imports:
   - pkg/version
   - pkg/watch
   - third_party/forked/golang/json
+  - third_party/forked/golang/netutil
   - third_party/forked/golang/reflect
 - name: k8s.io/client-go
   version: 7656f45ccb3db63d177f734a9e5f6a116f08ad4f
@@ -531,9 +547,11 @@ imports:
   - tools/clientcmd/api/v1
   - tools/metrics
   - tools/pager
+  - tools/portforward
   - tools/record
   - tools/reference
   - transport
+  - transport/spdy
   - util/cert
   - util/flowcontrol
   - util/homedir
