@@ -326,6 +326,9 @@ var _ = Describe("MongoDB", func() {
 					// Create and wait for running MongoDB
 					createAndWaitForRunning()
 
+					By("Insert Document Inside DB")
+					f.EventuallyInsertDocument(mongodb.ObjectMeta).Should(BeTrue())
+
 					By("Create Secret")
 					f.CreateSecret(secret)
 
@@ -363,6 +366,9 @@ var _ = Describe("MongoDB", func() {
 					// Create and wait for running MongoDB
 					createAndWaitForRunning()
 
+					By("Checking Inserted Document")
+					f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
+
 					// Delete test resource
 					deleteTestResource()
 					mongodb = oldMongoDB
@@ -370,7 +376,6 @@ var _ = Describe("MongoDB", func() {
 					deleteTestResource()
 				})
 			})
-
 		})
 
 		Context("Resume", func() {
@@ -536,7 +541,7 @@ var _ = Describe("MongoDB", func() {
 					})
 				})
 
-				FContext("With Snapshot Init", func() {
+				Context("With Snapshot Init", func() {
 					var skipDataCheck bool
 					AfterEach(func() {
 						f.DeleteSecret(secret.ObjectMeta)

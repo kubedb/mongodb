@@ -38,7 +38,7 @@ func (f *Framework) GetMongoDBClient(meta metav1.ObjectMeta) (*bongo.Connection,
 	pass, err := f.GetMongoDBRootPassword(mongodb)
 
 	config := &bongo.Config{
-		ConnectionString: fmt.Sprintf("mongodb://%s:%s@127.0.0.1:27017", user, pass),
+		ConnectionString: fmt.Sprintf("mongodb://%s:%s@127.0.0.1:%v", user, pass, tunnel.Local),
 		Database:         "kubedb",
 	}
 
@@ -53,7 +53,7 @@ func (f *Framework) EventuallyInsertDocument(meta metav1.ObjectMeta) GomegaAsync
 			if err != nil {
 				return false
 			}
-			defer en.Session.Close()
+			//defer en.Session.Close()
 
 			if err := en.Session.Ping(); err != nil {
 				return false
