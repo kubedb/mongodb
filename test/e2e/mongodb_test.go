@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/appscode/go/types"
+	meta_util "github.com/appscode/kutil/meta"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/mongodb/test/e2e/framework"
 	"github.com/kubedb/mongodb/test/e2e/matcher"
@@ -357,7 +358,7 @@ var _ = Describe("MongoDB", func() {
 			var usedInitSnapshot bool
 			BeforeEach(func() {
 				usedInitScript = false
-				usedInitSnapshot= false
+				usedInitSnapshot = false
 			})
 
 			var shouldResumeSuccessfully = func() {
@@ -387,24 +388,26 @@ var _ = Describe("MongoDB", func() {
 
 				if usedInitScript {
 					Expect(mongodb.Spec.Init).ShouldNot(BeNil())
-					Expect(mongodb.Annotations[api.AnnotationInitialized]).Should(BeEmpty())
+					_, err := meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized)
+					Expect(err).To(HaveOccurred())
 				}
 				if usedInitSnapshot {
 					Expect(mongodb.Spec.Init).ShouldNot(BeNil())
-					Expect(mongodb.Annotations[api.AnnotationInitialized]).ShouldNot(BeEmpty())
+					_, err := meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized)
+					Expect(err).NotTo(HaveOccurred())
 				}
 
 				// Delete test resource
 				deleteTestResource()
 			}
 
-			Context("Without Init", func() {
+			XContext("Without Init", func() {
 				It("should resume DormantDatabase successfully", shouldResumeSuccessfully)
 			})
 
 			Context("With Init", func() {
 				BeforeEach(func() {
-										usedInitScript= true
+					usedInitScript = true
 					mongodb.Spec.Init = &api.InitSpec{
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
@@ -451,7 +454,7 @@ var _ = Describe("MongoDB", func() {
 
 				Context("with init", func() {
 					BeforeEach(func() {
-						usedInitScript= true
+						usedInitScript = true
 						mongodb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
@@ -490,9 +493,13 @@ var _ = Describe("MongoDB", func() {
 
 						// Delete test resource
 						deleteTestResource()
-						if usedInitScript{
+						if usedInitScript {
 							Expect(mongodb.Spec.Init).ShouldNot(BeNil())
-							Expect(mongodb.Annotations[api.AnnotationInitialized]).ShouldNot(BeEmpty())
+							if usedInitScript {
+								Expect(mongodb.Spec.Init).ShouldNot(BeNil())
+								_, err := meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized)
+								Expect(err).To(HaveOccurred())
+							}
 						}
 					})
 				})
@@ -504,7 +511,7 @@ var _ = Describe("MongoDB", func() {
 					})
 					BeforeEach(func() {
 						skipDataCheck = false
-						usedInitSnapshot= true
+						usedInitSnapshot = true
 						secret = f.SecretForGCSBackend()
 						snapshot.Spec.StorageSecretName = secret.Name
 						snapshot.Spec.GCS = &api.GCSSpec{
@@ -559,13 +566,15 @@ var _ = Describe("MongoDB", func() {
 
 						By("Wait for Running mongodb")
 						f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
-						if usedInitSnapshot {
-							Expect(mongodb.Spec.Init).ShouldNot(BeNil())
-							Expect(mongodb.Annotations[api.AnnotationInitialized]).ShouldNot(BeEmpty())
-						}
 
 						mongodb, err = f.GetMongoDB(mongodb.ObjectMeta)
 						Expect(err).NotTo(HaveOccurred())
+
+						if usedInitSnapshot {
+							Expect(mongodb.Spec.Init).ShouldNot(BeNil())
+							_, err := meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized)
+							Expect(err).NotTo(HaveOccurred())
+						}
 
 						// Delete test resource
 						deleteTestResource()
@@ -581,7 +590,7 @@ var _ = Describe("MongoDB", func() {
 
 				Context("Multiple times with init", func() {
 					BeforeEach(func() {
-						usedInitScript= true
+						usedInitScript = true
 						mongodb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
@@ -630,6 +639,12 @@ var _ = Describe("MongoDB", func() {
 
 							_, err := f.GetMongoDB(mongodb.ObjectMeta)
 							Expect(err).NotTo(HaveOccurred())
+
+							if usedInitScript {
+								Expect(mongodb.Spec.Init).ShouldNot(BeNil())
+								_, err := meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized)
+								Expect(err).To(HaveOccurred())
+							}
 						}
 
 						// Delete test resource
@@ -639,7 +654,7 @@ var _ = Describe("MongoDB", func() {
 			})
 		})
 
-		XContext("SnapshotScheduler", func() {
+		Context("SnapshotScheduler", func() {
 			AfterEach(func() {
 				f.DeleteSecret(secret.ObjectMeta)
 			})

@@ -15,7 +15,6 @@ import (
 	"github.com/kubedb/apimachinery/pkg/eventer"
 	"github.com/kubedb/apimachinery/pkg/storage"
 	"github.com/kubedb/mongodb/pkg/validator"
-	"github.com/the-redback/go-oneliners"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -128,6 +127,21 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 		return nil
 	}
 
+	ms, _, err := util.PatchMongoDB(c.ExtClient, mongodb, func(in *api.MongoDB) *api.MongoDB {
+		in.Status.Phase = api.DatabasePhaseRunning
+		return in
+	})
+	if err != nil {
+		c.recorder.Eventf(
+			mongodb,
+			core.EventTypeWarning,
+			eventer.EventReasonFailedToUpdate,
+			err.Error(),
+		)
+		return err
+	}
+	mongodb.Status = ms.Status
+
 	// Ensure Schedule backup
 	c.ensureBackupScheduler(mongodb)
 
@@ -142,6 +156,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 		log.Errorln(err)
 		return nil
 	}
+
 	return nil
 }
 
@@ -223,7 +238,9 @@ func (c *Controller) matchDormantDatabase(mongodb *api.MongoDB) error {
 		return sendEvent("MongoDB spec mismatches with OriginSpec in DormantDatabases")
 	}
 
-	if _, err := meta_util.GetString(dormantDb.Spec.Origin.Annotations, api.AnnotationInitialized); err != kutil.ErrNotFound {
+	if _, err := meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized); err == kutil.ErrNotFound &&
+		mongodb.Spec.Init != nil &&
+		mongodb.Spec.Init.SnapshotSource != nil {
 		mg, _, err := util.PatchMongoDB(c.ExtClient, mongodb, func(in *api.MongoDB) *api.MongoDB {
 			in.Annotations = core_util.UpsertMap(in.Annotations, map[string]string{
 				api.AnnotationInitialized: "",

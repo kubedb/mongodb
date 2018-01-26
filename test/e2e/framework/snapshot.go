@@ -82,7 +82,7 @@ func (f *Framework) EventuallySnapshotCount(meta metav1.ObjectMeta) GomegaAsyncA
 
 			return len(snapshotList.Items)
 		},
-		time.Minute*10,
+		time.Minute*15,
 		time.Second*5,
 	)
 }
@@ -138,5 +138,11 @@ func (f *Framework) CleanSnapshot() {
 			in.ObjectMeta = core_util.RemoveFinalizer(in.ObjectMeta, api.GenericKey)
 			return in
 		})
+	}
+	deletePolicy := metav1.DeletePropagationBackground
+	if err := f.extClient.Snapshots(f.namespace).DeleteCollection(&metav1.DeleteOptions{
+		PropagationPolicy: &deletePolicy,
+	}, metav1.ListOptions{}); err != nil {
+		return
 	}
 }
