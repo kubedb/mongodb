@@ -104,7 +104,41 @@ var _ = Describe("MongoDB", func() {
 						StorageClassName: types.StringP(f.StorageClass),
 					}
 				})
-				It("should run successfully", shouldSuccessfullyRunning)
+				It("should run successfully", func() {
+					if skipMessage != "" {
+						Skip(skipMessage)
+					}
+					// Create MySQL
+					createAndWaitForRunning()
+
+					By("Insert Document Inside DB")
+					f.EventuallyInsertDocument(mongodb.ObjectMeta).Should(BeTrue())
+
+					By("Checking Inserted Document")
+					f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
+
+					By("Delete mongodb")
+					err = f.DeleteMongoDB(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Wait for mongodb to be paused")
+					f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
+
+					_, err = f.PatchDormantDatabase(mongodb.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
+						in.Spec.Resume = true
+						return in
+					})
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Wait for DormantDatabase to be deleted")
+					f.EventuallyDormantDatabase(mongodb.ObjectMeta).Should(BeFalse())
+
+					By("Wait for Running mongodb")
+					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+
+					By("Checking Inserted Document")
+					f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
+				})
 			})
 		})
 
@@ -330,6 +364,9 @@ var _ = Describe("MongoDB", func() {
 
 					By("Insert Document Inside DB")
 					f.EventuallyInsertDocument(mongodb.ObjectMeta).Should(BeTrue())
+
+					By("Checking Inserted Document")
+					f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
 
 					By("Create Secret")
 					f.CreateSecret(secret)
@@ -562,6 +599,12 @@ var _ = Describe("MongoDB", func() {
 						// Create and wait for running MongoDB
 						createAndWaitForRunning()
 
+						By("Insert Document Inside DB")
+						f.EventuallyInsertDocument(mongodb.ObjectMeta).Should(BeTrue())
+
+						By("Checking Inserted Document")
+						f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
+
 						By("Create Secret")
 						f.CreateSecret(secret)
 
@@ -600,6 +643,9 @@ var _ = Describe("MongoDB", func() {
 						// Create and wait for running MongoDB
 						createAndWaitForRunning()
 
+						By("Checking Inserted Document")
+						f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
+
 						By("Delete mongodb")
 						f.DeleteMongoDB(mongodb.ObjectMeta)
 
@@ -619,6 +665,9 @@ var _ = Describe("MongoDB", func() {
 
 						mongodb, err = f.GetMongoDB(mongodb.ObjectMeta)
 						Expect(err).NotTo(HaveOccurred())
+
+						By("Checking Inserted Document")
+						f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
 
 						if usedInitSnapshot {
 							Expect(mongodb.Spec.Init).ShouldNot(BeNil())
