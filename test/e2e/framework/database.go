@@ -60,8 +60,8 @@ func (f *Framework) EventuallyInsertDocument(meta metav1.ObjectMeta) GomegaAsync
 			}
 
 			person := &KubedbTable{
-				FirstName: meta.Name,
-				LastName:  meta.Namespace,
+				FirstName: "kubernetes",
+				LastName:  "database",
 			}
 
 			if err := en.Collection("people").Save(person); err != nil {
@@ -90,7 +90,7 @@ func (f *Framework) EventuallyDocumentExists(meta metav1.ObjectMeta) GomegaAsync
 			}
 			person := &KubedbTable{}
 
-			if err := en.Collection("people").FindOne(bson.M{"firstName": meta.Name}, person); err != nil {
+			if err := en.Collection("people").FindOne(bson.M{"firstname": "kubernetes"}, person); err != nil {
 				return false
 			} else {
 				return true

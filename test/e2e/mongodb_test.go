@@ -280,6 +280,18 @@ var _ = Describe("MongoDB", func() {
 		})
 
 		Context("Initialize", func() {
+			BeforeEach(func() {
+				if f.StorageClass != "" {
+					mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
+						Resources: core.ResourceRequirements{
+							Requests: core.ResourceList{
+								core.ResourceStorage: resource.MustParse("50Mi"),
+							},
+						},
+						StorageClassName: types.StringP(f.StorageClass),
+					}
+				}
+			})
 			Context("With Script", func() {
 				BeforeEach(func() {
 					mongodb.Spec.Init = &api.InitSpec{
@@ -304,16 +316,6 @@ var _ = Describe("MongoDB", func() {
 				})
 
 				BeforeEach(func() {
-					if f.StorageClass != "" {
-						mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
-							Resources: core.ResourceRequirements{
-								Requests: core.ResourceList{
-									core.ResourceStorage: resource.MustParse("50Mi"),
-								},
-							},
-							StorageClassName: types.StringP(f.StorageClass),
-						}
-					}
 					secret = f.SecretForGCSBackend()
 					snapshot.Spec.StorageSecretName = secret.Name
 					snapshot.Spec.GCS = &api.GCSSpec{
@@ -322,7 +324,7 @@ var _ = Describe("MongoDB", func() {
 					snapshot.Spec.DatabaseName = mongodb.Name
 				})
 
-				FIt("should run successfully", func() {
+				It("should run successfully", func() {
 					// Create and wait for running MongoDB
 					createAndWaitForRunning()
 
@@ -350,7 +352,7 @@ var _ = Describe("MongoDB", func() {
 						mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
 							Resources: core.ResourceRequirements{
 								Requests: core.ResourceList{
-									core.ResourceStorage: resource.MustParse("50Mi"),
+									core.ResourceStorage: resource.MustParse("500Mi"),
 								},
 							},
 							StorageClassName: types.StringP(f.StorageClass),
@@ -391,7 +393,7 @@ var _ = Describe("MongoDB", func() {
 				mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
 					Resources: core.ResourceRequirements{
 						Requests: core.ResourceList{
-							core.ResourceStorage: resource.MustParse("50Mi"),
+							core.ResourceStorage: resource.MustParse("500Mi"),
 						},
 					},
 					StorageClassName: types.StringP(f.StorageClass),
@@ -582,7 +584,7 @@ var _ = Describe("MongoDB", func() {
 							mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
 								Resources: core.ResourceRequirements{
 									Requests: core.ResourceList{
-										core.ResourceStorage: resource.MustParse("50Mi"),
+										core.ResourceStorage: resource.MustParse("500Mi"),
 									},
 								},
 								StorageClassName: types.StringP(f.StorageClass),
@@ -655,7 +657,7 @@ var _ = Describe("MongoDB", func() {
 						mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
 							Resources: core.ResourceRequirements{
 								Requests: core.ResourceList{
-									core.ResourceStorage: resource.MustParse("50Mi"),
+									core.ResourceStorage: resource.MustParse("500Mi"),
 								},
 							},
 							StorageClassName: types.StringP(f.StorageClass),
@@ -759,7 +761,7 @@ var _ = Describe("MongoDB", func() {
 						mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
 							Resources: core.ResourceRequirements{
 								Requests: core.ResourceList{
-									core.ResourceStorage: resource.MustParse("50Mi"),
+									core.ResourceStorage: resource.MustParse("500Mi"),
 								},
 							},
 							StorageClassName: types.StringP(f.StorageClass),
