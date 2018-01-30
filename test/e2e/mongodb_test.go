@@ -138,6 +138,8 @@ var _ = Describe("MongoDB", func() {
 
 					By("Checking Inserted Document")
 					f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
+
+					deleteTestResource()
 				})
 			})
 		})
