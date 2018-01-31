@@ -53,7 +53,7 @@ func (f *Framework) EventuallyInsertDocument(meta metav1.ObjectMeta) GomegaAsync
 			if err != nil {
 				return false
 			}
-			//defer en.Session.Close()
+			defer en.Session.Close()
 
 			if err := en.Session.Ping(); err != nil {
 				return false
