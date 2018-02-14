@@ -2,7 +2,6 @@ package controller
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/appscode/go/log"
 	mon_api "github.com/appscode/kube-mon/api"
@@ -21,7 +20,7 @@ import (
 )
 
 func (c *Controller) create(mongodb *api.MongoDB) error {
-	if err := validator.ValidateMongoDB(c.Client, mongodb, &c.opt.Docker); err != nil {
+	if err := validator.ValidateMongoDB(c.Client, mongodb); err != nil {
 		c.recorder.Event(
 			mongodb.ObjectReference(),
 			core.EventTypeWarning,
@@ -236,7 +235,7 @@ func (c *Controller) matchDormantDatabase(mongodb *api.MongoDB) error {
 	// Skip checking doNotPause
 	drmnOriginSpec.DoNotPause = originalSpec.DoNotPause
 
-	if !reflect.DeepEqual(drmnOriginSpec, &originalSpec) {
+	if !meta_util.Equal(drmnOriginSpec, originalSpec) {
 		return sendEvent("MongoDB spec mismatches with OriginSpec in DormantDatabases")
 	}
 

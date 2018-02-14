@@ -5,29 +5,23 @@ import (
 
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	amv "github.com/kubedb/apimachinery/pkg/validator"
-	dr "github.com/kubedb/mongodb/pkg/docker"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes"
 )
 
 var (
-	mongodbVersions = []string{"3.4", "3.6"}
+	mongodbVersions = sets.NewString("3.4", "3.6")
 )
 
-func ValidateMongoDB(client kubernetes.Interface, mongodb *api.MongoDB, docker *dr.Docker) error {
+func ValidateMongoDB(client kubernetes.Interface, mongodb *api.MongoDB) error {
 	if mongodb.Spec.Version == "" {
 		return fmt.Errorf(`object 'Version' is missing in '%v'`, mongodb.Spec)
 	}
 
 	// check MongoDB version validation
-	exists := false
-	for _, ver := range mongodbVersions {
-		if ver == string(mongodb.Spec.Version) {
-			exists = true
-		}
-	}
-	if !exists {
-		return fmt.Errorf(`image %s not found`, docker.GetImageWithTag(mongodb))
+	if !mongodbVersions.Has(string(mongodb.Spec.Version)) {
+		return fmt.Errorf(`KubeDB doesn't support MongoDB version: %s`, string(mongodb.Spec.Version))
 	}
 
 	if mongodb.Spec.Storage != nil {
@@ -56,7 +50,6 @@ func ValidateMongoDB(client kubernetes.Interface, mongodb *api.MongoDB, docker *
 		if err := amv.ValidateMonitorSpec(monitorSpec); err != nil {
 			return err
 		}
-
 	}
 	return nil
 }
