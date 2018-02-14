@@ -1,5 +1,5 @@
 hash: cb8c3ea947e4d26e88e43e19891138432fb48578c67e8414a148924f41fd1ad6
-updated: 2018-01-31T17:14:23.882299093+06:00
+updated: 2018-02-14T14:58:58.917761816+06:00
 imports:
 - name: cloud.google.com/go
   version: fe3d41e1ecb2ce36ad3a979037c9b9a2b726226f
@@ -7,7 +7,7 @@ imports:
   - compute/metadata
   - internal
 - name: github.com/appscode/go
-  version: 99dbf420807d9459b63d1d0bf702537bb7aa976f
+  version: 1be9b0441d73831aaa93df76e42a751caa5dba88
   subpackages:
   - analytics
   - context
@@ -16,23 +16,21 @@ imports:
   - encoding/yaml
   - hold
   - homedir
-  - ioutil
   - log
   - log/golog
   - runtime
-  - sets
   - strings
   - types
   - version
 - name: github.com/appscode/kube-mon
-  version: 6c843f8c6418d421ec6e7d62d7840b114e043334
+  version: 69036cc40b44a7ba97be91d530f421e3adaba407
   subpackages:
   - agents
   - agents/coreosprometheusoperator
   - agents/prometheusbuiltin
   - api
 - name: github.com/appscode/kutil
-  version: eae83543706680e70bf902428b43551cf7f1519b
+  version: 579ddb8cc946c9e5f09d59863a3c5fe27cdc56f5
   subpackages:
   - apiextensions/v1beta1
   - apps/v1beta1
@@ -99,7 +97,7 @@ imports:
   subpackages:
   - pkg/client/monitoring/v1
 - name: github.com/cpuguy83/go-md2man
-  version: 20f5889cbdc3c73dbd2862796665e7c465ade7d1
+  version: 391147570fb4e908f72412ff974ca2f2e66bd93a
   subpackages:
   - md2man
 - name: github.com/davecgh/go-spew
@@ -108,18 +106,6 @@ imports:
   - spew
 - name: github.com/dgrijalva/jwt-go
   version: 01aeca54ebda6e0fbfafd0a524d234159c05ec20
-- name: github.com/docker/distribution
-  version: edc3ab29cdff8694dd6feb85cfeb4b5f1b38ed9c
-  subpackages:
-  - context
-  - digestset
-  - manifest
-  - manifest/schema1
-  - manifest/schema2
-  - reference
-  - uuid
-- name: github.com/docker/libtrust
-  version: aabc10ec26b754e797f9028f4589c5b7bd90dc20
 - name: github.com/docker/spdystream
   version: 449fdfce4d962303d702fec724ef0ad181c92528
   subpackages:
@@ -170,7 +156,7 @@ imports:
 - name: github.com/google/btree
   version: 7d79101e329e5a3adf994758c578dab82b90c017
 - name: github.com/google/go-cmp
-  version: 97aa668b73e764ccdd786bc3ccd2edffe621150e
+  version: 3af367b6b30c263d47e8895973edcca9a49cf029
   subpackages:
   - cmp
   - cmp/internal/diff
@@ -186,10 +172,6 @@ imports:
   - OpenAPIv2
   - compiler
   - extensions
-- name: github.com/gorilla/context
-  version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
-- name: github.com/gorilla/mux
-  version: 0a192a193177452756c362c20087ddafcf6829c4
 - name: github.com/graymeta/stow
   version: 6f2b8867a3fb15cca5507da1d552b55cfe5d07a7
   repo: https://github.com/appscode/stow.git
@@ -212,10 +194,6 @@ imports:
   version: a0d98a5f288019575c6d1f4bb1573fef2d1fcdc4
   subpackages:
   - simplelru
-- name: github.com/heroku/docker-registry-client
-  version: fd2fe803496897db70c236ee244f41487ea92ec2
-  subpackages:
-  - registry
 - name: github.com/howeyc/gopass
   version: bf9dde6d0d2c004a008c27aaee91170c786f6db8
 - name: github.com/imdario/mergo
@@ -242,7 +220,6 @@ imports:
   - pkg/controller/dormant_database
   - pkg/controller/job
   - pkg/controller/snapshot
-  - pkg/docker
   - pkg/eventer
   - pkg/storage
   - pkg/validator
@@ -279,8 +256,6 @@ imports:
   - matchers/support/goraph/node
   - matchers/support/goraph/util
   - types
-- name: github.com/opencontainers/go-digest
-  version: 279bed98673dd5bef374d3b6e4b09e2af76183bf
 - name: github.com/orcaman/concurrent-map
   version: 2ae17bc4c860c83513ee50feb9746f3e50d7515d
 - name: github.com/peterbourgon/diskv
@@ -324,7 +299,7 @@ imports:
 - name: github.com/sirupsen/logrus
   version: f006c2ac4710855cf0f916dd6b77acf6b048dc6e
 - name: github.com/spf13/cobra
-  version: f91529fc609202eededff4de2dc0ba2f662240a3
+  version: be77323fc05148ef091e83b3866c0d47c8e74a8b
   subpackages:
   - doc
 - name: github.com/spf13/pflag
@@ -377,7 +352,7 @@ imports:
   - unicode/norm
   - width
 - name: google.golang.org/api
-  version: ffa5046912fde3e38fd41244f9593c99431ecfa2
+  version: b0284fdf28b5e4d7c9aa5c26e67035437f711304
   subpackages:
   - gensupport
   - googleapi

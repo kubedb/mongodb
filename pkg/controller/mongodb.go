@@ -11,7 +11,6 @@ import (
 	meta_util "github.com/appscode/kutil/meta"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/apimachinery/client/typed/kubedb/v1alpha1/util"
-	"github.com/kubedb/apimachinery/pkg/docker"
 	"github.com/kubedb/apimachinery/pkg/eventer"
 	"github.com/kubedb/apimachinery/pkg/storage"
 	"github.com/kubedb/mongodb/pkg/validator"
@@ -234,6 +233,9 @@ func (c *Controller) matchDormantDatabase(mongodb *api.MongoDB) error {
 		}
 	}
 
+	// Skip checking doNotPause
+	drmnOriginSpec.DoNotPause = originalSpec.DoNotPause
+
 	if !reflect.DeepEqual(drmnOriginSpec, &originalSpec) {
 		return sendEvent("MongoDB spec mismatches with OriginSpec in DormantDatabases")
 	}
@@ -285,10 +287,6 @@ func (c *Controller) initialize(mongodb *api.MongoDB) error {
 		return err
 	}
 	mongodb.Status = mg.Status
-
-	if err := docker.CheckDockerImageVersion(c.opt.Docker.GetToolsImage(mongodb), string(mongodb.Spec.Version)); err != nil {
-		return fmt.Errorf("image %s not found", c.opt.Docker.GetToolsImageWithTag(mongodb))
-	}
 
 	snapshotSource := mongodb.Spec.Init.SnapshotSource
 	// Event for notification that kubernetes objects are creating

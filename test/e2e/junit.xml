@@ -1,24 +1,2 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <testsuite tests="10" failures="3" time="630.744804783">
-      <testcase name="MongoDB Test General - should run successfully" classname="e2e Suite" time="72.603396975"></testcase>
-      <testcase name="MongoDB Test General With PVC should run successfully" classname="e2e Suite" time="86.972791682"></testcase>
-      <testcase name="MongoDB Test DoNotPause should work successfully" classname="e2e Suite" time="0">
-          <skipped></skipped>
-      </testcase>
-      <testcase name="MongoDB Test Snapshot In Local should take Snapshot successfully" classname="e2e Suite" time="103.06767382"></testcase>
-      <testcase name="MongoDB Test Snapshot In Local With PVC should run successfully" classname="e2e Suite" time="65.431683352"></testcase>
-      <testcase name="MongoDB Test Snapshot In S3 should take Snapshot successfully" classname="e2e Suite" time="21.243691024">
-          <failure type="Failure">/home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:261&#xA;Expected&#xA;    &lt;v1alpha1.SnapshotPhase&gt;: Failed&#xA;not to equal&#xA;    &lt;v1alpha1.SnapshotPhase&gt;: Failed&#xA;/home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/framework/snapshot.go:49</failure>
-          <system-out>[BeforeEach] MongoDB&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:35&#xA;[BeforeEach] Snapshot&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:184&#xA;[BeforeEach] In S3&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:253&#xA;[It] should take Snapshot successfully&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:261&#xA;�[1mSTEP�[0m: Create MongoDB: mongodb-qqrknn&#xA;�[1mSTEP�[0m: Wait for Running mongodb&#xA;�[1mSTEP�[0m: Create Secret&#xA;�[1mSTEP�[0m: Create Snapshot&#xA;�[1mSTEP�[0m: Check for Successed snapshot&#xA;[AfterEach] Snapshot&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:180&#xA;</system-out>
-      </testcase>
-      <testcase name="MongoDB Test Snapshot In GCS should take Snapshot successfully" classname="e2e Suite" time="92.403157882"></testcase>
-      <testcase name="MongoDB Test Snapshot In GCS With Init should resume DormantDatabase successfully" classname="e2e Suite" time="76.23842158"></testcase>
-      <testcase name="MongoDB Test Snapshot In Azure should take Snapshot successfully" classname="e2e Suite" time="22.597948759">
-          <failure type="Failure">/home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:302&#xA;Expected&#xA;    &lt;v1alpha1.SnapshotPhase&gt;: Failed&#xA;not to equal&#xA;    &lt;v1alpha1.SnapshotPhase&gt;: Failed&#xA;/home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/framework/snapshot.go:49</failure>
-          <system-out>[BeforeEach] MongoDB&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:35&#xA;[BeforeEach] Snapshot&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:184&#xA;[BeforeEach] In Azure&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:294&#xA;[It] should take Snapshot successfully&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:302&#xA;�[1mSTEP�[0m: Create MongoDB: mongodb-czciqm&#xA;�[1mSTEP�[0m: Wait for Running mongodb&#xA;�[1mSTEP�[0m: Create Secret&#xA;�[1mSTEP�[0m: Create Snapshot&#xA;�[1mSTEP�[0m: Check for Successed snapshot&#xA;[AfterEach] Snapshot&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:180&#xA;</system-out>
-      </testcase>
-      <testcase name="MongoDB Test Snapshot In Swift should take Snapshot successfully" classname="e2e Suite" time="27.052727225">
-          <failure type="Failure">/home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:314&#xA;Expected&#xA;    &lt;v1alpha1.SnapshotPhase&gt;: Failed&#xA;not to equal&#xA;    &lt;v1alpha1.SnapshotPhase&gt;: Failed&#xA;/home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/framework/snapshot.go:49</failure>
-          <system-out>[BeforeEach] MongoDB&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:35&#xA;[BeforeEach] Snapshot&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:184&#xA;[BeforeEach] In Swift&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:306&#xA;[It] should take Snapshot successfully&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:314&#xA;�[1mSTEP�[0m: Create MongoDB: mongodb-itqngq&#xA;�[1mSTEP�[0m: Wait for Running mongodb&#xA;�[1mSTEP�[0m: Create Secret&#xA;�[1mSTEP�[0m: Create Snapshot&#xA;�[1mSTEP�[0m: Check for Successed snapshot&#xA;[AfterEach] Snapshot&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:180&#xA;</system-out>
-      </testcase>
-  </testsuite>
+  <testsuite tests="19" failures="19" time="3.782727242"></testsuite>
