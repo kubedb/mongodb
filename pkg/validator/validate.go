@@ -87,7 +87,7 @@ func matchWithDormantDatabase(extClient cs.KubedbV1alpha1Interface, mongodb *api
 	}
 
 	// Check Origin Spec
-	drmnOriginSpec := dormantDb.Spec.Origin.Spec.MySQL
+	drmnOriginSpec := dormantDb.Spec.Origin.Spec.MongoDB
 	originalSpec := mongodb.Spec
 
 	if originalSpec.DatabaseSecret == nil {
