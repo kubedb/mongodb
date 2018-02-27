@@ -479,7 +479,7 @@ var _ = Describe("MongoDB", func() {
 				deleteTestResource()
 			}
 
-			XContext("Without Init", func() {
+			Context("Without Init", func() {
 				It("should resume DormantDatabase successfully", shouldResumeSuccessfully)
 			})
 
