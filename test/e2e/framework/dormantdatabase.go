@@ -3,7 +3,8 @@ package framework
 import (
 	"time"
 
-	core_util "github.com/appscode/kutil/core/v1"
+	"fmt"
+
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 	. "github.com/onsi/gomega"
@@ -70,7 +71,7 @@ func (f *Framework) CleanDormantDatabase() {
 	}
 	for _, d := range dormantDatabaseList.Items {
 		util.PatchDormantDatabase(f.extClient, &d, func(in *api.DormantDatabase) *api.DormantDatabase {
-			in.ObjectMeta = core_util.RemoveFinalizer(in.ObjectMeta, api.GenericKey)
+			in.ObjectMeta.Finalizers = nil
 			return in
 		})
 	}
@@ -78,6 +79,6 @@ func (f *Framework) CleanDormantDatabase() {
 	if err := f.extClient.DormantDatabases(f.namespace).DeleteCollection(&metav1.DeleteOptions{
 		PropagationPolicy: &deletePolicy,
 	}, metav1.ListOptions{}); err != nil {
-		return
+		fmt.Errorf("error in deletion of Dormant Database. Error: %v", err)
 	}
 }

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/appscode/go/crypto/rand"
-	core_util "github.com/appscode/kutil/core/v1"
 	"github.com/graymeta/stow"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
@@ -135,7 +134,7 @@ func (f *Framework) CleanSnapshot() {
 	}
 	for _, s := range snapshotList.Items {
 		util.PatchSnapshot(f.extClient, &s, func(in *api.Snapshot) *api.Snapshot {
-			in.ObjectMeta = core_util.RemoveFinalizer(in.ObjectMeta, api.GenericKey)
+			in.ObjectMeta.Finalizers = nil
 			return in
 		})
 	}
@@ -143,6 +142,6 @@ func (f *Framework) CleanSnapshot() {
 	if err := f.extClient.Snapshots(f.namespace).DeleteCollection(&metav1.DeleteOptions{
 		PropagationPolicy: &deletePolicy,
 	}, metav1.ListOptions{}); err != nil {
-		return
+		fmt.Errorf("error in deletion of Snapshot. Error: %v", err)
 	}
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/kubedb/apimachinery/pkg/eventer"
 	"github.com/kubedb/apimachinery/pkg/storage"
 	"github.com/kubedb/mongodb/pkg/validator"
+	"github.com/the-redback/go-oneliners"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,6 +21,7 @@ import (
 )
 
 func (c *Controller) create(mongodb *api.MongoDB) error {
+	oneliners.PrettyJson(mongodb, "mongodb controller")
 	if err := validator.ValidateMongoDB(c.Client, c.ExtClient, mongodb); err != nil {
 		c.recorder.Event(
 			mongodb.ObjectReference(),
@@ -203,21 +205,6 @@ func (c *Controller) matchDormantDatabase(mongodb *api.MongoDB) error {
 			return err
 		}
 		return nil
-	}
-
-	if _, err := meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized); err == kutil.ErrNotFound &&
-		mongodb.Spec.Init != nil &&
-		mongodb.Spec.Init.SnapshotSource != nil {
-		mg, _, err := util.PatchMongoDB(c.ExtClient, mongodb, func(in *api.MongoDB) *api.MongoDB {
-			in.Annotations = core_util.UpsertMap(in.Annotations, map[string]string{
-				api.AnnotationInitialized: "",
-			})
-			return in
-		})
-		if err != nil {
-			return err
-		}
-		mongodb.Annotations = mg.Annotations
 	}
 
 	return util.DeleteDormantDatabase(c.ExtClient, dormantDb.ObjectMeta)

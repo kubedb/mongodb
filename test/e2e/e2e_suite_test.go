@@ -6,9 +6,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kubedb/apimachinery/client/clientset/versioned/scheme"
+	clientSetScheme "k8s.io/client-go/kubernetes/scheme"
+
+	"os"
+
 	"github.com/appscode/go/homedir"
 	"github.com/appscode/go/log"
 	logs "github.com/appscode/go/log/golog"
+	"github.com/bcicen/grmon"
 	pcm "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	cs "github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1"
@@ -20,8 +26,10 @@ import (
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 	crd_cs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
+	genericapiserver "k8s.io/apiserver/pkg/server"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	ka "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset"
 )
 
 var (
@@ -33,6 +41,10 @@ var (
 )
 
 func init() {
+	scheme.AddToScheme(clientSetScheme.Scheme)
+	os.Setenv("SERVICE_ACCOUNT_NAME", "kubedb-operator")
+	os.Setenv("KUBE_NAMESPACE", "kube-system")
+
 	flag.StringVar(&storageClass, "storageclass", "standard", "Kubernetes StorageClass name")
 	flag.StringVar(&dockerRegistry, "docker-registry", "kubedb", "User provided docker repository")
 }
@@ -57,6 +69,8 @@ func TestE2e(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 
+	grmon.Start() // Delete Later
+
 	userHome := homedir.HomeDir()
 
 	// Kubernetes config
@@ -72,12 +86,13 @@ var _ = BeforeSuite(func() {
 	kubeClient := kubernetes.NewForConfigOrDie(config)
 	apiExtKubeClient := crd_cs.NewForConfigOrDie(config)
 	extClient := cs.NewForConfigOrDie(config)
+	kaClient := ka.NewForConfigOrDie(config)
 	promClient, err := pcm.NewForConfig(&prometheusCrdKinds, prometheusCrdGroup, config)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	// Framework
-	root = framework.New(config, kubeClient, extClient, storageClass)
+	root = framework.New(config, kubeClient, extClient, kaClient, storageClass)
 
 	By("Using namespace " + root.Namespace())
 
@@ -106,11 +121,17 @@ var _ = BeforeSuite(func() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	stopCh := genericapiserver.SetupSignalHandler()
+	go root.RunAdmissionServer(kubeconfigPath, stopCh)
+
 	ctrl.Run()
 	root.EventuallyCRD().Should(Succeed())
+	root.EventuallyApiServiceReady().Should(Succeed())
 })
 
 var _ = AfterSuite(func() {
+	root.CleanAdmissionController()
 	root.CleanMongoDB()
 	root.CleanDormantDatabase()
 	root.CleanSnapshot()

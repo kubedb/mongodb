@@ -86,7 +86,7 @@ var _ = Describe("MongoDB", func() {
 
 		Context("General", func() {
 
-			Context("-", func() {
+			FContext("-", func() {
 				It("should run successfully", shouldSuccessfullyRunning)
 			})
 

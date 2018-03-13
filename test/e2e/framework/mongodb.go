@@ -3,9 +3,10 @@ package framework
 import (
 	"time"
 
+	"fmt"
+
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/go/encoding/json/types"
-	core_util "github.com/appscode/kutil/core/v1"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 	. "github.com/onsi/gomega"
@@ -87,7 +88,7 @@ func (f *Framework) CleanMongoDB() {
 	}
 	for _, e := range mongodbList.Items {
 		util.PatchMongoDB(f.extClient, &e, func(in *api.MongoDB) *api.MongoDB {
-			in.ObjectMeta = core_util.RemoveFinalizer(in.ObjectMeta, api.GenericKey)
+			in.ObjectMeta.Finalizers = nil
 			return in
 		})
 	}
@@ -95,6 +96,6 @@ func (f *Framework) CleanMongoDB() {
 	if err := f.extClient.MongoDBs(f.namespace).DeleteCollection(&metav1.DeleteOptions{
 		PropagationPolicy: &deletePolicy,
 	}, metav1.ListOptions{}); err != nil {
-		return
+		fmt.Errorf("error in deletion of MongoDB. Error: %v", err)
 	}
 }
