@@ -222,24 +222,6 @@ func (c *Controller) initialize(mongodb *api.MongoDB) error {
 }
 
 func (c *Controller) pause(mongodb *api.MongoDB) error {
-	if _, err := c.createDormantDatabase(mongodb); err != nil {
-		c.recorder.Eventf(
-			mongodb.ObjectReference(),
-			core.EventTypeWarning,
-			eventer.EventReasonFailedToCreate,
-			`Failed to create DormantDatabase: "%v". Reason: %v`,
-			mongodb.Name,
-			err,
-		)
-		return err
-	}
-	c.recorder.Eventf(
-		mongodb.ObjectReference(),
-		core.EventTypeNormal,
-		eventer.EventReasonSuccessfulCreate,
-		`Successfully created DormantDatabase: "%v"`,
-		mongodb.Name,
-	)
 
 	c.cronController.StopBackupScheduling(mongodb.ObjectMeta)
 

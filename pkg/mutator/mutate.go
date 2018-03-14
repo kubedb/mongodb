@@ -75,7 +75,6 @@ func OnCreate(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface,
 	return &mongodb, nil
 }
 
-
 // OnCreate provides the defaulting that is performed in mutating stage of creating/updating a MongoDB database
 //
 // Major Tasks:
@@ -83,13 +82,12 @@ func OnCreate(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface,
 // Let kubernetes Garbage Collect of StatefulSets, Service
 func OnDelete(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface, mongodb api.MongoDB) (runtime.Object, error) {
 	ddb := getDormantDatabase(&mongodb)
-	if _,err := extClient.DormantDatabases(ddb.Namespace).Create(ddb); err!= nil {
-		return nil,err
+	if _, err := extClient.DormantDatabases(ddb.Namespace).Create(ddb); err != nil {
+		return nil, err
 	}
 
 	return &mongodb, nil
 }
-
 
 func resembleDormantDatabase(extClient cs.KubedbV1alpha1Interface, mongodb *api.MongoDB) error {
 	// Check if DormantDatabase exists or not

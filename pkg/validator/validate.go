@@ -3,11 +3,11 @@ package validator
 import (
 	"fmt"
 
-	cs_util "github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 	"github.com/appscode/go/types"
 	core_util "github.com/appscode/kutil/core/v1"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	cs "github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1"
+	cs_util "github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 	amv "github.com/kubedb/apimachinery/pkg/validator"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -76,9 +76,9 @@ func killMatchingDormantDatabase(extClient cs.KubedbV1alpha1Interface, mongodb *
 
 	// Set WipeOut to false
 	if _, _, err := cs_util.PatchDormantDatabase(extClient, ddb, func(in *api.DormantDatabase) *api.DormantDatabase {
-		in.Spec.WipeOut= false
+		in.Spec.WipeOut = false
 		return in
-	}); err!= nil {
+	}); err != nil {
 		return err
 	}
 

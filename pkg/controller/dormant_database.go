@@ -89,4 +89,3 @@ func (c *Controller) ResumeDatabase(dormantDb *api.DormantDatabase) error {
 	_, err := c.ExtClient.MongoDBs(mongodb.Namespace).Create(mongodb)
 	return err
 }
-

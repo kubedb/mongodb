@@ -66,7 +66,7 @@ func (a *MongoDBMutator) Admit(req *admission.AdmissionRequest) *admission.Admis
 		return hookapi.StatusUninitialized()
 	}
 
-	//oneliners.PrettyJson(req, "mutate mongodb")
+	oneliners.PrettyJson(req, "mutate mongodb")
 
 	switch req.Operation {
 	case admission.Delete:
@@ -84,7 +84,7 @@ func (a *MongoDBMutator) Admit(req *admission.AdmissionRequest) *admission.Admis
 		}
 		// validate database specs
 		mongoMod, err := mgv.OnCreate(a.client, a.extClient.KubedbV1alpha1(), *obj.(*api.MongoDB))
-		//oneliners.PrettyJson(mongoMod,"MongoDB Mod")
+		oneliners.PrettyJson(mongoMod,"MongoDB Mod")
 		if err != nil {
 			return hookapi.StatusForbidden(err)
 		} else if mongoMod != nil {
