@@ -10,8 +10,14 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func DeleteSecret(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface, dormantDb *api.DormantDatabase, secretVolume *core.SecretVolumeSource) error {
+func DeleteSecret(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface, dormantDb *api.DormantDatabase) error {
 	secretFound := false
+
+	secretVolume := dormantDb.Spec.Origin.Spec.MongoDB.DatabaseSecret
+	if secretVolume == nil {
+		return nil
+	}
+
 	mongodbList, err := extClient.MongoDBs(dormantDb.Namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return err
