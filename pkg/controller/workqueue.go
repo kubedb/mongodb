@@ -182,13 +182,6 @@ func (c *Controller) runMongoDB(key string) error {
 				return err
 			}
 		} else {
-			mongodb, _, err = util.PatchMongoDB(c.ExtClient, mongodb, func(in *api.MongoDB) *api.MongoDB {
-				in.ObjectMeta = core_util.AddFinalizer(in.ObjectMeta, api.GenericKey)
-				return in
-			})
-			if err != nil {
-				return err
-			}
 			util.AssignTypeKind(mongodb)
 			if err := c.create(mongodb); err != nil {
 				log.Errorln(err)

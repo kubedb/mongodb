@@ -90,29 +90,3 @@ func (c *Controller) ResumeDatabase(dormantDb *api.DormantDatabase) error {
 	return err
 }
 
-func (c *Controller) createDormantDatabase(mongodb *api.MongoDB) (*api.DormantDatabase, error) {
-	dormantDb := &api.DormantDatabase{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      mongodb.Name,
-			Namespace: mongodb.Namespace,
-			Labels: map[string]string{
-				api.LabelDatabaseKind: api.ResourceKindMongoDB,
-			},
-		},
-		Spec: api.DormantDatabaseSpec{
-			Origin: api.Origin{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:        mongodb.Name,
-					Namespace:   mongodb.Namespace,
-					Labels:      mongodb.Labels,
-					Annotations: mongodb.Annotations,
-				},
-				Spec: api.OriginSpec{
-					MongoDB: &mongodb.Spec,
-				},
-			},
-		},
-	}
-
-	return c.ExtClient.DormantDatabases(dormantDb.Namespace).Create(dormantDb)
-}

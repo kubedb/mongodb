@@ -159,7 +159,7 @@ def test(type, *args):
     if type == 'e2e':
         die(call('goimports -w *.go pkg test'))
         call('gofmt -s -w *.go pkg test')
-        die(call('test/e2e/framework/construction.sh'))
+        die(call('hack/dev/construction.sh'))
         die(call('ginkgo -r -v -progress -trace test/e2e -- ' + " ".join(args)))
     else:
         print '{test e2e}'

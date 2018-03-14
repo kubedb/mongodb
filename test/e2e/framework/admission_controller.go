@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"path"
 	"time"
 
 	"github.com/kubedb/kubedb-server/pkg/admission/plugin/dormant-database"
@@ -43,11 +42,8 @@ func (f *Framework) RunAdmissionServer(kubeconfigPath string, stopCh <-chan stru
 		&mongodb.MongoDBValidator{}, &mongodb.MongoDBMutator{},
 		&snapshot.SnapshotValidator{},
 		&dormant_database.DormantDatabaseValidator{})
-	tlsDir := path.Join(os.Getenv("GOPATH"), "src/github.com/kubedb/mongodb/hack/config/")
 
 	serverOpt.RecommendedOptions.CoreAPI.CoreAPIKubeconfigPath = kubeconfigPath
-	serverOpt.RecommendedOptions.SecureServing.ServerCert.CertKey.CertFile = path.Join(tlsDir, "tls.crt")
-	serverOpt.RecommendedOptions.SecureServing.ServerCert.CertKey.KeyFile = path.Join(tlsDir, "tls.key")
 	serverOpt.RecommendedOptions.SecureServing.BindPort = 8443
 	serverOpt.RecommendedOptions.SecureServing.BindAddress = net.ParseIP("127.0.0.1")
 	serverOpt.RecommendedOptions.Authorization.RemoteKubeConfigFile = kubeconfigPath

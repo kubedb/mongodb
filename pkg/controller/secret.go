@@ -1,11 +1,8 @@
 package controller
 
 import (
-	"fmt"
-
 	"github.com/appscode/go/crypto/rand"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
-	"github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 	"github.com/kubedb/apimachinery/pkg/eventer"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
@@ -23,9 +20,16 @@ const (
 )
 
 func (c *Controller) ensureDatabaseSecret(mongodb *api.MongoDB) error {
-	if mongodb.Spec.DatabaseSecret == nil {
-		secretVolumeSource, err := c.createDatabaseSecret(mongodb)
-		if err != nil {
+
+	authSecretName := mongodb.Name + "-auth"
+
+	sc, err := c.checkSecret(authSecretName, mongodb)
+	if err != nil {
+		return err
+	}
+
+	if sc == nil {
+		if err := c.createDatabaseSecret(mongodb); err != nil {
 			c.recorder.Eventf(
 				mongodb.ObjectReference(),
 				core.EventTypeWarning,
@@ -35,54 +39,31 @@ func (c *Controller) ensureDatabaseSecret(mongodb *api.MongoDB) error {
 			)
 			return err
 		}
-
-		ms, _, err := util.PatchMongoDB(c.ExtClient, mongodb, func(in *api.MongoDB) *api.MongoDB {
-			in.Spec.DatabaseSecret = secretVolumeSource
-			return in
-		})
-		if err != nil {
-			c.recorder.Eventf(
-				mongodb.ObjectReference(),
-				core.EventTypeWarning,
-				eventer.EventReasonFailedToUpdate,
-				err.Error(),
-			)
-			return err
-		}
-		mongodb.Spec.DatabaseSecret = ms.Spec.DatabaseSecret
 	}
 	return nil
 }
 
-func (c *Controller) createDatabaseSecret(mongodb *api.MongoDB) (*core.SecretVolumeSource, error) {
+func (c *Controller) createDatabaseSecret(mongodb *api.MongoDB) error {
 	authSecretName := mongodb.Name + "-auth"
 
-	sc, err := c.checkSecret(authSecretName, mongodb)
-	if err != nil {
-		return nil, err
-	}
-	if sc == nil {
-		secret := &core.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: authSecretName,
-				Labels: map[string]string{
-					api.LabelDatabaseKind: api.ResourceKindMongoDB,
-					api.LabelDatabaseName: mongodb.Name,
-				},
+	secret := &core.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: authSecretName,
+			Labels: map[string]string{
+				api.LabelDatabaseKind: api.ResourceKindMongoDB,
+				api.LabelDatabaseName: mongodb.Name,
 			},
-			Type: core.SecretTypeOpaque,
-			StringData: map[string]string{
-				KeyMongoDBUser:     mongodbUser,
-				KeyMongoDBPassword: rand.GeneratePassword(),
-			},
-		}
-		if _, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Create(secret); err != nil {
-			return nil, err
-		}
+		},
+		Type: core.SecretTypeOpaque,
+		StringData: map[string]string{
+			KeyMongoDBUser:     mongodbUser,
+			KeyMongoDBPassword: rand.GeneratePassword(),
+		},
 	}
-	return &core.SecretVolumeSource{
-		SecretName: authSecretName,
-	}, nil
+	if _, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Create(secret); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *Controller) checkSecret(secretName string, mongodb *api.MongoDB) (*core.Secret, error) {
@@ -94,10 +75,10 @@ func (c *Controller) checkSecret(secretName string, mongodb *api.MongoDB) (*core
 			return nil, err
 		}
 	}
-	if secret.Labels[api.LabelDatabaseKind] != api.ResourceKindMongoDB ||
-		secret.Labels[api.LabelDatabaseName] != mongodb.Name {
-		return nil, fmt.Errorf(`intended secret "%v" already exists`, secretName)
-	}
+	//if secret.Labels[api.LabelDatabaseKind] != api.ResourceKindMongoDB ||
+	//	secret.Labels[api.LabelDatabaseName] != mongodb.Name {
+	//	return nil, fmt.Errorf(`intended secret "%v" already exists`, secretName)
+	//}
 
 	return secret, nil
 }

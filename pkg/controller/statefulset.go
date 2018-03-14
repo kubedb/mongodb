@@ -15,14 +15,12 @@ import (
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clientsetscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/reference"
 )
 
 func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB) (kutil.VerbType, error) {
 	if err := c.checkStatefulSet(mongodb); err != nil {
-		return kutil.VerbUnchanged, err
-	}
-
-	if err := c.ensureDatabaseSecret(mongodb); err != nil {
 		return kutil.VerbUnchanged, err
 	}
 
@@ -78,7 +76,14 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 		Name:      mongodb.OffshootName(),
 		Namespace: mongodb.Namespace,
 	}
+
+	ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb)
+	if err != nil {
+		return nil, kutil.VerbUnchanged, err
+	}
+
 	return app_util.CreateOrPatchStatefulSet(c.Client, statefulSetMeta, func(in *apps.StatefulSet) *apps.StatefulSet {
+		in.ObjectMeta = core_util.EnsureOwnerReference(in.ObjectMeta, ref)
 		in.Labels = core_util.UpsertMap(in.Labels, mongodb.StatefulSetLabels())
 		in.Annotations = core_util.UpsertMap(in.Annotations, mongodb.StatefulSetAnnotations())
 

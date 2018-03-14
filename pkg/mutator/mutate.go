@@ -11,7 +11,6 @@ import (
 	"github.com/cloudflare/cfssl/log"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	cs "github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1"
-	cs_util "github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 	amv "github.com/kubedb/apimachinery/pkg/validator"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
@@ -21,6 +20,15 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+// OnCreate provides the defaulting that is performed in mutating stage of creating/updating a MongoDB database
+//
+// Major Tasks:
+// - Take Defaults from Dormant Database
+// - Set default  values to rest of the fields
+// - Remove Dormant Database Finalizer and set Spec.WipeOut to false
+// - Delete Dormant Database
+// - Finalizer Not Needed for MongoDB object
+// N.B.: Delete dormant database at the last stage of ValidatingWebhook
 func OnCreate(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface, mongodb api.MongoDB) (runtime.Object, error) {
 	if mongodb.Spec.Version == "" {
 		return nil, fmt.Errorf(`object 'Version' is missing in '%v'`, mongodb.Spec)
@@ -37,12 +45,12 @@ func OnCreate(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface,
 		}
 	}
 
-	databaseSecret := mongodb.Spec.DatabaseSecret
-	if databaseSecret != nil {
-		if _, err := client.CoreV1().Secrets(mongodb.Namespace).Get(databaseSecret.SecretName, metav1.GetOptions{}); err != nil {
-			return nil, err
-		}
-	}
+	//databaseSecret := mongodb.Spec.DatabaseSecret
+	//if databaseSecret != nil {
+	//	if _, err := client.CoreV1().Secrets(mongodb.Namespace).Get(databaseSecret.SecretName, metav1.GetOptions{}); err != nil {
+	//		return nil, err
+	//	}
+	//}
 
 	backupScheduleSpec := mongodb.Spec.BackupSchedule
 	if backupScheduleSpec != nil {
@@ -67,6 +75,22 @@ func OnCreate(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface,
 	return &mongodb, nil
 }
 
+
+// OnCreate provides the defaulting that is performed in mutating stage of creating/updating a MongoDB database
+//
+// Major Tasks:
+// - Create Dormant Database with Finalizer
+// Let kubernetes Garbage Collect of StatefulSets, Service
+func OnDelete(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface, mongodb api.MongoDB) (runtime.Object, error) {
+	ddb := getDormantDatabase(&mongodb)
+	if _,err := extClient.DormantDatabases(ddb.Namespace).Create(ddb); err!= nil {
+		return nil,err
+	}
+
+	return &mongodb, nil
+}
+
+
 func resembleDormantDatabase(extClient cs.KubedbV1alpha1Interface, mongodb *api.MongoDB) error {
 	// Check if DormantDatabase exists or not
 	dormantDb, err := extClient.DormantDatabases(mongodb.Namespace).Get(mongodb.Name, metav1.GetOptions{})
@@ -77,15 +101,10 @@ func resembleDormantDatabase(extClient cs.KubedbV1alpha1Interface, mongodb *api.
 		return nil
 	}
 
-	cleanDormantDB := dormantDb
-
 	// Check DatabaseKind
 	if dormantDb.Labels[api.LabelDatabaseKind] != api.ResourceKindMongoDB {
 		return errors.New(fmt.Sprintf(`invalid MongoDB: "%v". Exists DormantDatabase "%v" of different Kind`, mongodb.Name, dormantDb.Name))
 	}
-
-	// Set Dormant.Spec.WipeOut= false
-	dormantDb.Spec.WipeOut = false
 
 	// Check Origin Spec
 	drmnOriginSpec := dormantDb.Spec.Origin.Spec.MongoDB
@@ -114,15 +133,6 @@ func resembleDormantDatabase(extClient cs.KubedbV1alpha1Interface, mongodb *api.
 		return errors.New(fmt.Sprintf("mongodb spec mismatches with OriginSpec in DormantDatabases. Diff: %v", diff))
 	}
 
-	// Remove Finalizer
-	if core_util.HasFinalizer(cleanDormantDB.ObjectMeta, api.GenericKey) {
-		_, _, err := cs_util.PatchDormantDatabase(extClient, cleanDormantDB, func(in *api.DormantDatabase) *api.DormantDatabase {
-			in.ObjectMeta = core_util.RemoveFinalizer(in.ObjectMeta, api.GenericKey)
-			return in
-		})
-		return err
-	}
-
 	if _, err := meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized); err == kutil.ErrNotFound &&
 		mongodb.Spec.Init != nil &&
 		mongodb.Spec.Init.SnapshotSource != nil {
@@ -131,18 +141,22 @@ func resembleDormantDatabase(extClient cs.KubedbV1alpha1Interface, mongodb *api.
 		})
 	}
 
-	// Delete  Matching dormantDatabase after checking ValidationWebhook
+	// Delete  Matching dormantDatabase after checking ValidatingWebhook
 
 	return nil
 }
 
 func prepareMongoDB(mongodb *api.MongoDB) error {
+
+	// Set Default DatabaseSecretName
 	if mongodb.Spec.DatabaseSecret == nil {
 		mongodb.Spec.DatabaseSecret = &core.SecretVolumeSource{
 			SecretName: fmt.Sprintf("%v-auth", mongodb.Name),
 		}
 	}
 
+	// If monitoring spec is given without port,
+	// set default Listening port
 	setMonitoringPort(mongodb)
 
 	return nil
@@ -159,5 +173,31 @@ func setMonitoringPort(mongodb *api.MongoDB) {
 		if mongodb.Spec.Monitor.Prometheus.Port == 0 {
 			mongodb.Spec.Monitor.Prometheus.Port = api.PrometheusExporterPortNumber
 		}
+	}
+}
+
+func getDormantDatabase(mongodb *api.MongoDB) *api.DormantDatabase {
+	return &api.DormantDatabase{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mongodb.Name,
+			Namespace: mongodb.Namespace,
+			Labels: map[string]string{
+				api.LabelDatabaseKind: api.ResourceKindMongoDB,
+			},
+			Finalizers: []string{api.GenericKey},
+		},
+		Spec: api.DormantDatabaseSpec{
+			Origin: api.Origin{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        mongodb.Name,
+					Namespace:   mongodb.Namespace,
+					Labels:      mongodb.Labels,
+					Annotations: mongodb.Annotations,
+				},
+				Spec: api.OriginSpec{
+					MongoDB: &mongodb.Spec,
+				},
+			},
+		},
 	}
 }

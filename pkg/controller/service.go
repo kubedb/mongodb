@@ -12,6 +12,8 @@ import (
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	clientsetscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/reference"
 )
 
 func (c *Controller) ensureService(mongodb *api.MongoDB) (kutil.VerbType, error) {
@@ -55,7 +57,7 @@ func (c *Controller) checkService(mongodb *api.MongoDB) error {
 	}
 
 	if service.Spec.Selector[api.LabelDatabaseName] != name {
-		return fmt.Errorf(`Intended service "%v" already exists`, name)
+		return fmt.Errorf(`intended service "%v" already exists`, name)
 	}
 
 	return nil
@@ -67,7 +69,13 @@ func (c *Controller) createService(mongodb *api.MongoDB) (kutil.VerbType, error)
 		Namespace: mongodb.Namespace,
 	}
 
+	ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb)
+	if err != nil {
+		return kutil.VerbUnchanged, err
+	}
+
 	_, ok, err := core_util.CreateOrPatchService(c.Client, meta, func(in *core.Service) *core.Service {
+		in.ObjectMeta = core_util.EnsureOwnerReference(in.ObjectMeta, ref)
 		in.Labels = mongodb.OffshootLabels()
 		in.Spec.Ports = upsertServicePort(in, mongodb)
 		in.Spec.Selector = mongodb.OffshootLabels()

@@ -1,9 +1,8 @@
 package framework
 
 import (
-	"time"
-
 	"fmt"
+	"time"
 
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
