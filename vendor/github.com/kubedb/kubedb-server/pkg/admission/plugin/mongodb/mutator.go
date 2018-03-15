@@ -1,15 +1,17 @@
 package mongodb
 
 import (
+	"fmt"
 	"sync"
 
 	hookapi "github.com/appscode/kutil/admission/api"
 	meta_util "github.com/appscode/kutil/meta"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	cs "github.com/kubedb/apimachinery/client/clientset/versioned"
-	mgv "github.com/kubedb/mongodb/pkg/mutator"
-	"github.com/the-redback/go-oneliners"
+	mgm "github.com/kubedb/mongodb/pkg/mutator"
 	admission "k8s.io/api/admission/v1beta1"
+	kerr "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -66,25 +68,25 @@ func (a *MongoDBMutator) Admit(req *admission.AdmissionRequest) *admission.Admis
 		return hookapi.StatusUninitialized()
 	}
 
-	oneliners.PrettyJson(req, "mutate mongodb")
-
 	switch req.Operation {
 	case admission.Delete:
-		//// req.Object.Raw = nil, so read from kubernetes
-		//obj, err := a.extClient.KubedbV1alpha1().MongoDBs(req.Namespace).Get(req.Name, metav1.GetOptions{})
-		//if err != nil && !kerr.IsNotFound(err) {
-		//	return hookapi.StatusInternalServerError(err)
-		//} else if err == nil && obj.Spec.DoNotPause {
-		//	return hookapi.StatusBadRequest(fmt.Errorf(`mongodb "%s" can't be paused. To continue delete, unset spec.doNotPause and retry`, req.Name))
-		//}
+		// req.Object.Raw = nil, so read from kubernetes
+		obj, err := a.extClient.KubedbV1alpha1().MongoDBs(req.Namespace).Get(req.Name, metav1.GetOptions{})
+		if err != nil && !kerr.IsNotFound(err) {
+			return hookapi.StatusInternalServerError(err)
+		} else if err == nil && obj.Spec.DoNotPause {
+			return hookapi.StatusBadRequest(fmt.Errorf(`mongodb "%s" can't be paused. To continue delete, unset spec.doNotPause and retry`, req.Name))
+		}
+		if _, err := mgm.OnDelete(a.client, a.extClient.KubedbV1alpha1(), *obj); err != nil {
+			return hookapi.StatusForbidden(err)
+		}
+
 	default:
 		obj, err := meta_util.UnmarshalToJSON(req.Object.Raw, api.SchemeGroupVersion)
 		if err != nil {
 			return hookapi.StatusBadRequest(err)
 		}
-		// validate database specs
-		mongoMod, err := mgv.OnCreate(a.client, a.extClient.KubedbV1alpha1(), *obj.(*api.MongoDB))
-		oneliners.PrettyJson(mongoMod,"MongoDB Mod")
+		mongoMod, err := mgm.OnCreate(a.client, a.extClient.KubedbV1alpha1(), *obj.(*api.MongoDB))
 		if err != nil {
 			return hookapi.StatusForbidden(err)
 		} else if mongoMod != nil {
@@ -95,7 +97,6 @@ func (a *MongoDBMutator) Admit(req *admission.AdmissionRequest) *admission.Admis
 			status.Patch = patch
 			patchType := admission.PatchTypeJSONPatch
 			status.PatchType = &patchType
-			oneliners.PrettyJson(patch, "mutate patch")
 		}
 	}
 	status.Allowed = true

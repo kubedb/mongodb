@@ -10,7 +10,6 @@ import (
 	"github.com/appscode/go/homedir"
 	"github.com/appscode/go/log"
 	logs "github.com/appscode/go/log/golog"
-	"github.com/bcicen/grmon"
 	pcm "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/apimachinery/client/clientset/versioned/scheme"
@@ -66,8 +65,6 @@ func TestE2e(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-
-	grmon.Start() // Delete Later
 
 	userHome := homedir.HomeDir()
 

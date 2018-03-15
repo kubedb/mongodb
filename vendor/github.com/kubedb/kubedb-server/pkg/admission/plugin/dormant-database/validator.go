@@ -6,7 +6,6 @@ import (
 	hookapi "github.com/appscode/kutil/admission/api"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	cs "github.com/kubedb/apimachinery/client/clientset/versioned"
-	"github.com/the-redback/go-oneliners"
 	admission "k8s.io/api/admission/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
@@ -63,8 +62,6 @@ func (a *DormantDatabaseValidator) Admit(req *admission.AdmissionRequest) *admis
 	if !a.initialized {
 		return hookapi.StatusUninitialized()
 	}
-
-	oneliners.PrettyJson(req, "dormantdbbbbbbbbbbbbbbbbbbbbbbbb")
 
 	//switch req.Operation {
 	//case admission.Delete:
