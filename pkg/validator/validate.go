@@ -79,13 +79,13 @@ func OnCreateLeftOvers(extClient cs.KubedbV1alpha1Interface, mongodb *api.MongoD
 // Major Tasks:
 // - Create Dormant Database with Finalizer
 // Let kubernetes Garbage Collect of StatefulSets, Service
-func OnDeleteLeftOvers(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface, mongodb api.MongoDB) (runtime.Object, error) {
-	ddb := getDormantDatabase(&mongodb)
+func OnDeleteLeftOvers(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface, mongodb *api.MongoDB) (runtime.Object, error) {
+	ddb := getDormantDatabase(mongodb)
 	if _, err := extClient.DormantDatabases(ddb.Namespace).Create(ddb); err != nil {
 		return nil, err
 	}
 
-	return &mongodb, nil
+	return mongodb, nil
 }
 
 // SterilizeSecrets cleans secret that is created for this Ex-MongoDB database by KubeDB-Operator and
