@@ -60,12 +60,12 @@ func (a *SnapshotValidator) Admit(req *admission.AdmissionRequest) *admission.Ad
 		return hookapi.StatusUninitialized()
 	}
 
-	obj, err := meta.UnmarshalToJSON(req.Object.Raw, api.SchemeGroupVersion)
+	obj, err := meta.UnmarshalFromJSON(req.Object.Raw, api.SchemeGroupVersion)
 	if err != nil {
 		return hookapi.StatusBadRequest(err)
 	}
 	if req.Operation == admission.Update && !util.IsKubeDBOperator(req.UserInfo) {
-		oldObject, err := meta.UnmarshalToJSON(req.OldObject.Raw, api.SchemeGroupVersion)
+		oldObject, err := meta.UnmarshalFromJSON(req.OldObject.Raw, api.SchemeGroupVersion)
 		if err != nil {
 			return hookapi.StatusBadRequest(err)
 		}

@@ -29,8 +29,5 @@ type Snapshotter interface {
 }
 
 type Deleter interface {
-	Exists(*metav1.ObjectMeta) (bool, error)
-	PauseDatabase(*api.DormantDatabase) error
-	WipeOutDatabase(*api.DormantDatabase) error
-	ResumeDatabase(*api.DormantDatabase) error
+	ExDatabaseStatus(*api.DormantDatabase) error
 }

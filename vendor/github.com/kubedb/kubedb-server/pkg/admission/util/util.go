@@ -49,7 +49,6 @@ func getPreconditionFunc(kind string) []mergepatch.PreconditionFunc {
 		mergepatch.RequireKeyUnchanged("kind"),
 		mergepatch.RequireMetadataKeyUnchanged("name"),
 		mergepatch.RequireMetadataKeyUnchanged("namespace"),
-		mergepatch.RequireKeyUnchanged("status"),
 	}
 
 	if fields, found := preconditionSpecField[kind]; found {

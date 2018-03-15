@@ -80,14 +80,17 @@ func (a *MongoDBValidator) Admit(req *admission.AdmissionRequest) *admission.Adm
 		} else if err == nil && obj.Spec.DoNotPause {
 			return hookapi.StatusBadRequest(fmt.Errorf(`mongodb "%s" can't be paused. To continue delete, unset spec.doNotPause and retry`, req.Name))
 		}
+		if err = mgv.OnDeleteLeftOvers(a.client, a.extClient.KubedbV1alpha1(), obj); err != nil {
+			return hookapi.StatusForbidden(err)
+		}
 	default:
-		obj, err := meta_util.UnmarshalToJSON(req.Object.Raw, api.SchemeGroupVersion)
+		obj, err := meta_util.UnmarshalFromJSON(req.Object.Raw, api.SchemeGroupVersion)
 		if err != nil {
 			return hookapi.StatusBadRequest(err)
 		}
 		if req.Operation == admission.Update && !util.IsKubeDBOperator(req.UserInfo) {
 			// validate changes made by user
-			oldObject, err := meta_util.UnmarshalToJSON(req.OldObject.Raw, api.SchemeGroupVersion)
+			oldObject, err := meta_util.UnmarshalFromJSON(req.OldObject.Raw, api.SchemeGroupVersion)
 			if err != nil {
 				return hookapi.StatusBadRequest(err)
 			}
@@ -96,7 +99,12 @@ func (a *MongoDBValidator) Admit(req *admission.AdmissionRequest) *admission.Adm
 			}
 		}
 		// validate database specs
-		if err = mgv.ValidateMongoDB(a.client, a.extClient.KubedbV1alpha1(), obj.(*api.MongoDB)); err != nil {
+		if err = mgv.OnCreateValidate(a.client, a.extClient.KubedbV1alpha1(), obj.(*api.MongoDB)); err != nil {
+			return hookapi.StatusForbidden(err)
+		}
+
+		// Do
+		if err = mgv.OnCreateLeftOvers(a.extClient.KubedbV1alpha1(), obj.(*api.MongoDB)); err != nil {
 			return hookapi.StatusForbidden(err)
 		}
 	}

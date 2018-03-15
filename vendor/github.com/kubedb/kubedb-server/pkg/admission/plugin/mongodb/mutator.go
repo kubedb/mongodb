@@ -1,7 +1,6 @@
 package mongodb
 
 import (
-	"fmt"
 	"sync"
 
 	hookapi "github.com/appscode/kutil/admission/api"
@@ -10,8 +9,6 @@ import (
 	cs "github.com/kubedb/apimachinery/client/clientset/versioned"
 	mgm "github.com/kubedb/mongodb/pkg/mutator"
 	admission "k8s.io/api/admission/v1beta1"
-	kerr "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -70,19 +67,10 @@ func (a *MongoDBMutator) Admit(req *admission.AdmissionRequest) *admission.Admis
 
 	switch req.Operation {
 	case admission.Delete:
-		// req.Object.Raw = nil, so read from kubernetes
-		obj, err := a.extClient.KubedbV1alpha1().MongoDBs(req.Namespace).Get(req.Name, metav1.GetOptions{})
-		if err != nil && !kerr.IsNotFound(err) {
-			return hookapi.StatusInternalServerError(err)
-		} else if err == nil && obj.Spec.DoNotPause {
-			return hookapi.StatusBadRequest(fmt.Errorf(`mongodb "%s" can't be paused. To continue delete, unset spec.doNotPause and retry`, req.Name))
-		}
-		if _, err := mgm.OnDelete(a.client, a.extClient.KubedbV1alpha1(), *obj); err != nil {
-			return hookapi.StatusForbidden(err)
-		}
+		// No Mutating for delete
 
 	default:
-		obj, err := meta_util.UnmarshalToJSON(req.Object.Raw, api.SchemeGroupVersion)
+		obj, err := meta_util.UnmarshalFromJSON(req.Object.Raw, api.SchemeGroupVersion)
 		if err != nil {
 			return hookapi.StatusBadRequest(err)
 		}

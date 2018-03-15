@@ -2,6 +2,7 @@ package validator
 
 import (
 	core_util "github.com/appscode/kutil/core/v1"
+	meta_util "github.com/appscode/kutil/meta"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	cs "github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1"
 	cs_util "github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
@@ -37,10 +38,8 @@ func killMatchingDormantDatabase(extClient cs.KubedbV1alpha1Interface, mongodb *
 	}
 
 	// Delete  Matching dormantDatabase
-	deletePolicy := metav1.DeletePropagationForeground
-	if err := extClient.DormantDatabases(mongodb.Namespace).Delete(mongodb.Name, &metav1.DeleteOptions{
-		PropagationPolicy: &deletePolicy,
-	}); err != nil && !kerr.IsNotFound(err) {
+	if err := extClient.DormantDatabases(mongodb.Namespace).Delete(mongodb.Name,
+		meta_util.DeleteInBackground()); err != nil && !kerr.IsNotFound(err) {
 		return err
 	}
 

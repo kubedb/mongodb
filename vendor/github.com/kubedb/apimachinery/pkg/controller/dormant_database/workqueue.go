@@ -156,10 +156,7 @@ func (c *Controller) runDormantDatabase(key string) error {
 		if dormantDatabase.DeletionTimestamp != nil {
 			if core_util.HasFinalizer(dormantDatabase.ObjectMeta, "kubedb.com") {
 				util.AssignTypeKind(dormantDatabase)
-				if err := c.delete(dormantDatabase); err != nil {
-					log.Errorln(err)
-					return err
-				}
+				// No tasks for dormant Database Deletion
 				dormantDatabase, _, err = util.PatchDormantDatabase(c.ExtClient, dormantDatabase, func(in *api.DormantDatabase) *api.DormantDatabase {
 					in.ObjectMeta = core_util.RemoveFinalizer(in.ObjectMeta, "kubedb.com")
 					return in
@@ -167,10 +164,6 @@ func (c *Controller) runDormantDatabase(key string) error {
 				return err
 			}
 		} else {
-			dormantDatabase, _, err = util.PatchDormantDatabase(c.ExtClient, dormantDatabase, func(in *api.DormantDatabase) *api.DormantDatabase {
-				in.ObjectMeta = core_util.AddFinalizer(in.ObjectMeta, "kubedb.com")
-				return in
-			})
 			util.AssignTypeKind(dormantDatabase)
 			if err := c.create(dormantDatabase); err != nil {
 				log.Errorln(err)
