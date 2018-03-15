@@ -11,7 +11,6 @@ import (
 	"github.com/cloudflare/cfssl/log"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	cs "github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1"
-	amv "github.com/kubedb/apimachinery/pkg/validator"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
@@ -38,53 +37,20 @@ func OnCreate(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface,
 		mongodb.Spec.Replicas = types.Int32P(1)
 	}
 
-	if mongodb.Spec.Storage != nil {
-		var err error
-		if err = amv.ValidateStorage(client, mongodb.Spec.Storage); err != nil {
-			return nil, err
-		}
-	}
-
-	//databaseSecret := mongodb.Spec.DatabaseSecret
-	//if databaseSecret != nil {
-	//	if _, err := client.CoreV1().Secrets(mongodb.Namespace).Get(databaseSecret.SecretName, metav1.GetOptions{}); err != nil {
-	//		return nil, err
-	//	}
-	//}
-
-	backupScheduleSpec := mongodb.Spec.BackupSchedule
-	if backupScheduleSpec != nil {
-		if err := amv.ValidateBackupSchedule(client, backupScheduleSpec, mongodb.Namespace); err != nil {
-			return nil, err
-		}
-	}
-
-	monitorSpec := mongodb.Spec.Monitor
-	if monitorSpec != nil {
-		if err := amv.ValidateMonitorSpec(monitorSpec); err != nil {
-			return nil, err
-		}
-	}
-
 	if err := resembleDormantDatabase(extClient, &mongodb); err != nil {
 		return nil, err
 	}
 
-	prepareMongoDB(&mongodb)
-
-	return &mongodb, nil
-}
-
-// OnCreate provides the defaulting that is performed in mutating stage of creating/updating a MongoDB database
-//
-// Major Tasks:
-// - Create Dormant Database with Finalizer
-// Let kubernetes Garbage Collect of StatefulSets, Service
-func OnDelete(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface, mongodb api.MongoDB) (runtime.Object, error) {
-	ddb := getDormantDatabase(&mongodb)
-	if _, err := extClient.DormantDatabases(ddb.Namespace).Create(ddb); err != nil {
-		return nil, err
+	// Set Default DatabaseSecretName
+	if mongodb.Spec.DatabaseSecret == nil {
+		mongodb.Spec.DatabaseSecret = &core.SecretVolumeSource{
+			SecretName: fmt.Sprintf("%v-auth", mongodb.Name),
+		}
 	}
+
+	// If monitoring spec is given without port,
+	// set default Listening port
+	setMonitoringPort(&mongodb)
 
 	return &mongodb, nil
 }
@@ -144,22 +110,6 @@ func resembleDormantDatabase(extClient cs.KubedbV1alpha1Interface, mongodb *api.
 	return nil
 }
 
-func prepareMongoDB(mongodb *api.MongoDB) error {
-
-	// Set Default DatabaseSecretName
-	if mongodb.Spec.DatabaseSecret == nil {
-		mongodb.Spec.DatabaseSecret = &core.SecretVolumeSource{
-			SecretName: fmt.Sprintf("%v-auth", mongodb.Name),
-		}
-	}
-
-	// If monitoring spec is given without port,
-	// set default Listening port
-	setMonitoringPort(mongodb)
-
-	return nil
-}
-
 // Assign Default Monitoring Port if MonitoringSpec Exists
 // and the AgentVendor is Prometheus.
 func setMonitoringPort(mongodb *api.MongoDB) {
@@ -171,31 +121,5 @@ func setMonitoringPort(mongodb *api.MongoDB) {
 		if mongodb.Spec.Monitor.Prometheus.Port == 0 {
 			mongodb.Spec.Monitor.Prometheus.Port = api.PrometheusExporterPortNumber
 		}
-	}
-}
-
-func getDormantDatabase(mongodb *api.MongoDB) *api.DormantDatabase {
-	return &api.DormantDatabase{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      mongodb.Name,
-			Namespace: mongodb.Namespace,
-			Labels: map[string]string{
-				api.LabelDatabaseKind: api.ResourceKindMongoDB,
-			},
-			Finalizers: []string{api.GenericKey},
-		},
-		Spec: api.DormantDatabaseSpec{
-			Origin: api.Origin{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:        mongodb.Name,
-					Namespace:   mongodb.Namespace,
-					Labels:      mongodb.Labels,
-					Annotations: mongodb.Annotations,
-				},
-				Spec: api.OriginSpec{
-					MongoDB: &mongodb.Spec,
-				},
-			},
-		},
 	}
 }

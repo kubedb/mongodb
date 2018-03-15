@@ -21,7 +21,7 @@ import (
 
 func (c *Controller) create(mongodb *api.MongoDB) error {
 	oneliners.PrettyJson(mongodb, "mongodb controller")
-	if err := validator.ValidateMongoDB(c.Client, c.ExtClient, mongodb); err != nil {
+	if err := validator.OnCreateValidate(c.Client, c.ExtClient, mongodb); err != nil {
 		c.recorder.Event(
 			mongodb.ObjectReference(),
 			core.EventTypeWarning,

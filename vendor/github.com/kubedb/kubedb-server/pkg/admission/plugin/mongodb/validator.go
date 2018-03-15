@@ -97,7 +97,7 @@ func (a *MongoDBValidator) Admit(req *admission.AdmissionRequest) *admission.Adm
 			}
 		}
 		// validate database specs
-		if err = mgv.ValidateMongoDB(a.client, a.extClient.KubedbV1alpha1(), obj.(*api.MongoDB)); err != nil {
+		if err = mgv.OnCreateValidate(a.client, a.extClient.KubedbV1alpha1(), obj.(*api.MongoDB)); err != nil {
 			return hookapi.StatusForbidden(err)
 		}
 	}
