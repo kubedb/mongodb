@@ -13,7 +13,6 @@ import (
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes"
 	clientsetscheme "k8s.io/client-go/kubernetes/scheme"
@@ -79,13 +78,13 @@ func OnCreateLeftOvers(extClient cs.KubedbV1alpha1Interface, mongodb *api.MongoD
 // Major Tasks:
 // - Create Dormant Database with Finalizer
 // Let kubernetes Garbage Collect of StatefulSets, Service
-func OnDeleteLeftOvers(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface, mongodb *api.MongoDB) (runtime.Object, error) {
+func OnDeleteLeftOvers(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface, mongodb *api.MongoDB) error {
 	ddb := getDormantDatabase(mongodb)
 	if _, err := extClient.DormantDatabases(ddb.Namespace).Create(ddb); err != nil {
-		return nil, err
+		return err
 	}
 
-	return mongodb, nil
+	return nil
 }
 
 // SterilizeSecrets cleans secret that is created for this Ex-MongoDB database by KubeDB-Operator and
