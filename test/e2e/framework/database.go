@@ -90,11 +90,10 @@ func (f *Framework) EventuallyDocumentExists(meta metav1.ObjectMeta) GomegaAsync
 			}
 			person := &KubedbTable{}
 
-			if err := en.Collection("people").FindOne(bson.M{"firstname": "kubernetes"}, person); err != nil {
-				return false
-			} else {
+			if err := en.Collection("people").FindOne(bson.M{"firstname": "kubernetes"}, person); err == nil {
 				return true
 			}
+			return false
 		},
 		time.Minute*15,
 		time.Second*10,

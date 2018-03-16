@@ -126,11 +126,15 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
+	By("Delete Admission Controller Configs")
 	root.CleanAdmissionController()
+	By("Delete left over MongoDB objects")
 	root.CleanMongoDB()
+	By("Delete left over Dormant Database objects")
 	root.CleanDormantDatabase()
+	By("Delete left over Snapshot objects")
 	root.CleanSnapshot()
+	By("Delete Namespace")
 	err := root.DeleteNamespace()
 	Expect(err).NotTo(HaveOccurred())
-	By("Deleted namespace")
 })

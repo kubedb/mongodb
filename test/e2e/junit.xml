@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <testsuite tests="1" failures="0" time="416.49601022">
+  <testsuite tests="4" failures="0" time="275.915492946">
       <testcase name="MongoDB Test General - should run successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
@@ -9,25 +9,10 @@
       <testcase name="MongoDB Test DoNotPause should work successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
-      <testcase name="MongoDB Test Snapshot In Local should take Snapshot successfully" classname="e2e Suite" time="0">
-          <skipped></skipped>
-      </testcase>
-      <testcase name="MongoDB Test Snapshot In Local With PVC should run successfully" classname="e2e Suite" time="0">
-          <skipped></skipped>
-      </testcase>
+      <testcase name="MongoDB Test Snapshot In Local should take Snapshot successfully" classname="e2e Suite" time="64.871633292"></testcase>
+      <testcase name="MongoDB Test Snapshot In Local Without PVC should run successfully" classname="e2e Suite" time="75.335364222"></testcase>
       <testcase name="MongoDB Test Snapshot In S3 should take Snapshot successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
-      <testcase name="MongoDB Test Snapshot In GCS should take Snapshot successfully" classname="e2e Suite" time="0">
-          <skipped></skipped>
-      </testcase>
-      <testcase name="MongoDB Test Snapshot In GCS With Init should resume DormantDatabase successfully" classname="e2e Suite" time="0">
-          <skipped></skipped>
-      </testcase>
-      <testcase name="MongoDB Test Snapshot In Azure should take Snapshot successfully" classname="e2e Suite" time="0">
-          <skipped></skipped>
-      </testcase>
-      <testcase name="MongoDB Test Snapshot In Swift should take Snapshot successfully" classname="e2e Suite" time="0">
-          <skipped></skipped>
-      </testcase>
+      <testcase name="MongoDB Test Snapshot In GCS should take Snapshot successfully" classname="e2e Suite" time="80.752348203"></testcase>
   </testsuite>
