@@ -83,8 +83,6 @@ spec:
     protocol: TCP
     targetPort: 8443
   type: ClusterIP
-  selector:
-    app: kubedb
 
 ---
 # To get to the host machine from the VM,

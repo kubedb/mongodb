@@ -24,6 +24,7 @@ func (f *Framework) EventuallyApiServiceReady() GomegaAsyncAssertion {
 			}
 			for _, cond := range crd.Status.Conditions {
 				if cond.Type == kApi.Available && cond.Status == kApi.ConditionTrue {
+					time.Sleep(time.Second * 5) // let the resource become available
 					fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>>>..... Trueeeeeeeeeeeeeeeeeeeeeee")
 					return nil
 				}
@@ -33,7 +34,7 @@ func (f *Framework) EventuallyApiServiceReady() GomegaAsyncAssertion {
 			return fmt.Errorf("ApiService not ready yet")
 		},
 		time.Minute*2,
-		time.Second*10,
+		time.Second*5,
 	)
 }
 

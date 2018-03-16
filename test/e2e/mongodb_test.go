@@ -104,7 +104,7 @@ var _ = Describe("MongoDB", func() {
 						StorageClassName: types.StringP(f.StorageClass),
 					}
 				})
-				FIt("should run successfully", func() {
+				It("should run successfully", func() {
 					if skipMessage != "" {
 						Skip(skipMessage)
 					}
@@ -143,7 +143,7 @@ var _ = Describe("MongoDB", func() {
 			})
 		})
 
-		XContext("DoNotPause", func() {
+		Context("DoNotPause", func() {
 			BeforeEach(func() {
 				mongodb.Spec.DoNotPause = true
 			})
@@ -154,7 +154,7 @@ var _ = Describe("MongoDB", func() {
 
 				By("Delete mongodb")
 				err = f.DeleteMongoDB(mongodb.ObjectMeta)
-				Expect(err).NotTo(HaveOccurred())
+				Expect(err).Should(HaveOccurred())
 
 				By("MongoDB is not paused. Check for mongodb")
 				f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeTrue())
@@ -314,7 +314,7 @@ var _ = Describe("MongoDB", func() {
 			})
 		})
 
-		Context("Initialize", func() {
+		FContext("Initialize", func() {
 			BeforeEach(func() {
 				if f.StorageClass != "" {
 					mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
@@ -341,7 +341,16 @@ var _ = Describe("MongoDB", func() {
 					}
 				})
 
-				It("should run successfully", shouldSuccessfullyRunning)
+				It("should run successfully", func() {
+					// Create Postgres
+					createAndWaitForRunning()
+
+					By("Checking Row Count of Table")
+					f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(Equal(3))
+
+					// Delete test resource
+					deleteTestResource()
+				})
 
 			})
 
@@ -448,10 +457,9 @@ var _ = Describe("MongoDB", func() {
 				By("Wait for mongodb to be paused")
 				f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
 
-				_, err = f.PatchDormantDatabase(mongodb.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
-					in.Spec.Resume = true
-					return in
-				})
+				// Create MongoDB object again to resume it
+				By("Create MongoDB: " + mongodb.Name)
+				err = f.CreateMongoDB(mongodb)
 				Expect(err).NotTo(HaveOccurred())
 
 				By("Wait for DormantDatabase to be deleted")

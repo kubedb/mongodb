@@ -27,9 +27,6 @@ type DormantDatabaseSpec struct {
 	// If true, invoke wipe out operation
 	// +optional
 	WipeOut bool `json:"wipeOut,omitempty"`
-	// If true, resumes database
-	// +optional
-	Resume bool `json:"resume,omitempty"`
 	// Origin to store original database information
 	Origin Origin `json:"origin,omitempty"`
 }
