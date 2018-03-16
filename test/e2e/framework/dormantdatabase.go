@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 func (f *Framework) GetDormantDatabase(meta metav1.ObjectMeta) (*api.DormantDatabase, error) {
@@ -57,6 +58,61 @@ func (f *Framework) EventuallyDormantDatabaseStatus(meta metav1.ObjectMeta) Gome
 				return api.DormantDatabasePhase("")
 			}
 			return drmn.Status.Phase
+		},
+		time.Minute*10,
+		time.Second*5,
+	)
+}
+
+func (f *Framework) EventuallyWipedOut(meta metav1.ObjectMeta) GomegaAsyncAssertion {
+	return Eventually(
+		func() error {
+			labelMap := map[string]string{
+				api.LabelDatabaseName: meta.Name,
+				api.LabelDatabaseKind: api.ResourceKindMongoDB,
+			}
+			labelSelector := labels.SelectorFromSet(labelMap)
+
+			// check if pvcs is wiped out
+			pvcList, err := f.kubeClient.CoreV1().PersistentVolumeClaims(meta.Namespace).List(
+				metav1.ListOptions{
+					LabelSelector: labelSelector.String(),
+				},
+			)
+			if err != nil {
+				return err
+			}
+			if len(pvcList.Items) > 0 {
+				fmt.Errorf("PVCs have not wiped out yet")
+			}
+
+			// check if snapshot is wiped out
+			snapshotList, err := f.extClient.Snapshots(meta.Namespace).List(
+				metav1.ListOptions{
+					LabelSelector: labelSelector.String(),
+				},
+			)
+			if err != nil {
+				return err
+			}
+			if len(snapshotList.Items) > 0 {
+				fmt.Errorf("all snapshots have not wiped out yet")
+			}
+
+			// check if secrets are wiped out
+			secretList, err := f.kubeClient.CoreV1().Secrets(meta.Namespace).List(
+				metav1.ListOptions{
+					LabelSelector: labelSelector.String(),
+				},
+			)
+			if err != nil {
+				return err
+			}
+			if len(secretList.Items) > 0 {
+				fmt.Errorf("secrets have not wiped out yet")
+			}
+
+			return nil
 		},
 		time.Minute*10,
 		time.Second*5,

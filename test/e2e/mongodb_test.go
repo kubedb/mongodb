@@ -63,11 +63,11 @@ var _ = Describe("MongoDB", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		By("Wait for mongodb to be wipedOut")
-		f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HaveWipedOut())
-
 		err = f.DeleteDormantDatabase(mongodb.ObjectMeta)
 		Expect(err).NotTo(HaveOccurred())
+
+		By("Wait for mongodb resources to be wipedOut")
+		f.EventuallyWipedOut(mongodb.ObjectMeta).Should(Succeed())
 	}
 
 	var shouldSuccessfullyRunning = func() {
@@ -86,7 +86,7 @@ var _ = Describe("MongoDB", func() {
 
 		Context("General", func() {
 
-			FContext("-", func() {
+			Context("-", func() {
 				It("should run successfully", shouldSuccessfullyRunning)
 			})
 
@@ -104,7 +104,7 @@ var _ = Describe("MongoDB", func() {
 						StorageClassName: types.StringP(f.StorageClass),
 					}
 				})
-				It("should run successfully", func() {
+				FIt("should run successfully", func() {
 					if skipMessage != "" {
 						Skip(skipMessage)
 					}
@@ -124,10 +124,9 @@ var _ = Describe("MongoDB", func() {
 					By("Wait for mongodb to be paused")
 					f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
 
-					_, err = f.PatchDormantDatabase(mongodb.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
-						in.Spec.Resume = true
-						return in
-					})
+					// Create MongoDB object again to resume it
+					By("Create MongoDB: " + mongodb.Name)
+					err = f.CreateMongoDB(mongodb)
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for DormantDatabase to be deleted")
