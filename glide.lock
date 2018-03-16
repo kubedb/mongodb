@@ -1,5 +1,5 @@
-hash: 9cf9521d3becb07824d13ee93bd1b336448dc453f21e2972e41880726a391260
-updated: 2018-03-16T13:13:13.644584427+06:00
+hash: 2f18f6c4279d128078cc999cd97ea86bc88142b9166059c279ab53f9dcdbaf1b
+updated: 2018-03-16T15:44:04.73236664+06:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -130,7 +130,7 @@ imports:
   subpackages:
   - pkg/client/monitoring/v1
 - name: github.com/cpuguy83/go-md2man
-  version: 48d8747a2ca13185e7cc8efe6e9fc196a83f71a5
+  version: 71acacd42f85e5e82f70a55327789582a5200a90
   subpackages:
   - md2man
 - name: github.com/davecgh/go-spew

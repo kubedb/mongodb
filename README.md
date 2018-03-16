@@ -1,6 +1,8 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/kubedb/mongodb)](https://goreportcard.com/report/github.com/kubedb/mongodb)
-
-[Website](https://kubedb.com) • [Slack](http://slack.kubernetes.io) • [Twitter](https://twitter.com/KubeDB)
+[![Build Status](https://travis-ci.org/kubedb/mongodb.svg?branch=master)](https://travis-ci.org/kubedb/mongodb)
+[![codecov](https://codecov.io/gh/kubedb/mongodb/branch/master/graph/badge.svg)](https://codecov.io/gh/kubedb/mongodb)
+[![Slack](http://slack.kubernetes.io/badge.svg)](http://slack.kubernetes.io)
+[![Twitter](https://img.shields.io/twitter/follow/kubedb.svg?style=social&logo=twitter&label=Follow)](https://twitter.com/intent/follow?screen_name=kubedb)
 
 # mongodb
 Run MongoDB in Kubernetes
