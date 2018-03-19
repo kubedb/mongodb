@@ -36,12 +36,20 @@ func (c *Controller) addOrUpdateMonitor(mongodb *api.MongoDB) (kutil.VerbType, e
 	return agent.CreateOrUpdate(mongodb.StatsAccessor(), mongodb.Spec.Monitor)
 }
 
-func (c *Controller) deleteMonitor(mongodb *api.MongoDB) (kutil.VerbType, error) {
-	agent, err := c.newMonitorController(mongodb)
+// deleteMonitor deletes the left-over service-monitors using agent.delete.
+// Built-In prometheus is not handled here because the service will be deleted automatically.
+func (c *Controller) deleteMonitor(name, namespace string) (kutil.VerbType, error) {
+	fakeMongoDB := &api.MongoDB{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+	agent, err := c.newMonitorController(fakeMongoDB)
 	if err != nil {
 		return kutil.VerbUnchanged, err
 	}
-	return agent.Delete(mongodb.StatsAccessor())
+	return agent.Delete(fakeMongoDB.StatsAccessor())
 }
 
 func (c *Controller) getOldAgent(mongodb *api.MongoDB) mona.Agent {

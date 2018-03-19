@@ -5,7 +5,6 @@ import (
 
 	"github.com/appscode/go/log"
 	"github.com/appscode/kutil"
-	core_util "github.com/appscode/kutil/core/v1"
 	meta_util "github.com/appscode/kutil/meta"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
@@ -15,7 +14,6 @@ import (
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func (c *Controller) create(mongodb *api.MongoDB) error {
@@ -219,57 +217,14 @@ func (c *Controller) initialize(mongodb *api.MongoDB) error {
 	return nil
 }
 
-func (c *Controller) pause(mongodb *api.MongoDB) error {
-
-	c.cronController.StopBackupScheduling(mongodb.ObjectMeta)
-
-	if mongodb.Spec.Monitor != nil {
-		if _, err := c.deleteMonitor(mongodb); err != nil {
-			c.recorder.Eventf(
-				mongodb.ObjectReference(),
-				core.EventTypeWarning,
-				eventer.EventReasonFailedToDelete,
-				"Failed to delete monitoring system. Reason: %v",
-				err,
-			)
-			log.Errorln(err)
-			return nil
-		}
+func (c *Controller) pause(name, namespace string) error {
+	c.cronController.StopBackupScheduling(metav1.ObjectMeta{
+		Name:      name,
+		Namespace: namespace,
+	})
+	if _, err := c.deleteMonitor(name, namespace); err != nil {
+		log.Errorln(err)
+		return err
 	}
 	return nil
-}
-
-func (c *Controller) GetDatabase(meta metav1.ObjectMeta) (runtime.Object, error) {
-	mongodb, err := c.ExtClient.MongoDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	return mongodb, nil
-}
-
-func (c *Controller) SetDatabaseStatus(meta metav1.ObjectMeta, phase api.DatabasePhase, reason string) error {
-	mongodb, err := c.ExtClient.MongoDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	_, _, err = util.PatchMongoDB(c.ExtClient, mongodb, func(in *api.MongoDB) *api.MongoDB {
-		in.Status.Phase = phase
-		in.Status.Reason = reason
-		return in
-	})
-	return err
-}
-
-func (c *Controller) UpsertDatabaseAnnotation(meta metav1.ObjectMeta, annotation map[string]string) error {
-	mongodb, err := c.ExtClient.MongoDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-
-	_, _, err = util.PatchMongoDB(c.ExtClient, mongodb, func(in *api.MongoDB) *api.MongoDB {
-		in.Annotations = core_util.UpsertMap(mongodb.Annotations, annotation)
-		return in
-	})
-	return err
 }

@@ -1,9 +1,8 @@
 package e2e_test
 
 import (
-	"os"
-
 	"fmt"
+	"os"
 
 	"github.com/appscode/go/types"
 	meta_util "github.com/appscode/kutil/meta"
@@ -22,7 +21,6 @@ const (
 	AZURE_CONTAINER_NAME = "AZURE_CONTAINER_NAME"
 	SWIFT_CONTAINER_NAME = "SWIFT_CONTAINER_NAME"
 )
-
 
 //todo: add PVC by default, and add some tests without pvc
 var _ = Describe("MongoDB", func() {
@@ -225,7 +223,7 @@ var _ = Describe("MongoDB", func() {
 				}
 			}
 
-			FContext("In Local", func() {
+			Context("In Local", func() {
 				BeforeEach(func() {
 					skipDataCheck = true
 					secret = f.SecretForLocalBackend()
@@ -261,7 +259,7 @@ var _ = Describe("MongoDB", func() {
 				It("should take Snapshot successfully", shouldTakeSnapshot)
 			})
 
-			FContext("In GCS", func() {
+			Context("In GCS", func() {
 				BeforeEach(func() {
 					secret = f.SecretForGCSBackend()
 					snapshot.Spec.StorageSecretName = secret.Name
@@ -315,7 +313,7 @@ var _ = Describe("MongoDB", func() {
 			})
 		})
 
-		FContext("Initialize", func() {
+		Context("Initialize", func() {
 			BeforeEach(func() {
 				if f.StorageClass != "" {
 					mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
@@ -428,7 +426,7 @@ var _ = Describe("MongoDB", func() {
 			})
 		})
 
-		FContext("Resume", func() {
+		Context("Resume", func() {
 			var usedInitScript bool
 			var usedInitSnapshot bool
 			BeforeEach(func() {
@@ -703,7 +701,7 @@ var _ = Describe("MongoDB", func() {
 
 		})
 
-		FContext("SnapshotScheduler", func() {
+		Context("SnapshotScheduler", func() {
 			AfterEach(func() {
 				f.DeleteSecret(secret.ObjectMeta)
 			})
