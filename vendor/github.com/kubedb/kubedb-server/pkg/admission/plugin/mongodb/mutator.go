@@ -3,7 +3,7 @@ package mongodb
 import (
 	"sync"
 
-	hookapi "github.com/appscode/kutil/admission/api"
+	hookapi "github.com/appscode/kutil/admission/v1beta1"
 	meta_util "github.com/appscode/kutil/meta"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	cs "github.com/kubedb/apimachinery/client/clientset/versioned"

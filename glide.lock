@@ -1,5 +1,5 @@
 hash: 2f18f6c4279d128078cc999cd97ea86bc88142b9166059c279ab53f9dcdbaf1b
-updated: 2018-03-16T15:44:04.73236664+06:00
+updated: 2018-03-19T15:40:52.029201559+06:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -34,14 +34,16 @@ imports:
   - agents/prometheusbuiltin
   - api
 - name: github.com/appscode/kutil
-  version: 3e1d387015c275db5fd3d605fcf1f61af6ab6866
+  version: a5d9262e49e1228e8f0b0e830e0355721e3bf682
   subpackages:
-  - admission/api
+  - admission
+  - admission/v1beta1
   - apiextensions/v1beta1
   - apps/v1
   - core/v1
   - meta
   - registry/admissionreview/v1beta1
+  - runtime/serializer/versioning
   - tools/analytics
   - tools/portforward
 - name: github.com/appscode/mergo
@@ -165,7 +167,7 @@ imports:
 - name: github.com/go-bongo/go-dotaccess
   version: ae070a2d2a38fd7233e255ded21fb26fe36b4796
 - name: github.com/go-ini/ini
-  version: 300e940a926eb277d3901b20bdfcc54928ad3642
+  version: d3de07a94d22b4a0972deb4b96d790c2c0ce8333
 - name: github.com/go-openapi/jsonpointer
   version: 46af16f9f7b149af66e5d1bd010e3574dc06de98
 - name: github.com/go-openapi/jsonreference
@@ -214,8 +216,17 @@ imports:
   - OpenAPIv2
   - compiler
   - extensions
+- name: github.com/gophercloud/gophercloud
+  version: 8183543f90d1aef267a5ecc209f2e0715b355acb
+  subpackages:
+  - openstack
+  - openstack/identity/v2/tenants
+  - openstack/identity/v2/tokens
+  - openstack/identity/v3/tokens
+  - openstack/utils
+  - pagination
 - name: github.com/graymeta/stow
-  version: 6f2b8867a3fb15cca5507da1d552b55cfe5d07a7
+  version: db723d93e5b1b0cc0d404c2c5fb0ac4919bda55e
   repo: https://github.com/appscode/stow.git
   vcs: git
   subpackages:
@@ -275,7 +286,7 @@ imports:
   - pkg/storage
   - pkg/validator
 - name: github.com/kubedb/kubedb-server
-  version: b9a82ee7d54cd60da4468ffb5b299a49c0ab1a25
+  version: ac4794b50e651ab8fcf5a25b6b2e8bce2dda642c
   subpackages:
   - pkg/admission/plugin/dormant-database
   - pkg/admission/plugin/mongodb
@@ -390,7 +401,7 @@ imports:
 - name: github.com/sirupsen/logrus
   version: f006c2ac4710855cf0f916dd6b77acf6b048dc6e
 - name: github.com/spf13/cobra
-  version: c6c44e6fdcc30161c7f4480754da7230d01c06e3
+  version: c439c4fa093711d42e1b01acb1235b52004753c1
   subpackages:
   - doc
 - name: github.com/spf13/pflag
@@ -466,7 +477,7 @@ imports:
   - unicode/norm
   - width
 - name: google.golang.org/api
-  version: c24aa0e5ed34558ea50c016e4fb92c5e9aa69f2c
+  version: 55e9fb4044f4757138d4273ace23060d022d18f9
   subpackages:
   - gensupport
   - googleapi
@@ -808,8 +819,14 @@ imports:
   - listers/storage/v1alpha1
   - listers/storage/v1beta1
   - pkg/version
+  - plugin/pkg/client/auth
+  - plugin/pkg/client/auth/azure
+  - plugin/pkg/client/auth/gcp
+  - plugin/pkg/client/auth/oidc
+  - plugin/pkg/client/auth/openstack
   - rest
   - rest/watch
+  - third_party/forked/golang/template
   - tools/auth
   - tools/cache
   - tools/clientcmd
@@ -828,6 +845,7 @@ imports:
   - util/flowcontrol
   - util/homedir
   - util/integer
+  - util/jsonpath
   - util/workqueue
 - name: k8s.io/kube-aggregator
   version: 23f9f59d663ea22b680310831a1b7297914b4ed3

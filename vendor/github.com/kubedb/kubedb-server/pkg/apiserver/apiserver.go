@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	hookapi "github.com/appscode/kutil/admission/api"
+	hookapi "github.com/appscode/kutil/admission/v1beta1"
 	admissionreview "github.com/appscode/kutil/registry/admissionreview/v1beta1"
 	"github.com/pkg/errors"
 	admission "k8s.io/api/admission/v1beta1"

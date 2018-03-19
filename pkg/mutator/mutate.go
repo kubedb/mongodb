@@ -28,7 +28,7 @@ import (
 // - Delete Dormant Database
 // - Finalizer Not Needed for MongoDB object
 // N.B.: Delete dormant database at the last stage of ValidatingWebhook
-func OnCreate(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface, mongodb api.MongoDB) (runtime.Object, error) {
+func OnCreate(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface, mongodb *api.MongoDB) (runtime.Object, error) {
 	if mongodb.Spec.Version == "" {
 		return nil, fmt.Errorf(`object 'Version' is missing in '%v'`, mongodb.Spec)
 	}
@@ -37,7 +37,7 @@ func OnCreate(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface,
 		mongodb.Spec.Replicas = types.Int32P(1)
 	}
 
-	if err := resembleDormantDatabase(extClient, &mongodb); err != nil {
+	if err := resembleDormantDatabase(extClient, mongodb); err != nil {
 		return nil, err
 	}
 
@@ -50,9 +50,9 @@ func OnCreate(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface,
 
 	// If monitoring spec is given without port,
 	// set default Listening port
-	setMonitoringPort(&mongodb)
+	setMonitoringPort(mongodb)
 
-	return &mongodb, nil
+	return mongodb, nil
 }
 
 func resembleDormantDatabase(extClient cs.KubedbV1alpha1Interface, mongodb *api.MongoDB) error {

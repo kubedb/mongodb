@@ -3,7 +3,7 @@ package dormant_database
 import (
 	"sync"
 
-	hookapi "github.com/appscode/kutil/admission/api"
+	hookapi "github.com/appscode/kutil/admission/v1beta1"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	cs "github.com/kubedb/apimachinery/client/clientset/versioned"
 	admission "k8s.io/api/admission/v1beta1"
