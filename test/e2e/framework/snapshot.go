@@ -86,6 +86,32 @@ func (f *Framework) EventuallySnapshotCount(meta metav1.ObjectMeta) GomegaAsyncA
 	)
 }
 
+func (f *Framework) EventuallyMultipleSucceededSnapshot(meta metav1.ObjectMeta) GomegaAsyncAssertion {
+
+	labelMap := map[string]string{
+		api.LabelDatabaseKind: api.ResourceKindMongoDB,
+		api.LabelDatabaseName: meta.Name,
+	}
+
+	return Eventually(
+		func() error {
+			snapshotList, err := f.extClient.Snapshots(meta.Namespace).List(metav1.ListOptions{
+				LabelSelector: labels.SelectorFromSet(labelMap).String(),
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			for _, snapshot := range snapshotList.Items {
+				if snapshot.Status.Phase != api.SnapshotPhaseSucceeded {
+					return fmt.Errorf("snapshot phase: %v and Reason: %v", snapshot.Status.Phase, snapshot.Status.Reason)
+				}
+			}
+			return nil
+		},
+		time.Minute*15,
+		time.Second*5,
+	)
+}
+
 func (f *Framework) checkSnapshotData(snapshot *api.Snapshot) (bool, error) {
 	storageSpec := snapshot.Spec.SnapshotStorageSpec
 	cfg, err := storage.NewOSMContext(f.kubeClient, storageSpec, snapshot.Namespace)

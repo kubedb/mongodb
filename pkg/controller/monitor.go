@@ -36,22 +36,6 @@ func (c *Controller) addOrUpdateMonitor(mongodb *api.MongoDB) (kutil.VerbType, e
 	return agent.CreateOrUpdate(mongodb.StatsAccessor(), mongodb.Spec.Monitor)
 }
 
-// deleteMonitor deletes the left-over service-monitors using agent.delete.
-// Built-In prometheus is not handled here because the service will be deleted automatically.
-func (c *Controller) deleteMonitor(name, namespace string) (kutil.VerbType, error) {
-	fakeMongoDB := &api.MongoDB{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-	}
-	agent, err := c.newMonitorController(fakeMongoDB)
-	if err != nil {
-		return kutil.VerbUnchanged, err
-	}
-	return agent.Delete(fakeMongoDB.StatsAccessor())
-}
-
 func (c *Controller) getOldAgent(mongodb *api.MongoDB) mona.Agent {
 	service, err := c.Client.CoreV1().Services(mongodb.Namespace).Get(mongodb.StatsAccessor().ServiceName(), metav1.GetOptions{})
 	if err != nil {
@@ -95,4 +79,13 @@ func (c *Controller) manageMonitor(mongodb *api.MongoDB) error {
 		}
 	}
 	return nil
+}
+
+// deleteMonitor deletes the left-over service-monitors using agent.delete.
+// Built-In prometheus is not handled here because the service will be deleted automatically.
+func (c *Controller) deleteMonitor(dummyMongoDB *api.MongoDB) {
+	agent := agents.New(mona.AgentCoreOSPrometheus, c.Client, c.ApiExtKubeClient, c.promClient)
+	if _, err := agent.Delete(dummyMongoDB.StatsAccessor()); err != nil {
+		log.Errorln(err)
+	}
 }

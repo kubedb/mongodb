@@ -22,7 +22,7 @@ const (
 	SWIFT_CONTAINER_NAME = "SWIFT_CONTAINER_NAME"
 )
 
-//todo: add PVC by default, and add some tests without pvc
+// todo: add PVC by default, and add some tests without pvc
 var _ = Describe("MongoDB", func() {
 	var (
 		err         error
@@ -57,13 +57,14 @@ var _ = Describe("MongoDB", func() {
 		By("Wait for mongodb to be paused")
 		f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
 
-		By("WipeOut mongodb")
+		By("Set DormantDatabase Spec.WipeOut to true")
 		_, err := f.PatchDormantDatabase(mongodb.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
 			in.Spec.WipeOut = true
 			return in
 		})
 		Expect(err).NotTo(HaveOccurred())
 
+		By("Delete Dormant Database")
 		err = f.DeleteDormantDatabase(mongodb.ObjectMeta)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -84,27 +85,31 @@ var _ = Describe("MongoDB", func() {
 	}
 
 	Describe("Test", func() {
+		BeforeEach(func() {
+			if f.StorageClass == "" {
+				Skip("Missing StorageClassName. Provide as flag to test this.")
+			}
+			mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
+				Resources: core.ResourceRequirements{
+					Requests: core.ResourceList{
+						core.ResourceStorage: resource.MustParse("1Gi"),
+					},
+				},
+				StorageClassName: types.StringP(f.StorageClass),
+			}
+
+		})
 
 		Context("General", func() {
 
-			Context("-", func() {
+			Context("Without PVC", func() {
+				BeforeEach(func() {
+					mongodb.Spec.Storage = nil
+				})
 				It("should run successfully", shouldSuccessfullyRunning)
 			})
 
 			Context("With PVC", func() {
-				BeforeEach(func() {
-					if f.StorageClass == "" {
-						skipMessage = "Missing StorageClassName. Provide as flag to test this."
-					}
-					mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
-						Resources: core.ResourceRequirements{
-							Requests: core.ResourceList{
-								core.ResourceStorage: resource.MustParse("100Mi"),
-							},
-						},
-						StorageClassName: types.StringP(f.StorageClass),
-					}
-				})
 				It("should run successfully", func() {
 					if skipMessage != "" {
 						Skip(skipMessage)
@@ -184,16 +189,6 @@ var _ = Describe("MongoDB", func() {
 			BeforeEach(func() {
 				skipDataCheck = false
 				snapshot.Spec.DatabaseName = mongodb.Name
-				if f.StorageClass != "" {
-					mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
-						Resources: core.ResourceRequirements{
-							Requests: core.ResourceList{
-								core.ResourceStorage: resource.MustParse("100Mi"),
-							},
-						},
-						StorageClassName: types.StringP(f.StorageClass),
-					}
-				}
 			})
 
 			var shouldTakeSnapshot = func() {
@@ -201,12 +196,14 @@ var _ = Describe("MongoDB", func() {
 				createAndWaitForRunning()
 
 				By("Create Secret")
-				f.CreateSecret(secret)
+				err := f.CreateSecret(secret)
+				Expect(err).NotTo(HaveOccurred())
 
 				By("Create Snapshot")
-				f.CreateSnapshot(snapshot)
+				err = f.CreateSnapshot(snapshot)
+				Expect(err).NotTo(HaveOccurred())
 
-				By("Check for Successed snapshot")
+				By("Check for Succeeded snapshot")
 				f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
 
 				if !skipDataCheck {
@@ -314,18 +311,6 @@ var _ = Describe("MongoDB", func() {
 		})
 
 		Context("Initialize", func() {
-			BeforeEach(func() {
-				if f.StorageClass != "" {
-					mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
-						Resources: core.ResourceRequirements{
-							Requests: core.ResourceList{
-								core.ResourceStorage: resource.MustParse("50Mi"),
-							},
-						},
-						StorageClassName: types.StringP(f.StorageClass),
-					}
-				}
-			})
 			Context("With Script", func() {
 				BeforeEach(func() {
 					mongodb.Spec.Init = &api.InitSpec{
@@ -383,7 +368,7 @@ var _ = Describe("MongoDB", func() {
 					By("Create Snapshot")
 					f.CreateSnapshot(snapshot)
 
-					By("Check for Successed snapshot")
+					By("Check for Succeeded snapshot")
 					f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
 
 					By("Check for snapshot data")
@@ -398,7 +383,7 @@ var _ = Describe("MongoDB", func() {
 						mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
 							Resources: core.ResourceRequirements{
 								Requests: core.ResourceList{
-									core.ResourceStorage: resource.MustParse("500Mi"),
+									core.ResourceStorage: resource.MustParse("1Gi"),
 								},
 							},
 							StorageClassName: types.StringP(f.StorageClass),
@@ -432,18 +417,6 @@ var _ = Describe("MongoDB", func() {
 			BeforeEach(func() {
 				usedInitScript = false
 				usedInitSnapshot = false
-
-				if f.StorageClass == "" {
-					skipMessage = "Missing StorageClassName. Provide as flag to test this."
-				}
-				mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
-					Resources: core.ResourceRequirements{
-						Requests: core.ResourceList{
-							core.ResourceStorage: resource.MustParse("500Mi"),
-						},
-					},
-					StorageClassName: types.StringP(f.StorageClass),
-				}
 			})
 
 			Context("Without Init", func() {
@@ -559,7 +532,7 @@ var _ = Describe("MongoDB", func() {
 					By("Create Snapshot")
 					f.CreateSnapshot(snapshot)
 
-					By("Check for Successed snapshot")
+					By("Check for Succeeded snapshot")
 					f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
 
 					By("Check for snapshot data")
@@ -570,12 +543,11 @@ var _ = Describe("MongoDB", func() {
 
 					By("Create mongodb from snapshot")
 					mongodb = f.MongoDB()
-					mongodb = f.MongoDB()
 					if f.StorageClass != "" {
 						mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
 							Resources: core.ResourceRequirements{
 								Requests: core.ResourceList{
-									core.ResourceStorage: resource.MustParse("500Mi"),
+									core.ResourceStorage: resource.MustParse("1Gi"),
 								},
 							},
 							StorageClassName: types.StringP(f.StorageClass),
@@ -648,17 +620,6 @@ var _ = Describe("MongoDB", func() {
 							},
 						},
 					}
-					if f.StorageClass == "" {
-						skipMessage = "Missing StorageClassName. Provide as flag to test this."
-					}
-					mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
-						Resources: core.ResourceRequirements{
-							Requests: core.ResourceList{
-								core.ResourceStorage: resource.MustParse("500Mi"),
-							},
-						},
-						StorageClassName: types.StringP(f.StorageClass),
-					}
 				})
 
 				It("should resume DormantDatabase successfully", func() {
@@ -715,8 +676,18 @@ var _ = Describe("MongoDB", func() {
 					// Create and wait for running MongoDB
 					createAndWaitForRunning()
 
-					By("Count multiple Snapshot")
-					f.EventuallySnapshotCount(mongodb.ObjectMeta).Should(matcher.MoreThan(3))
+					By("Count multiple Snapshot Object")
+					f.EventuallySnapshotCount(mongodb.ObjectMeta).Should(matcher.MoreThan(2))
+
+					By("Remove Backup Scheduler from MongoDB")
+					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
+						in.Spec.BackupSchedule = nil
+						return in
+					})
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Verify multiple Succeeded Snapshot")
+					f.EventuallyMultipleSucceededSnapshot(mongodb.ObjectMeta).Should(Succeed())
 
 					deleteTestResource()
 				}
@@ -751,17 +722,6 @@ var _ = Describe("MongoDB", func() {
 									Bucket: os.Getenv(GCS_BUCKET_NAME),
 								},
 							},
-						}
-						if f.StorageClass == "" {
-							skipMessage = "Missing StorageClassName. Provide as flag to test this."
-						}
-						mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
-							Resources: core.ResourceRequirements{
-								Requests: core.ResourceList{
-									core.ResourceStorage: resource.MustParse("500Mi"),
-								},
-							},
-							StorageClassName: types.StringP(f.StorageClass),
 						}
 					})
 

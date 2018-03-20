@@ -3,15 +3,12 @@ package controller
 import (
 	"fmt"
 
-	core_util "github.com/appscode/kutil/core/v1"
 	"github.com/appscode/kutil/tools/analytics"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
-	"github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 	"github.com/kubedb/apimachinery/pkg/storage"
 	batch "k8s.io/api/batch/v1"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
@@ -19,41 +16,6 @@ const (
 	snapshotProcessRestore = "restore"
 	snapshotProcessBackup  = "backup"
 )
-
-func (c *Controller) GetDatabase(meta metav1.ObjectMeta) (runtime.Object, error) {
-	mongodb, err := c.ExtClient.MongoDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	return mongodb, nil
-}
-
-func (c *Controller) SetDatabaseStatus(meta metav1.ObjectMeta, phase api.DatabasePhase, reason string) error {
-	mongodb, err := c.ExtClient.MongoDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	_, _, err = util.PatchMongoDB(c.ExtClient, mongodb, func(in *api.MongoDB) *api.MongoDB {
-		in.Status.Phase = phase
-		in.Status.Reason = reason
-		return in
-	})
-	return err
-}
-
-func (c *Controller) UpsertDatabaseAnnotation(meta metav1.ObjectMeta, annotation map[string]string) error {
-	mongodb, err := c.ExtClient.MongoDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-
-	_, _, err = util.PatchMongoDB(c.ExtClient, mongodb, func(in *api.MongoDB) *api.MongoDB {
-		in.Annotations = core_util.UpsertMap(mongodb.Annotations, annotation)
-		return in
-	})
-	return err
-}
 
 func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapshot) (*batch.Job, error) {
 	databaseName := mongodb.Name

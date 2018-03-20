@@ -8,7 +8,6 @@ import (
 	meta_util "github.com/appscode/kutil/meta"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
-	"github.com/the-redback/go-oneliners"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	rt "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -39,7 +38,6 @@ func (c *Controller) initWatcher() {
 		AddFunc: func(obj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(obj)
 			if err == nil {
-				oneliners.PrettyJson(key, "create key")
 				c.queue.Add(key)
 			}
 		},
@@ -48,7 +46,6 @@ func (c *Controller) initWatcher() {
 			// key function.
 			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 			if err == nil {
-				oneliners.PrettyJson(key, " Delete key")
 				c.queue.Add(key)
 			}
 		},
@@ -165,10 +162,11 @@ func (c *Controller) runMongoDB(key string) error {
 	}
 
 	if !exists {
-		ns, name, _ := cache.SplitMetaNamespaceKey(key)
-		fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>. Not exists key", ns, name)
-		log.Debugf("MongoDB %s does not exist anymore\n", key)
-		if err := c.pause(name, ns); err != nil {
+		namespace, name, err := cache.SplitMetaNamespaceKey(key)
+		if err != nil {
+			return err
+		}
+		if err := c.pause(name, namespace); err != nil {
 			log.Errorln(err)
 			return err
 		}

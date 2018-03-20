@@ -218,13 +218,15 @@ func (c *Controller) initialize(mongodb *api.MongoDB) error {
 }
 
 func (c *Controller) pause(name, namespace string) error {
-	c.cronController.StopBackupScheduling(metav1.ObjectMeta{
-		Name:      name,
-		Namespace: namespace,
-	})
-	if _, err := c.deleteMonitor(name, namespace); err != nil {
-		log.Errorln(err)
-		return err
+	dummyMongoDB := &api.MongoDB{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
 	}
+
+	c.cronController.StopBackupScheduling(dummyMongoDB.ObjectMeta)
+	c.deleteMonitor(dummyMongoDB)
+
 	return nil
 }

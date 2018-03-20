@@ -83,34 +83,21 @@ func (a *DormantDatabaseValidator) Admit(req *admission.AdmissionRequest) *admis
 			return hookapi.StatusInternalServerError(err)
 		}
 
-		// validate the operation made by User
-		//if !util.IsKubeDBOperator(req.UserInfo) {
-		//	todo: Do Not let user delete dormant Database, if WipeOut = false
-		//}
-
 		if err := a.onDeleteLeftOvers(obj); err != nil {
 			return hookapi.StatusInternalServerError(err)
 		}
-
-	case admission.Create:
-		//// validate the operation made by User
-		//if !util.IsKubeDBOperator(req.UserInfo) {
-		// todo: Do Not let user create dormant database. But, skip requests from KubeDB-Admission-Server
-		//}
 	case admission.Update:
 		// validate the operation made by User
-		if !updUtil.IsKubeDBOperator(req.UserInfo) {
-			obj, err := meta_util.UnmarshalFromJSON(req.Object.Raw, api.SchemeGroupVersion)
-			if err != nil {
-				return hookapi.StatusBadRequest(err)
-			}
-			OldObj, err := meta_util.UnmarshalFromJSON(req.OldObject.Raw, api.SchemeGroupVersion)
-			if err != nil {
-				return hookapi.StatusBadRequest(err)
-			}
-			if err := updUtil.ValidateUpdate(obj, OldObj, req.Kind.Kind); err != nil {
-				return hookapi.StatusBadRequest(fmt.Errorf("%v", err))
-			}
+		obj, err := meta_util.UnmarshalFromJSON(req.Object.Raw, api.SchemeGroupVersion)
+		if err != nil {
+			return hookapi.StatusBadRequest(err)
+		}
+		OldObj, err := meta_util.UnmarshalFromJSON(req.OldObject.Raw, api.SchemeGroupVersion)
+		if err != nil {
+			return hookapi.StatusBadRequest(err)
+		}
+		if err := updUtil.ValidateUpdate(obj, OldObj, req.Kind.Kind); err != nil {
+			return hookapi.StatusBadRequest(fmt.Errorf("%v", err))
 		}
 	}
 

@@ -2,7 +2,6 @@ package e2e_test
 
 import (
 	"flag"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -39,8 +38,6 @@ var (
 
 func init() {
 	scheme.AddToScheme(clientSetScheme.Scheme)
-	os.Setenv("SERVICE_ACCOUNT_NAME", "kubedb-operator")
-	os.Setenv("KUBE_NAMESPACE", "kube-system")
 
 	flag.StringVar(&storageClass, "storageclass", "standard", "Kubernetes StorageClass name")
 	flag.StringVar(&dockerRegistry, "docker-registry", "kubedb", "User provided docker repository")
@@ -57,6 +54,7 @@ var (
 
 func TestE2e(t *testing.T) {
 	logs.InitLogs()
+	defer logs.FlushLogs()
 	RegisterFailHandler(Fail)
 	SetDefaultEventuallyTimeout(TIMEOUT)
 

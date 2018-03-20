@@ -1,5 +1,5 @@
 hash: 2f18f6c4279d128078cc999cd97ea86bc88142b9166059c279ab53f9dcdbaf1b
-updated: 2018-03-19T15:40:52.029201559+06:00
+updated: 2018-03-20T17:45:19.259587199+06:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -27,14 +27,14 @@ imports:
 - name: github.com/appscode/jsonpatch
   version: 3e75a56b8967932466984d4432401e1c1a7ff61e
 - name: github.com/appscode/kube-mon
-  version: a670a5ff28df12938aa324b9f13683caeb216f8f
+  version: eeb8de0ba83795dc2fd86c3667d6566a62276160
   subpackages:
   - agents
   - agents/coreosprometheusoperator
   - agents/prometheusbuiltin
   - api
 - name: github.com/appscode/kutil
-  version: a5d9262e49e1228e8f0b0e830e0355721e3bf682
+  version: 27d2cfe8446ebe2627406a43081ff7d0f222e8e7
   subpackages:
   - admission
   - admission/v1beta1
@@ -46,6 +46,7 @@ imports:
   - runtime/serializer/versioning
   - tools/analytics
   - tools/portforward
+  - workload/v1
 - name: github.com/appscode/mergo
   version: e3000cb3d28c72b837601cac94debd91032d19fe
 - name: github.com/appscode/osm
@@ -286,7 +287,7 @@ imports:
   - pkg/storage
   - pkg/validator
 - name: github.com/kubedb/kubedb-server
-  version: ac4794b50e651ab8fcf5a25b6b2e8bce2dda642c
+  version: 85e625ed527cf6ab05f4e6633916a8895b9c2488
   subpackages:
   - pkg/admission/plugin/dormant-database
   - pkg/admission/plugin/mongodb
@@ -406,8 +407,6 @@ imports:
   - doc
 - name: github.com/spf13/pflag
   version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
-- name: github.com/the-redback/go-oneliners
-  version: 82a97ec58df4809a2bc57ebbbcc1e6a2feb78111
 - name: github.com/ugorji/go
   version: ded73eae5db7e7a0ef6f55aace87a2873c5d2b74
   subpackages:
@@ -477,7 +476,7 @@ imports:
   - unicode/norm
   - width
 - name: google.golang.org/api
-  version: 55e9fb4044f4757138d4273ace23060d022d18f9
+  version: 00840100d732f946c263bfd7bc26b17890f47fe7
   subpackages:
   - gensupport
   - googleapi

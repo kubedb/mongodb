@@ -83,7 +83,7 @@ func (f *Framework) EventuallyWipedOut(meta metav1.ObjectMeta) GomegaAsyncAssert
 				return err
 			}
 			if len(pvcList.Items) > 0 {
-				fmt.Errorf("PVCs have not wiped out yet")
+				return fmt.Errorf("PVCs have not wiped out yet")
 			}
 
 			// check if snapshot is wiped out
@@ -96,7 +96,7 @@ func (f *Framework) EventuallyWipedOut(meta metav1.ObjectMeta) GomegaAsyncAssert
 				return err
 			}
 			if len(snapshotList.Items) > 0 {
-				fmt.Errorf("all snapshots have not wiped out yet")
+				return fmt.Errorf("all snapshots have not wiped out yet")
 			}
 
 			// check if secrets are wiped out
@@ -109,7 +109,7 @@ func (f *Framework) EventuallyWipedOut(meta metav1.ObjectMeta) GomegaAsyncAssert
 				return err
 			}
 			if len(secretList.Items) > 0 {
-				fmt.Errorf("secrets have not wiped out yet")
+				return fmt.Errorf("secrets have not wiped out yet")
 			}
 
 			return nil

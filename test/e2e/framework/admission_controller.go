@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/appscode/go/log"
 	"github.com/kubedb/kubedb-server/pkg/admission/plugin/dormant-database"
 	"github.com/kubedb/kubedb-server/pkg/admission/plugin/mongodb"
 	"github.com/kubedb/kubedb-server/pkg/admission/plugin/snapshot"
@@ -25,10 +26,12 @@ func (f *Framework) EventuallyApiServiceReady() GomegaAsyncAssertion {
 			for _, cond := range crd.Status.Conditions {
 				if cond.Type == kApi.Available && cond.Status == kApi.ConditionTrue {
 					time.Sleep(time.Second * 5) // let the resource become available
+					log.Info("APIService status is true")
 					return nil
 				}
 			}
-			return fmt.Errorf("ApiService not ready yet")
+			log.Error("APIService not ready yet")
+			return fmt.Errorf("APIService not ready yet")
 		},
 		time.Minute*2,
 		time.Second*5,
