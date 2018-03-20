@@ -411,6 +411,7 @@ var _ = Describe("MongoDB", func() {
 			})
 		})
 
+		// todo: check data as well
 		Context("Resume", func() {
 			var usedInitScript bool
 			var usedInitSnapshot bool
@@ -677,7 +678,7 @@ var _ = Describe("MongoDB", func() {
 					createAndWaitForRunning()
 
 					By("Count multiple Snapshot Object")
-					f.EventuallySnapshotCount(mongodb.ObjectMeta).Should(matcher.MoreThan(2))
+					f.EventuallySnapshotCount(mongodb.ObjectMeta).Should(matcher.MoreThan(3))
 
 					By("Remove Backup Scheduler from MongoDB")
 					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
