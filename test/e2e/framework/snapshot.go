@@ -37,7 +37,7 @@ func (f *Framework) GetSnapshot(meta metav1.ObjectMeta) (*api.Snapshot, error) {
 }
 
 func (f *Framework) DeleteSnapshot(meta metav1.ObjectMeta) error {
-	return f.extClient.Snapshots(meta.Namespace).Delete(meta.Name, &metav1.DeleteOptions{})
+	return f.extClient.Snapshots(meta.Namespace).Delete(meta.Name, deleteInBackground())
 }
 
 func (f *Framework) EventuallySnapshotPhase(meta metav1.ObjectMeta) GomegaAsyncAssertion {
@@ -164,10 +164,7 @@ func (f *Framework) CleanSnapshot() {
 			return in
 		})
 	}
-	deletePolicy := metav1.DeletePropagationBackground
-	if err := f.extClient.Snapshots(f.namespace).DeleteCollection(&metav1.DeleteOptions{
-		PropagationPolicy: &deletePolicy,
-	}, metav1.ListOptions{}); err != nil {
+	if err := f.extClient.Snapshots(f.namespace).DeleteCollection(deleteInBackground(), metav1.ListOptions{}); err != nil {
 		fmt.Errorf("error in deletion of Snapshot. Error: %v", err)
 	}
 }

@@ -47,7 +47,7 @@ func (f *Framework) PatchMongoDB(meta metav1.ObjectMeta, transform func(*api.Mon
 }
 
 func (f *Framework) DeleteMongoDB(meta metav1.ObjectMeta) error {
-	return f.extClient.MongoDBs(meta.Namespace).Delete(meta.Name, &metav1.DeleteOptions{})
+	return f.extClient.MongoDBs(meta.Namespace).Delete(meta.Name, deleteInBackground())
 }
 
 func (f *Framework) EventuallyMongoDB(meta metav1.ObjectMeta) GomegaAsyncAssertion {
@@ -91,10 +91,7 @@ func (f *Framework) CleanMongoDB() {
 			return in
 		})
 	}
-	deletePolicy := metav1.DeletePropagationForeground
-	if err := f.extClient.MongoDBs(f.namespace).DeleteCollection(&metav1.DeleteOptions{
-		PropagationPolicy: &deletePolicy,
-	}, metav1.ListOptions{}); err != nil {
+	if err := f.extClient.MongoDBs(f.namespace).DeleteCollection(deleteInBackground(), metav1.ListOptions{}); err != nil {
 		fmt.Errorf("error in deletion of MongoDB. Error: %v", err)
 	}
 }

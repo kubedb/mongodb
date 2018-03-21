@@ -329,7 +329,7 @@ var _ = Describe("MongoDB", func() {
 					// Create Postgres
 					createAndWaitForRunning()
 
-					By("Checking Row Count of Table")
+					By("Checking Inserted Document")
 					f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
 
 					// Delete test resource
@@ -411,7 +411,6 @@ var _ = Describe("MongoDB", func() {
 			})
 		})
 
-		// todo: check data as well
 		Context("Resume", func() {
 			var usedInitScript bool
 			var usedInitSnapshot bool
@@ -424,6 +423,12 @@ var _ = Describe("MongoDB", func() {
 				It("should resume DormantDatabase successfully", func() {
 					// Create and wait for running MongoDB
 					createAndWaitForRunning()
+
+					By("Insert Document Inside DB")
+					f.EventuallyInsertDocument(mongodb.ObjectMeta).Should(BeTrue())
+
+					By("Checking Inserted Document")
+					f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
 
 					By("Delete mongodb")
 					f.DeleteMongoDB(mongodb.ObjectMeta)
@@ -442,6 +447,9 @@ var _ = Describe("MongoDB", func() {
 					By("Wait for Running mongodb")
 					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
 
+					By("Checking Inserted Document")
+					f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
+
 					_, err = f.GetMongoDB(mongodb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
@@ -450,7 +458,7 @@ var _ = Describe("MongoDB", func() {
 				})
 			})
 
-			Context("with init", func() {
+			Context("with init Script", func() {
 				BeforeEach(func() {
 					usedInitScript = true
 					mongodb.Spec.Init = &api.InitSpec{
@@ -469,6 +477,9 @@ var _ = Describe("MongoDB", func() {
 					// Create and wait for running MongoDB
 					createAndWaitForRunning()
 
+					By("Checking Inserted Document")
+					f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
+
 					By("Delete mongodb")
 					f.DeleteMongoDB(mongodb.ObjectMeta)
 
@@ -485,6 +496,9 @@ var _ = Describe("MongoDB", func() {
 
 					By("Wait for Running mongodb")
 					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+
+					By("Checking Inserted Document")
+					f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
 
 					_, err := f.GetMongoDB(mongodb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())

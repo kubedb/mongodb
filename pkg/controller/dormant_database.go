@@ -28,15 +28,14 @@ func (c *Controller) ExDatabaseStatus(dormantDb *api.DormantDatabase) error {
 		return err
 	}
 
-	//todo: make sure service is deleted as welll
-	//_, err = c.Client.CoreV1().Services(mongodb.Namespace).Get(mongodb.Name, metav1.GetOptions{})
-	//if err != nil {
-	//	if kerr.IsNotFound(err) {
-	//		return nil
-	//	} else {
-	//		return err
-	//	}
-	//}
+	_, err = c.Client.CoreV1().Services(mongodb.Namespace).Get(mongodb.Name, metav1.GetOptions{})
+	if err != nil {
+		if kerr.IsNotFound(err) {
+			return nil
+		} else {
+			return err
+		}
+	}
 
 	return nil
 }

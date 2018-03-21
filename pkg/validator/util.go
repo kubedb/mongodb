@@ -54,7 +54,6 @@ func getDormantDatabase(mongodb *api.MongoDB) *api.DormantDatabase {
 			Labels: map[string]string{
 				api.LabelDatabaseKind: api.ResourceKindMongoDB,
 			},
-			Finalizers: []string{api.GenericKey},
 		},
 		Spec: api.DormantDatabaseSpec{
 			Origin: api.Origin{

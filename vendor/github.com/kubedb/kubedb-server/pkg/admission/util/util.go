@@ -2,15 +2,12 @@ package util
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	meta_util "github.com/appscode/kutil/meta"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
-	authenticationv1 "k8s.io/api/authentication/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/mergepatch"
-	apiserver_util "k8s.io/apiserver/pkg/authentication/serviceaccount"
 )
 
 var (
@@ -20,15 +17,15 @@ var (
 	EnvSvcAccountName = "SERVICE_ACCOUNT_NAME"
 )
 
-func IsKubeDBOperator(userInfo authenticationv1.UserInfo) bool {
-	svcAccEnv := os.Getenv(EnvSvcAccountName)
-	nsEnv := meta_util.Namespace()
-
-	if ns, username, err := apiserver_util.SplitUsername(userInfo.Username); err == nil && username == svcAccEnv && ns == nsEnv {
-		return true
-	}
-	return false
-}
+// func IsKubeDBOperator(userInfo authenticationv1.UserInfo) bool {
+// 	svcAccEnv := os.Getenv(EnvSvcAccountName)
+// 	nsEnv := meta_util.Namespace()
+//
+// 	if ns, username, err := apiserver_util.SplitUsername(userInfo.Username); err == nil && username == svcAccEnv && ns == nsEnv {
+// 		return true
+// 	}
+// 	return false
+// }
 
 func ValidateUpdate(obj, oldObj runtime.Object, kind string) error {
 	preconditions := getPreconditionFunc(kind)

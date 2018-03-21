@@ -12,26 +12,7 @@ import (
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 )
-
-func (c *Controller) DeletePersistentVolumeClaims(namespace string, selector labels.Selector) error {
-	pvcList, err := c.Client.CoreV1().PersistentVolumeClaims(namespace).List(
-		metav1.ListOptions{
-			LabelSelector: selector.String(),
-		},
-	)
-	if err != nil {
-		return err
-	}
-
-	for _, pvc := range pvcList.Items {
-		if err := c.Client.CoreV1().PersistentVolumeClaims(pvc.Namespace).Delete(pvc.Name, nil); err != nil {
-			return err
-		}
-	}
-	return nil
-}
 
 func (c *Controller) DeleteSnapshotData(snapshot *api.Snapshot) error {
 	cfg, err := storage.NewOSMContext(c.Client, snapshot.Spec.SnapshotStorageSpec, snapshot.Namespace)
@@ -70,24 +51,6 @@ func (c *Controller) DeleteSnapshotData(snapshot *api.Snapshot) error {
 		}
 	}
 
-	return nil
-}
-
-func (c *Controller) DeleteSnapshots(namespace string, selector labels.Selector) error {
-	snapshotList, err := c.ExtClient.Snapshots(namespace).List(
-		metav1.ListOptions{
-			LabelSelector: selector.String(),
-		},
-	)
-	if err != nil {
-		return err
-	}
-
-	for _, snapshot := range snapshotList.Items {
-		if err := c.ExtClient.Snapshots(snapshot.Namespace).Delete(snapshot.Name, &metav1.DeleteOptions{}); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 

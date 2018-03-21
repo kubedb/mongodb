@@ -54,46 +54,35 @@ func (f *Framework) RunAdmissionServer(kubeconfigPath string, stopCh <-chan stru
 }
 
 func (f *Framework) CleanAdmissionController() {
-	deletePolicy := metav1.DeletePropagationBackground
 
 	// Delete Service
-	if err := f.kubeClient.CoreV1().Services("kube-system").Delete("kubedb-operator", &metav1.DeleteOptions{
-		PropagationPolicy: &deletePolicy,
-	}); err != nil {
+	if err := f.kubeClient.CoreV1().Services("kube-system").Delete("kubedb-operator", deleteInBackground()); err != nil {
 		fmt.Errorf("error in deletion of Service. Error: %v", err)
 	}
 
 	// Delete EndPoints
-	if err := f.kubeClient.CoreV1().Endpoints("kube-system").DeleteCollection(&metav1.DeleteOptions{
-		PropagationPolicy: &deletePolicy,
-	}, metav1.ListOptions{
+	if err := f.kubeClient.CoreV1().Endpoints("kube-system").DeleteCollection(deleteInBackground(), metav1.ListOptions{
 		LabelSelector: "app=kubedb",
 	}); err != nil {
 		fmt.Errorf("error in deletion of Endpoints. Error: %v", err)
 	}
 
 	// delete validating Webhook
-	if err := f.kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().DeleteCollection(&metav1.DeleteOptions{
-		PropagationPolicy: &deletePolicy,
-	}, metav1.ListOptions{
+	if err := f.kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().DeleteCollection(deleteInBackground(), metav1.ListOptions{
 		LabelSelector: "app=kubedb",
 	}); err != nil {
 		fmt.Errorf("error in deletion of Validating Webhhok. Error: %v", err)
 	}
 
 	// delete mutating Webhook
-	if err := f.kubeClient.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().DeleteCollection(&metav1.DeleteOptions{
-		PropagationPolicy: &deletePolicy,
-	}, metav1.ListOptions{
+	if err := f.kubeClient.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().DeleteCollection(deleteInBackground(), metav1.ListOptions{
 		LabelSelector: "app=kubedb",
 	}); err != nil {
 		fmt.Errorf("error in deletion of MutatingWebhook. Error: %v", err)
 	}
 
 	// Delete APIService
-	if err := f.kaClient.ApiregistrationV1beta1().APIServices().DeleteCollection(&metav1.DeleteOptions{
-		PropagationPolicy: &deletePolicy,
-	}, metav1.ListOptions{
+	if err := f.kaClient.ApiregistrationV1beta1().APIServices().DeleteCollection(deleteInBackground(), metav1.ListOptions{
 		LabelSelector: "app=kubedb",
 	}); err != nil {
 		fmt.Errorf("error in deletion of APIService. Error: %v", err)
