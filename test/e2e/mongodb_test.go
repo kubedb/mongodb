@@ -22,7 +22,6 @@ const (
 	SWIFT_CONTAINER_NAME = "SWIFT_CONTAINER_NAME"
 )
 
-// todo: add PVC by default, and add some tests without pvc
 var _ = Describe("MongoDB", func() {
 	var (
 		err         error
@@ -179,7 +178,7 @@ var _ = Describe("MongoDB", func() {
 			})
 		})
 
-		Context("Snapshot", func() {
+		FContext("Snapshot", func() {
 			var skipDataCheck bool
 
 			AfterEach(func() {

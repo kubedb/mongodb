@@ -82,7 +82,7 @@ func (a *SnapshotValidator) Admit(req *admission.AdmissionRequest) *admission.Ad
 		if err := util.ValidateUpdate(obj, oldObject, req.Kind.Kind); err != nil {
 			return hookapi.StatusBadRequest(fmt.Errorf("%v", err))
 		}
-		// Skip checking validation is Spec is not changed
+		// Skip checking validation if Spec is not changed
 		if meta_util.Equal(obj.(*api.Snapshot).Spec, oldObject.(*api.Snapshot).Spec) {
 			status.Allowed = true
 			return status

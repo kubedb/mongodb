@@ -45,6 +45,10 @@ func (c *Controller) ensureDatabaseSecret(mongodb *api.MongoDB) error {
 func (c *Controller) createDatabaseSecret(mongodb *api.MongoDB) error {
 	authSecretName := mongodb.Name + "-auth"
 
+	randPassword := ""
+	for randPassword = rand.GeneratePassword(); randPassword[0] == '-'; {
+	}
+
 	secret := &core.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: authSecretName,
@@ -56,7 +60,7 @@ func (c *Controller) createDatabaseSecret(mongodb *api.MongoDB) error {
 		Type: core.SecretTypeOpaque,
 		StringData: map[string]string{
 			KeyMongoDBUser:     mongodbUser,
-			KeyMongoDBPassword: rand.GeneratePassword(),
+			KeyMongoDBPassword: randPassword,
 		},
 	}
 	if _, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Create(secret); err != nil {

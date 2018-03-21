@@ -81,17 +81,20 @@ func (f *Framework) EventuallyMongoDBRunning(meta metav1.ObjectMeta) GomegaAsync
 }
 
 func (f *Framework) CleanMongoDB() {
+	f.EventuallyCleanedAdmissionConfigs().Should(Succeed())
 	mongodbList, err := f.extClient.MongoDBs(f.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return
 	}
 	for _, e := range mongodbList.Items {
-		util.PatchMongoDB(f.extClient, &e, func(in *api.MongoDB) *api.MongoDB {
+		if _, _, err := util.PatchMongoDB(f.extClient, &e, func(in *api.MongoDB) *api.MongoDB {
 			in.ObjectMeta.Finalizers = nil
 			return in
-		})
+		}); err != nil {
+			fmt.Printf("error Patching MongoDB. error: %v", err)
+		}
 	}
 	if err := f.extClient.MongoDBs(f.namespace).DeleteCollection(deleteInBackground(), metav1.ListOptions{}); err != nil {
-		fmt.Errorf("error in deletion of MongoDB. Error: %v", err)
+		fmt.Printf("error in deletion of MongoDB. Error: %v", err)
 	}
 }

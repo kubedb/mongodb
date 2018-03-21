@@ -81,6 +81,8 @@ func (a *DormantDatabaseValidator) Admit(req *admission.AdmissionRequest) *admis
 		obj, err := a.extClient.KubedbV1alpha1().DormantDatabases(req.Namespace).Get(req.Name, metav1.GetOptions{})
 		if err != nil && !kerr.IsNotFound(err) {
 			return hookapi.StatusInternalServerError(err)
+		} else if kerr.IsNotFound(err) {
+			break
 		}
 
 		if err := a.onDeleteLeftOvers(obj); err != nil {

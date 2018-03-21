@@ -120,17 +120,20 @@ func (f *Framework) EventuallyWipedOut(meta metav1.ObjectMeta) GomegaAsyncAssert
 }
 
 func (f *Framework) CleanDormantDatabase() {
+	f.EventuallyCleanedAdmissionConfigs().Should(Succeed())
 	dormantDatabaseList, err := f.extClient.DormantDatabases(f.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return
 	}
 	for _, d := range dormantDatabaseList.Items {
-		util.PatchDormantDatabase(f.extClient, &d, func(in *api.DormantDatabase) *api.DormantDatabase {
+		if _, _, err := util.PatchDormantDatabase(f.extClient, &d, func(in *api.DormantDatabase) *api.DormantDatabase {
 			in.ObjectMeta.Finalizers = nil
 			return in
-		})
+		}); err != nil {
+			fmt.Printf("error Patching DormantDatabase. error: %v", err)
+		}
 	}
 	if err := f.extClient.DormantDatabases(f.namespace).DeleteCollection(deleteInBackground(), metav1.ListOptions{}); err != nil {
-		fmt.Errorf("error in deletion of Dormant Database. Error: %v", err)
+		fmt.Printf("error in deletion of Dormant Database. Error: %v", err)
 	}
 }

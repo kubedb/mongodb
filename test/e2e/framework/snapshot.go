@@ -154,17 +154,20 @@ func (f *Framework) checkSnapshotData(snapshot *api.Snapshot) (bool, error) {
 }
 
 func (f *Framework) CleanSnapshot() {
+	f.EventuallyCleanedAdmissionConfigs().Should(Succeed())
 	snapshotList, err := f.extClient.Snapshots(f.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return
 	}
 	for _, s := range snapshotList.Items {
-		util.PatchSnapshot(f.extClient, &s, func(in *api.Snapshot) *api.Snapshot {
+		if _, _, err := util.PatchSnapshot(f.extClient, &s, func(in *api.Snapshot) *api.Snapshot {
 			in.ObjectMeta.Finalizers = nil
 			return in
-		})
+		}); err != nil {
+			fmt.Printf("error Patching Snapshot. error: %v", err)
+		}
 	}
 	if err := f.extClient.Snapshots(f.namespace).DeleteCollection(deleteInBackground(), metav1.ListOptions{}); err != nil {
-		fmt.Errorf("error in deletion of Snapshot. Error: %v", err)
+		fmt.Printf("error in deletion of Snapshot. Error: %v", err)
 	}
 }

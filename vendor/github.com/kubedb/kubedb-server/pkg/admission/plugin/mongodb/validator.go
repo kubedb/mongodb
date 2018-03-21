@@ -69,8 +69,6 @@ func (a *MongoDBValidator) Admit(req *admission.AdmissionRequest) *admission.Adm
 		return hookapi.StatusUninitialized()
 	}
 
-	//oneliners.PrettyJson(req, "validator mongodb")
-
 	switch req.Operation {
 	case admission.Delete:
 		// req.Object.Raw = nil, so read from kubernetes
@@ -79,6 +77,8 @@ func (a *MongoDBValidator) Admit(req *admission.AdmissionRequest) *admission.Adm
 			return hookapi.StatusInternalServerError(err)
 		} else if err == nil && obj.Spec.DoNotPause {
 			return hookapi.StatusBadRequest(fmt.Errorf(`mongodb "%s" can't be paused. To continue delete, unset spec.doNotPause and retry`, req.Name))
+		} else if kerr.IsNotFound(err) {
+			break
 		}
 		if err = mgv.OnDeleteLeftOvers(a.client, a.extClient.KubedbV1alpha1(), obj); err != nil {
 			return hookapi.StatusForbidden(err)

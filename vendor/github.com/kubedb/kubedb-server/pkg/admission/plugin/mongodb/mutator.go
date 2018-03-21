@@ -51,7 +51,8 @@ func (a *MongoDBMutator) Initialize(config *rest.Config, stopCh <-chan struct{})
 func (a *MongoDBMutator) Admit(req *admission.AdmissionRequest) *admission.AdmissionResponse {
 	status := &admission.AdmissionResponse{}
 
-	if (req.Operation != admission.Create && req.Operation != admission.Update && req.Operation != admission.Delete) ||
+	// N.B.: No Mutating for delete
+	if (req.Operation != admission.Create && req.Operation != admission.Update) ||
 		len(req.SubResource) != 0 ||
 		req.Kind.Group != api.SchemeGroupVersion.Group ||
 		req.Kind.Kind != api.ResourceKindMongoDB {
@@ -64,29 +65,23 @@ func (a *MongoDBMutator) Admit(req *admission.AdmissionRequest) *admission.Admis
 	if !a.initialized {
 		return hookapi.StatusUninitialized()
 	}
-
-	switch req.Operation {
-	case admission.Delete:
-		// No Mutating for delete
-
-	default:
-		obj, err := meta_util.UnmarshalFromJSON(req.Object.Raw, api.SchemeGroupVersion)
-		if err != nil {
-			return hookapi.StatusBadRequest(err)
-		}
-		mongoMod, err := mgm.OnCreate(a.client, a.extClient.KubedbV1alpha1(), obj.(*api.MongoDB).DeepCopy())
-		if err != nil {
-			return hookapi.StatusForbidden(err)
-		} else if mongoMod != nil {
-			patch, err := meta_util.CreateJSONPatch(obj, mongoMod)
-			if err != nil {
-				return hookapi.StatusInternalServerError(err)
-			}
-			status.Patch = patch
-			patchType := admission.PatchTypeJSONPatch
-			status.PatchType = &patchType
-		}
+	obj, err := meta_util.UnmarshalFromJSON(req.Object.Raw, api.SchemeGroupVersion)
+	if err != nil {
+		return hookapi.StatusBadRequest(err)
 	}
+	mongoMod, err := mgm.OnCreate(a.client, a.extClient.KubedbV1alpha1(), obj.(*api.MongoDB).DeepCopy())
+	if err != nil {
+		return hookapi.StatusForbidden(err)
+	} else if mongoMod != nil {
+		patch, err := meta_util.CreateJSONPatch(obj, mongoMod)
+		if err != nil {
+			return hookapi.StatusInternalServerError(err)
+		}
+		status.Patch = patch
+		patchType := admission.PatchTypeJSONPatch
+		status.PatchType = &patchType
+	}
+
 	status.Allowed = true
 	return status
 }

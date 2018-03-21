@@ -125,7 +125,7 @@ var _ = BeforeSuite(func() {
 
 var _ = AfterSuite(func() {
 	By("Delete Admission Controller Configs")
-	root.CleanAdmissionController()
+	root.CleanAdmissionConfigs()
 	By("Delete left over MongoDB objects")
 	root.CleanMongoDB()
 	By("Delete left over Dormant Database objects")
