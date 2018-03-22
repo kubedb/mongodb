@@ -1,5 +1,5 @@
 hash: 2f18f6c4279d128078cc999cd97ea86bc88142b9166059c279ab53f9dcdbaf1b
-updated: 2018-03-22T17:19:18.804662172+06:00
+updated: 2018-03-22T18:36:52.769277064+06:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -287,7 +287,7 @@ imports:
   - pkg/storage
   - pkg/validator
 - name: github.com/kubedb/kubedb-server
-  version: 09e55077cbca081da691f2caf215444975746895
+  version: 64f192b2ed875d469a0dc8e6fab356141c68dc44
   subpackages:
   - pkg/admission/plugin/dormant-database
   - pkg/admission/plugin/mongodb
