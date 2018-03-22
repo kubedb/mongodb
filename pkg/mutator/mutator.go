@@ -44,7 +44,6 @@ func OnCreate(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface,
 	// Set Default DatabaseSecretName
 	if mongodb.Spec.DatabaseSecret == nil {
 		if err := inquireSecret(client, mongodb); err != nil {
-			fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>>>.. 1")
 			return nil, err
 		}
 
