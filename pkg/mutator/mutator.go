@@ -37,12 +37,17 @@ func OnCreate(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface,
 		mongodb.Spec.Replicas = types.Int32P(1)
 	}
 
-	if err := resembleDormantDatabase(extClient, mongodb); err != nil {
+	if err := fuseDormantDB(extClient, mongodb); err != nil {
 		return nil, err
 	}
 
 	// Set Default DatabaseSecretName
 	if mongodb.Spec.DatabaseSecret == nil {
+		if err := inquireSecret(client, mongodb); err != nil {
+			fmt.Println(">>>>>>>>>>>>>>>>>>>>>>>>>.. 1")
+			return nil, err
+		}
+
 		mongodb.Spec.DatabaseSecret = &core.SecretVolumeSource{
 			SecretName: fmt.Sprintf("%v-auth", mongodb.Name),
 		}
@@ -55,7 +60,8 @@ func OnCreate(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface,
 	return mongodb, nil
 }
 
-func resembleDormantDatabase(extClient cs.KubedbV1alpha1Interface, mongodb *api.MongoDB) error {
+// fuseDormantDB takes values from Similar Dormant Database
+func fuseDormantDB(extClient cs.KubedbV1alpha1Interface, mongodb *api.MongoDB) error {
 	// Check if DormantDatabase exists or not
 	dormantDb, err := extClient.DormantDatabases(mongodb.Namespace).Get(mongodb.Name, metav1.GetOptions{})
 	if err != nil {
@@ -122,4 +128,21 @@ func setMonitoringPort(mongodb *api.MongoDB) {
 			mongodb.Spec.Monitor.Prometheus.Port = api.PrometheusExporterPortNumber
 		}
 	}
+}
+
+func inquireSecret(client kubernetes.Interface, mongodb *api.MongoDB) error {
+	secretName := fmt.Sprintf("%v-auth", mongodb.Name)
+	secret, err := client.CoreV1().Secrets(mongodb.Namespace).Get(secretName, metav1.GetOptions{})
+	if err != nil {
+		if kerr.IsNotFound(err) {
+			return nil
+		} else {
+			return err
+		}
+	}
+	if secret.Labels[api.LabelDatabaseKind] != api.ResourceKindMongoDB ||
+		secret.Labels[api.LabelDatabaseName] != mongodb.Name {
+		return fmt.Errorf(`intended secret "%v" already exists`, secretName)
+	}
+	return nil
 }

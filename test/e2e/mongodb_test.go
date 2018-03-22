@@ -178,7 +178,7 @@ var _ = Describe("MongoDB", func() {
 			})
 		})
 
-		FContext("Snapshot", func() {
+		Context("Snapshot", func() {
 			var skipDataCheck bool
 
 			AfterEach(func() {

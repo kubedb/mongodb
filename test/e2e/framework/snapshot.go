@@ -37,7 +37,7 @@ func (f *Framework) GetSnapshot(meta metav1.ObjectMeta) (*api.Snapshot, error) {
 }
 
 func (f *Framework) DeleteSnapshot(meta metav1.ObjectMeta) error {
-	return f.extClient.Snapshots(meta.Namespace).Delete(meta.Name, deleteInBackground())
+	return f.extClient.Snapshots(meta.Namespace).Delete(meta.Name, &metav1.DeleteOptions{})
 }
 
 func (f *Framework) EventuallySnapshotPhase(meta metav1.ObjectMeta) GomegaAsyncAssertion {
@@ -66,12 +66,10 @@ func (f *Framework) EventuallySnapshotDataFound(snapshot *api.Snapshot) GomegaAs
 }
 
 func (f *Framework) EventuallySnapshotCount(meta metav1.ObjectMeta) GomegaAsyncAssertion {
-
 	labelMap := map[string]string{
 		api.LabelDatabaseKind: api.ResourceKindMongoDB,
 		api.LabelDatabaseName: meta.Name,
 	}
-
 	return Eventually(
 		func() int {
 			snapshotList, err := f.extClient.Snapshots(meta.Namespace).List(metav1.ListOptions{
@@ -87,12 +85,10 @@ func (f *Framework) EventuallySnapshotCount(meta metav1.ObjectMeta) GomegaAsyncA
 }
 
 func (f *Framework) EventuallyMultipleSucceededSnapshot(meta metav1.ObjectMeta) GomegaAsyncAssertion {
-
 	labelMap := map[string]string{
 		api.LabelDatabaseKind: api.ResourceKindMongoDB,
 		api.LabelDatabaseName: meta.Name,
 	}
-
 	return Eventually(
 		func() error {
 			snapshotList, err := f.extClient.Snapshots(meta.Namespace).List(metav1.ListOptions{
@@ -149,7 +145,6 @@ func (f *Framework) checkSnapshotData(snapshot *api.Snapshot) (bool, error) {
 			break
 		}
 	}
-
 	return totalItem != 0, nil
 }
 

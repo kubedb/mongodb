@@ -1,5 +1,5 @@
 hash: 2f18f6c4279d128078cc999cd97ea86bc88142b9166059c279ab53f9dcdbaf1b
-updated: 2018-03-21T16:30:55.721813772+06:00
+updated: 2018-03-22T12:10:39.544317411+06:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -287,7 +287,7 @@ imports:
   - pkg/storage
   - pkg/validator
 - name: github.com/kubedb/kubedb-server
-  version: 80716df634b5936a7bd63698a065969bec2e4b36
+  version: 996ba73edff3c5cf2fe6b7d6cbdd507059502aae
   subpackages:
   - pkg/admission/plugin/dormant-database
   - pkg/admission/plugin/mongodb
@@ -402,7 +402,7 @@ imports:
 - name: github.com/sirupsen/logrus
   version: f006c2ac4710855cf0f916dd6b77acf6b048dc6e
 - name: github.com/spf13/cobra
-  version: c439c4fa093711d42e1b01acb1235b52004753c1
+  version: a1f051bc3eba734da4772d60e2d677f47cf93ef4
   subpackages:
   - doc
 - name: github.com/spf13/pflag

@@ -10,23 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/mergepatch"
 )
 
-var (
-	// SERVICE_ACCOUNT_NAME is the key of Environment key-value.
-	// This key-value contains the name of service-account of KubeDB-Operator.
-	// This environment will be set while deploying KubeDB-Server.
-	EnvSvcAccountName = "SERVICE_ACCOUNT_NAME"
-)
-
-// func IsKubeDBOperator(userInfo authenticationv1.UserInfo) bool {
-// 	svcAccEnv := os.Getenv(EnvSvcAccountName)
-// 	nsEnv := meta_util.Namespace()
-//
-// 	if ns, username, err := apiserver_util.SplitUsername(userInfo.Username); err == nil && username == svcAccEnv && ns == nsEnv {
-// 		return true
-// 	}
-// 	return false
-// }
-
 func ValidateUpdate(obj, oldObj runtime.Object, kind string) error {
 	preconditions := getPreconditionFunc(kind)
 	_, err := meta_util.CreateStrategicPatch(oldObj, obj, preconditions...)

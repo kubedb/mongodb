@@ -40,6 +40,10 @@ func OnCreateValidate(client kubernetes.Interface, extClient cs.KubedbV1alpha1In
 		}
 	}
 
+	if mongodb.Spec.DatabaseSecret == nil {
+		return fmt.Errorf("database secret can't be empty")
+	}
+
 	if mongodb.Spec.Storage != nil {
 		var err error
 		if err = amv.ValidateStorage(client, mongodb.Spec.Storage); err != nil {

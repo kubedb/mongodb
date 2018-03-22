@@ -61,7 +61,8 @@ func (a *DormantDatabaseValidator) Initialize(config *rest.Config, stopCh <-chan
 func (a *DormantDatabaseValidator) Admit(req *admission.AdmissionRequest) *admission.AdmissionResponse {
 	status := &admission.AdmissionResponse{}
 
-	if (req.Operation != admission.Create && req.Operation != admission.Update && req.Operation != admission.Delete) ||
+	// No validation on CREATE
+	if (req.Operation != admission.Update && req.Operation != admission.Delete) ||
 		len(req.SubResource) != 0 ||
 		req.Kind.Group != api.SchemeGroupVersion.Group ||
 		req.Kind.Kind != api.ResourceKindDormantDatabase {
@@ -117,7 +118,6 @@ func (a *DormantDatabaseValidator) onDeleteLeftOvers(ddb *api.DormantDatabase) e
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -178,9 +178,7 @@ func (a *DormantDatabaseValidator) setOwnerReferenceToObjects(ddb *api.DormantDa
 	// Set Owner Reference of Secret to this Dormant Database Object
 	// KubeDB-Operator has set label-selector to only those secrets,
 	// that are created by Kube-DB operator.
-	setOwnerReferenceToSecret(a.client, a.extClient, ddb, dbKind)
-
-	return nil
+	return setOwnerReferenceToSecret(a.client, a.extClient, ddb, dbKind)
 }
 
 // setOwnerReferenceToSecret will set owner reference to secrets only if there is no other database or
@@ -276,7 +274,6 @@ func (a *DormantDatabaseValidator) removeOwnerReferenceFromObjects(ddb *api.Dorm
 	}); err != nil {
 		return err
 	}
-
 	return nil
 }
 

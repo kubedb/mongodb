@@ -73,15 +73,14 @@ func (f *Framework) EventuallyCleanedAdmissionConfigs() GomegaAsyncAssertion {
 			}
 			return nil
 		},
-		time.Minute*2,
-		time.Second*5,
+		time.Minute*1,
+		time.Second*2,
 	)
 }
 
-func (f *Framework) CleanAdmissionConfigs() error {
-
+func (f *Framework) CleanAdmissionConfigs() {
 	// Delete Service
-	if err := f.kubeClient.CoreV1().Services("kube-system").Delete("kubedb-operator", deleteInBackground()); err != nil && !kerr.IsNotFound(err) {
+	if err := f.kubeClient.CoreV1().Services("kube-system").Delete("kubedb-operator", &metav1.DeleteOptions{}); err != nil && !kerr.IsNotFound(err) {
 		fmt.Printf("error in deletion of Service. Error: %v", err)
 	}
 
@@ -112,6 +111,4 @@ func (f *Framework) CleanAdmissionConfigs() error {
 	}); err != nil && !kerr.IsNotFound(err) {
 		fmt.Printf("error in deletion of APIService. Error: %v", err)
 	}
-
-	return nil
 }
