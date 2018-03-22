@@ -149,7 +149,6 @@ func (f *Framework) checkSnapshotData(snapshot *api.Snapshot) (bool, error) {
 }
 
 func (f *Framework) CleanSnapshot() {
-	f.EventuallyCleanedAdmissionConfigs().Should(Succeed())
 	snapshotList, err := f.extClient.Snapshots(f.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return

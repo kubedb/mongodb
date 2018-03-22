@@ -26,8 +26,8 @@ func (f *Framework) EventuallyApiServiceReady() GomegaAsyncAssertion {
 			}
 			for _, cond := range crd.Status.Conditions {
 				if cond.Type == kApi.Available && cond.Status == kApi.ConditionTrue {
-					time.Sleep(time.Second * 5) // let the resource become available
 					log.Info("APIService status is true")
+					time.Sleep(time.Second * 3) // let the resource become available
 					return nil
 				}
 			}
@@ -52,30 +52,6 @@ func (f *Framework) RunAdmissionServer(kubeconfigPath string, stopCh <-chan stru
 	serverOpt.RecommendedOptions.Authentication.RemoteKubeConfigFile = kubeconfigPath
 	serverOpt.RecommendedOptions.Authentication.SkipInClusterLookup = true
 	serverOpt.RunAdmissionServer(stopCh)
-}
-
-func (f *Framework) EventuallyCleanedAdmissionConfigs() GomegaAsyncAssertion {
-	return Eventually(
-		func() error {
-			// Make sure v1alpha1.admission.kubedb.com APIService is not available
-			if _, err := f.kaClient.ApiregistrationV1beta1().APIServices().Get("v1alpha1.admission.kubedb.com", metav1.GetOptions{}); err == nil || !kerr.IsNotFound(err) {
-				return fmt.Errorf("APIService v1alpha1.admission.kubedb.com is still available")
-			}
-
-			// Make sure MutatingWebhook config is deleted
-			if _, err := f.kubeClient.AdmissionregistrationV1beta1().MutatingWebhookConfigurations().Get("admission.kubedb.com", metav1.GetOptions{}); err == nil || !kerr.IsNotFound(err) {
-				return fmt.Errorf("MutatingWebhook config is still available")
-			}
-
-			// Make sure ValidatingWebhook config is deleted
-			if _, err := f.kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Get("admission.kubedb.com", metav1.GetOptions{}); err == nil || !kerr.IsNotFound(err) {
-				return fmt.Errorf("ValidatingWebhook config is still available")
-			}
-			return nil
-		},
-		time.Minute*1,
-		time.Second*2,
-	)
 }
 
 func (f *Framework) CleanAdmissionConfigs() {
@@ -111,4 +87,6 @@ func (f *Framework) CleanAdmissionConfigs() {
 	}); err != nil && !kerr.IsNotFound(err) {
 		fmt.Printf("error in deletion of APIService. Error: %v", err)
 	}
+
+	time.Sleep(time.Second * 2) // let the kube-apiserver know it!!
 }

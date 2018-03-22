@@ -81,7 +81,6 @@ func (f *Framework) EventuallyMongoDBRunning(meta metav1.ObjectMeta) GomegaAsync
 }
 
 func (f *Framework) CleanMongoDB() {
-	f.EventuallyCleanedAdmissionConfigs().Should(Succeed())
 	mongodbList, err := f.extClient.MongoDBs(f.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return

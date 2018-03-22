@@ -743,7 +743,7 @@ var _ = Describe("MongoDB", func() {
 				})
 			})
 
-			Context("With Update", func() {
+			Context("With Update - with Local", func() {
 				BeforeEach(func() {
 					secret = f.SecretForLocalBackend()
 				})
@@ -773,8 +773,18 @@ var _ = Describe("MongoDB", func() {
 					})
 					Expect(err).NotTo(HaveOccurred())
 
-					By("Count multiple Snapshot")
+					By("Count multiple Snapshot Object")
 					f.EventuallySnapshotCount(mongodb.ObjectMeta).Should(matcher.MoreThan(3))
+
+					By("Remove Backup Scheduler from MongoDB")
+					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
+						in.Spec.BackupSchedule = nil
+						return in
+					})
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Verify multiple Succeeded Snapshot")
+					f.EventuallyMultipleSucceededSnapshot(mongodb.ObjectMeta).Should(Succeed())
 
 					deleteTestResource()
 				})

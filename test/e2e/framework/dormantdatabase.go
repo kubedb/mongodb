@@ -120,7 +120,6 @@ func (f *Framework) EventuallyWipedOut(meta metav1.ObjectMeta) GomegaAsyncAssert
 }
 
 func (f *Framework) CleanDormantDatabase() {
-	f.EventuallyCleanedAdmissionConfigs().Should(Succeed())
 	dormantDatabaseList, err := f.extClient.DormantDatabases(f.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return
