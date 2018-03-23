@@ -243,7 +243,7 @@ var _ = Describe("MongoDB", func() {
 				})
 			})
 
-			XContext("In S3", func() {
+			Context("In S3", func() {
 				BeforeEach(func() {
 					secret = f.SecretForS3Backend()
 					snapshot.Spec.StorageSecretName = secret.Name
@@ -284,7 +284,7 @@ var _ = Describe("MongoDB", func() {
 				})
 			})
 
-			XContext("In Azure", func() {
+			Context("In Azure", func() {
 				BeforeEach(func() {
 					secret = f.SecretForAzureBackend()
 					snapshot.Spec.StorageSecretName = secret.Name
@@ -296,7 +296,7 @@ var _ = Describe("MongoDB", func() {
 				It("should take Snapshot successfully", shouldTakeSnapshot)
 			})
 
-			XContext("In Swift", func() {
+			Context("In Swift", func() {
 				BeforeEach(func() {
 					secret = f.SecretForSwiftBackend()
 					snapshot.Spec.StorageSecretName = secret.Name

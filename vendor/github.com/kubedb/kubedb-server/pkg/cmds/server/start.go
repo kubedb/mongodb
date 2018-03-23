@@ -4,7 +4,7 @@ import (
 	"io"
 	"net"
 
-	hookapi "github.com/appscode/kutil/admission/v1beta1"
+	hookapi "github.com/appscode/kubernetes-webhook-util/admission/v1beta1"
 	"github.com/kubedb/kubedb-server/pkg/apiserver"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"

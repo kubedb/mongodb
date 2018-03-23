@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	hookapi "github.com/appscode/kutil/admission/v1beta1"
+	hookapi "github.com/appscode/kubernetes-webhook-util/admission/v1beta1"
 	core_util "github.com/appscode/kutil/core/v1"
 	meta_util "github.com/appscode/kutil/meta"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
