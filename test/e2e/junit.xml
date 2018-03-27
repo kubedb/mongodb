@@ -1,28 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <testsuite tests="16" failures="0" time="2169.712185139">
-      <testcase name="MongoDB Test General Without PVC should run successfully" classname="e2e Suite" time="158.275378476"></testcase>
-      <testcase name="MongoDB Test General With PVC should run successfully" classname="e2e Suite" time="86.828559861"></testcase>
-      <testcase name="MongoDB Test DoNotPause should work successfully" classname="e2e Suite" time="77.321238012"></testcase>
-      <testcase name="MongoDB Test Snapshot In Local should take Snapshot successfully" classname="e2e Suite" time="124.428618883"></testcase>
-      <testcase name="MongoDB Test Snapshot In Local Without PVC should run successfully" classname="e2e Suite" time="76.901332422"></testcase>
-      <testcase name="MongoDB Test Snapshot In S3 should take Snapshot successfully" classname="e2e Suite" time="0">
+  <testsuite tests="1" failures="0" time="702.45842764">
+      <testcase name="MongoDB Test General Without PVC should run successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
-      <testcase name="MongoDB Test Snapshot In GCS should take Snapshot successfully" classname="e2e Suite" time="91.68928053"></testcase>
-      <testcase name="MongoDB Test Snapshot In GCS With Init should resume DormantDatabase successfully" classname="e2e Suite" time="88.821407061"></testcase>
-      <testcase name="MongoDB Test Snapshot In Azure should take Snapshot successfully" classname="e2e Suite" time="0">
-          <skipped></skipped>
-      </testcase>
-      <testcase name="MongoDB Test Snapshot In Swift should take Snapshot successfully" classname="e2e Suite" time="0">
-          <skipped></skipped>
-      </testcase>
-      <testcase name="MongoDB Test Initialize With Script should run successfully" classname="e2e Suite" time="70.913059044"></testcase>
-      <testcase name="MongoDB Test Initialize With Snapshot should run successfully" classname="e2e Suite" time="173.85258422"></testcase>
-      <testcase name="MongoDB Test Resume Without Init should resume DormantDatabase successfully" classname="e2e Suite" time="107.062767052"></testcase>
-      <testcase name="MongoDB Test Resume with init Script should resume DormantDatabase successfully" classname="e2e Suite" time="96.163833035"></testcase>
-      <testcase name="MongoDB Test Resume With Snapshot Init should resume successfully" classname="e2e Suite" time="222.747362658"></testcase>
-      <testcase name="MongoDB Test Resume Multiple times with init should resume DormantDatabase successfully" classname="e2e Suite" time="182.782542413"></testcase>
-      <testcase name="MongoDB Test SnapshotScheduler With Startup with local should run schedular successfully" classname="e2e Suite" time="186.805221863"></testcase>
-      <testcase name="MongoDB Test SnapshotScheduler With Startup with GCS and PVC should run schedular successfully" classname="e2e Suite" time="217.502383823"></testcase>
-      <testcase name="MongoDB Test SnapshotScheduler With Update - with Local should run schedular successfully" classname="e2e Suite" time="191.075092686"></testcase>
   </testsuite>

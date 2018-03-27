@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/appscode/go/hold"
 	"github.com/appscode/go/types"
 	meta_util "github.com/appscode/kutil/meta"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
@@ -109,7 +110,7 @@ var _ = Describe("MongoDB", func() {
 			})
 
 			Context("With PVC", func() {
-				It("should run successfully", func() {
+				FIt("should run successfully", func() {
 					if skipMessage != "" {
 						Skip(skipMessage)
 					}
@@ -121,6 +122,8 @@ var _ = Describe("MongoDB", func() {
 
 					By("Checking Inserted Document")
 					f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
+
+					hold.Hold()
 
 					By("Delete mongodb")
 					err = f.DeleteMongoDB(mongodb.ObjectMeta)
