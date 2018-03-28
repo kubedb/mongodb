@@ -243,7 +243,7 @@ var _ = Describe("MongoDB", func() {
 				})
 			})
 
-			Context("In S3", func() {
+			XContext("In S3", func() {
 				BeforeEach(func() {
 					secret = f.SecretForS3Backend()
 					snapshot.Spec.StorageSecretName = secret.Name
@@ -284,7 +284,7 @@ var _ = Describe("MongoDB", func() {
 				})
 			})
 
-			Context("In Azure", func() {
+			XContext("In Azure", func() {
 				BeforeEach(func() {
 					secret = f.SecretForAzureBackend()
 					snapshot.Spec.StorageSecretName = secret.Name
@@ -296,7 +296,7 @@ var _ = Describe("MongoDB", func() {
 				It("should take Snapshot successfully", shouldTakeSnapshot)
 			})
 
-			Context("In Swift", func() {
+			XContext("In Swift", func() {
 				BeforeEach(func() {
 					secret = f.SecretForSwiftBackend()
 					snapshot.Spec.StorageSecretName = secret.Name
@@ -418,6 +418,56 @@ var _ = Describe("MongoDB", func() {
 				usedInitSnapshot = false
 			})
 
+			Context("Super Fast User - Create-Delete-Create-Delete-Create ", func() {
+				It("should resume DormantDatabase successfully", func() {
+					// Create and wait for running MongoDB
+					createAndWaitForRunning()
+
+					By("Insert Document Inside DB")
+					f.EventuallyInsertDocument(mongodb.ObjectMeta).Should(BeTrue())
+
+					By("Checking Inserted Document")
+					f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
+
+					By("Delete mongodb")
+					err = f.DeleteMongoDB(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Wait for mongodb to be paused")
+					f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
+
+					// Create MongoDB object again to resume it
+					By("Create MongoDB: " + mongodb.Name)
+					err = f.CreateMongoDB(mongodb)
+					Expect(err).NotTo(HaveOccurred())
+
+					// Delete without caring if DB is resumed
+					By("Delete mongodb")
+					err = f.DeleteMongoDB(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					// Create MongoDB object again to resume it
+					By("Create MongoDB: " + mongodb.Name)
+					err = f.CreateMongoDB(mongodb)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Wait for DormantDatabase to be deleted")
+					f.EventuallyDormantDatabase(mongodb.ObjectMeta).Should(BeFalse())
+
+					By("Wait for Running mongodb")
+					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+
+					By("Checking Inserted Document")
+					f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
+
+					_, err = f.GetMongoDB(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					// Delete test resource
+					deleteTestResource()
+				})
+			})
+
 			Context("Without Init", func() {
 				It("should resume DormantDatabase successfully", func() {
 					// Create and wait for running MongoDB
@@ -430,7 +480,8 @@ var _ = Describe("MongoDB", func() {
 					f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
 
 					By("Delete mongodb")
-					f.DeleteMongoDB(mongodb.ObjectMeta)
+					err = f.DeleteMongoDB(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for mongodb to be paused")
 					f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
@@ -480,7 +531,8 @@ var _ = Describe("MongoDB", func() {
 					f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
 
 					By("Delete mongodb")
-					f.DeleteMongoDB(mongodb.ObjectMeta)
+					err = f.DeleteMongoDB(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for mongodb to be paused")
 					f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
@@ -581,7 +633,8 @@ var _ = Describe("MongoDB", func() {
 					f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
 
 					By("Delete mongodb")
-					f.DeleteMongoDB(mongodb.ObjectMeta)
+					err = f.DeleteMongoDB(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for mongodb to be paused")
 					f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
@@ -643,7 +696,8 @@ var _ = Describe("MongoDB", func() {
 					for i := 0; i < 3; i++ {
 						By(fmt.Sprintf("%v-th", i+1) + " time running.")
 						By("Delete mongodb")
-						f.DeleteMongoDB(mongodb.ObjectMeta)
+						err = f.DeleteMongoDB(mongodb.ObjectMeta)
+						Expect(err).NotTo(HaveOccurred())
 
 						By("Wait for mongodb to be paused")
 						f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())

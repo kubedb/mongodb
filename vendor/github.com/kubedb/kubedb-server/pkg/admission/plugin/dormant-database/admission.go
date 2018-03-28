@@ -86,7 +86,7 @@ func (a *DormantDatabaseValidator) Admit(req *admission.AdmissionRequest) *admis
 			break
 		}
 
-		if err := a.onDeleteLeftOvers(obj); err != nil {
+		if err := a.handleOwnerReferences(obj); err != nil {
 			return hookapi.StatusInternalServerError(err)
 		}
 	case admission.Update:
@@ -108,7 +108,7 @@ func (a *DormantDatabaseValidator) Admit(req *admission.AdmissionRequest) *admis
 	return status
 }
 
-func (a *DormantDatabaseValidator) onDeleteLeftOvers(ddb *api.DormantDatabase) error {
+func (a *DormantDatabaseValidator) handleOwnerReferences(ddb *api.DormantDatabase) error {
 	if ddb.Spec.WipeOut {
 		if err := a.setOwnerReferenceToObjects(ddb); err != nil {
 			return err
@@ -183,7 +183,6 @@ func (a *DormantDatabaseValidator) setOwnerReferenceToObjects(ddb *api.DormantDa
 
 // setOwnerReferenceToSecret will set owner reference to secrets only if there is no other database or
 // dormant database using this Secret.
-// These secrets are only those who has 'lableselectors' set by kubedb.
 // Yet, User can reuse those secret for other database objects.
 // So make sure before deleting that nobody else is using these.
 func setOwnerReferenceToSecret(client kubernetes.Interface, extClient cs.Interface, ddb *api.DormantDatabase, dbKind string) error {

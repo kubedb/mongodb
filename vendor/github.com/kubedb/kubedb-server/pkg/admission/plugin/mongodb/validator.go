@@ -31,9 +31,9 @@ func (a *MongoDBValidator) Resource() (plural schema.GroupVersionResource, singu
 	return schema.GroupVersionResource{
 			Group:    "admission.kubedb.com",
 			Version:  "v1alpha1",
-			Resource: "mongodbreviews",
+			Resource: "mongodbvalidationreviews",
 		},
-		"mongodbreview"
+		"mongodbvalidationreview"
 }
 
 func (a *MongoDBValidator) Initialize(config *rest.Config, stopCh <-chan struct{}) error {
@@ -80,10 +80,7 @@ func (a *MongoDBValidator) Admit(req *admission.AdmissionRequest) *admission.Adm
 		} else if kerr.IsNotFound(err) {
 			break
 		}
-		if err = mgv.OnDeleteLeftOvers(a.client, a.extClient.KubedbV1alpha1(), obj); err != nil {
-			return hookapi.StatusForbidden(err)
-		}
-	default:
+	default :
 		obj, err := meta_util.UnmarshalFromJSON(req.Object.Raw, api.SchemeGroupVersion)
 		if err != nil {
 			return hookapi.StatusBadRequest(err)
@@ -94,17 +91,20 @@ func (a *MongoDBValidator) Admit(req *admission.AdmissionRequest) *admission.Adm
 			if err != nil {
 				return hookapi.StatusBadRequest(err)
 			}
-			if err := util.ValidateUpdate(obj, oldObject, req.Kind.Kind); err != nil {
+
+			mongodb := obj.(*api.MongoDB).DeepCopy()
+			oldMongoDB := oldObject.(*api.MongoDB).DeepCopy()
+			// Allow changing Database Secret only if there was no secret have set up yet.
+			if oldMongoDB.Spec.DatabaseSecret == nil {
+				oldMongoDB.Spec.DatabaseSecret = mongodb.Spec.DatabaseSecret
+			}
+
+			if err := util.ValidateUpdate(mongodb, oldMongoDB, req.Kind.Kind); err != nil {
 				return hookapi.StatusBadRequest(fmt.Errorf("%v", err))
 			}
 		}
 		// validate database specs
-		if err = mgv.ValidateMongoDB(a.client, a.extClient.KubedbV1alpha1(), obj.(*api.MongoDB)); err != nil {
-			return hookapi.StatusForbidden(err)
-		}
-
-		// Do
-		if err = mgv.OnCreateLeftOvers(a.extClient.KubedbV1alpha1(), obj.(*api.MongoDB)); err != nil {
+		if err = mgv.ValidateMongoDB(a.client, a.extClient.KubedbV1alpha1(), obj.(*api.MongoDB).DeepCopy()); err != nil {
 			return hookapi.StatusForbidden(err)
 		}
 	}

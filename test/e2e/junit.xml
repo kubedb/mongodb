@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <testsuite tests="2" failures="0" time="103.492408566">
-      <testcase name="MongoDB Test General Without PVC should run successfully" classname="e2e Suite" time="63.854414308"></testcase>
+  <testsuite tests="4" failures="0" time="238.401239467">
+      <testcase name="MongoDB Test General Without PVC should run successfully" classname="e2e Suite" time="62.95504596"></testcase>
+      <testcase name="MongoDB Test General With PVC should run successfully" classname="e2e Suite" time="86.482784905"></testcase>
+      <testcase name="MongoDB Test DoNotPause should work successfully" classname="e2e Suite" time="75.630750262"></testcase>
   </testsuite>

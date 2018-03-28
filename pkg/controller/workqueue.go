@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/appscode/go/log"
+	core_util "github.com/appscode/kutil/core/v1"
 	meta_util "github.com/appscode/kutil/meta"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
@@ -162,23 +163,35 @@ func (c *Controller) runMongoDB(key string) error {
 	}
 
 	if !exists {
-		namespace, name, err := cache.SplitMetaNamespaceKey(key)
-		if err != nil {
-			return err
-		}
-		if err := c.pause(name, namespace); err != nil {
-			log.Errorln(err)
-			return err
-		}
+		log.Debugf("MongoDB %s does not exist anymore\n", key)
 	} else {
 		// Note that you also have to check the uid if you have a local controlled resource, which
 		// is dependent on the actual instance, to detect that a MongoDB was recreated with the same name
 		mongodb := obj.(*api.MongoDB).DeepCopy()
-		util.AssignTypeKind(mongodb)
-		if err := c.create(mongodb); err != nil {
-			log.Errorln(err)
-			c.pushFailureEvent(mongodb, err.Error())
-			return err
+		if mongodb.DeletionTimestamp != nil {
+			if core_util.HasFinalizer(mongodb.ObjectMeta, api.GenericKey) {
+				util.AssignTypeKind(mongodb)
+				if err := c.pause(mongodb); err != nil {
+					log.Errorln(err)
+					return err
+				}
+				mongodb, _, err = util.PatchMongoDB(c.ExtClient, mongodb, func(in *api.MongoDB) *api.MongoDB {
+					in.ObjectMeta = core_util.RemoveFinalizer(in.ObjectMeta, api.GenericKey)
+					return in
+				})
+				return err
+			}
+		} else {
+			mongodb, _, err = util.PatchMongoDB(c.ExtClient, mongodb, func(in *api.MongoDB) *api.MongoDB {
+				in.ObjectMeta = core_util.AddFinalizer(in.ObjectMeta, api.GenericKey)
+				return in
+			})
+			util.AssignTypeKind(mongodb)
+			if err := c.create(mongodb); err != nil {
+				log.Errorln(err)
+				c.pushFailureEvent(mongodb, err.Error())
+				return err
+			}
 		}
 	}
 	return nil

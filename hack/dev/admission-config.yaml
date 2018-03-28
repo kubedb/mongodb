@@ -11,7 +11,7 @@ webhooks:
     service:
       namespace: default
       name: kubernetes
-      path: /apis/admission.kubedb.com/v1alpha1/mongodbreviews
+      path: /apis/admission.kubedb.com/v1alpha1/mongodbvalidationreviews
     caBundle: ${KUBE_CA}
   rules:
   - apiGroups: ["kubedb.com"]
@@ -60,7 +60,7 @@ webhooks:
     service:
       namespace: default
       name: kubernetes
-      path: /apis/admission.kubedb.com/v1alpha1/mongodbmutates
+      path: /apis/admission.kubedb.com/v1alpha1/mongodbmutationreviews
     caBundle: ${KUBE_CA}
   rules:
   - apiGroups: ["kubedb.com"]

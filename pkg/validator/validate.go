@@ -3,7 +3,6 @@ package validator
 import (
 	"fmt"
 
-	"github.com/appscode/go/types"
 	core_util "github.com/appscode/kutil/core/v1"
 	meta_util "github.com/appscode/kutil/meta"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
@@ -33,20 +32,20 @@ func ValidateMongoDB(client kubernetes.Interface, extClient cs.KubedbV1alpha1Int
 		return fmt.Errorf(`KubeDB doesn't support MongoDB version: %s`, string(mongodb.Spec.Version))
 	}
 
-	if mongodb.Spec.Replicas != nil {
-		replicas := types.Int32(mongodb.Spec.Replicas)
-		if replicas != 1 {
-			return fmt.Errorf(`spec.replicas "%d" invalid. Value must be one`, replicas)
-		}
-	}
-
-	if mongodb.Spec.DatabaseSecret == nil {
-		return fmt.Errorf("database secret can't be empty")
+	if mongodb.Spec.Replicas == nil || *mongodb.Spec.Replicas != 1 {
+		return fmt.Errorf(`spec.replicas "%v" invalid. Value must be one`, mongodb.Spec.Replicas)
 	}
 
 	if mongodb.Spec.Storage != nil {
 		var err error
 		if err = amv.ValidateStorage(client, mongodb.Spec.Storage); err != nil {
+			return err
+		}
+	}
+
+	databaseSecret := mongodb.Spec.DatabaseSecret
+	if databaseSecret != nil {
+		if _, err := client.CoreV1().Secrets(mongodb.Namespace).Get(databaseSecret.SecretName, metav1.GetOptions{}); err != nil {
 			return err
 		}
 	}

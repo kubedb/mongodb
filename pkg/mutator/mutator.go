@@ -12,7 +12,6 @@ import (
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	cs "github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1"
 	"github.com/pkg/errors"
-	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,16 +30,6 @@ func SetDefaultValues(client kubernetes.Interface, extClient cs.KubedbV1alpha1In
 
 	if err := fuseDormantDB(extClient, mongodb); err != nil {
 		return nil, err
-	}
-
-	// Set Default DatabaseSecretName
-	if mongodb.Spec.DatabaseSecret == nil {
-		if err := checkSecret(client, mongodb); err != nil {
-			return nil, err
-		}
-		mongodb.Spec.DatabaseSecret = &core.SecretVolumeSource{
-			SecretName: fmt.Sprintf("%v-auth", mongodb.Name),
-		}
 	}
 
 	// If monitoring spec is given without port,

@@ -81,11 +81,10 @@ func (c *Controller) manageMonitor(mongodb *api.MongoDB) error {
 	return nil
 }
 
-// deleteMonitor deletes the left-over service-monitors using agent.delete.
-// Built-In prometheus is not handled here because the service will be deleted automatically.
-func (c *Controller) deleteMonitor(dummyMongoDB *api.MongoDB) {
-	agent := agents.New(mona.AgentCoreOSPrometheus, c.Client, c.ApiExtKubeClient, c.promClient)
-	if _, err := agent.Delete(dummyMongoDB.StatsAccessor()); err != nil {
-		log.Errorln(err)
+func (c *Controller) deleteMonitor(mongodb *api.MongoDB) (kutil.VerbType, error) {
+	agent, err := c.newMonitorController(mongodb)
+	if err != nil {
+		return kutil.VerbUnchanged, err
 	}
+	return agent.Delete(mongodb.StatsAccessor())
 }
