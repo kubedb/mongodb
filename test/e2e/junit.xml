@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <testsuite tests="1" failures="0" time="702.45842764">
-      <testcase name="MongoDB Test General Without PVC should run successfully" classname="e2e Suite" time="0">
-          <skipped></skipped>
-      </testcase>
+  <testsuite tests="2" failures="0" time="103.492408566">
+      <testcase name="MongoDB Test General Without PVC should run successfully" classname="e2e Suite" time="63.854414308"></testcase>
   </testsuite>

@@ -19,21 +19,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// OnCreate provides the defaulting that is performed in mutating stage of creating/updating a MongoDB database
-//
-// Major Tasks:
-// - Take Defaults from Dormant Database
-// - Set default  values to rest of the fields
-// - Remove Dormant Database Finalizer and set Spec.WipeOut to false
-// - Delete Dormant Database
-// - Finalizer Not Needed for MongoDB object
-// N.B.: Delete dormant database at the last stage of ValidatingWebhook
-func OnCreate(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface, mongodb *api.MongoDB) (runtime.Object, error) {
+// SetDefaultValues provides the defaulting that is performed in mutating stage of creating/updating a MongoDB database
+func SetDefaultValues(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface, mongodb *api.MongoDB) (runtime.Object, error) {
 	if mongodb.Spec.Version == "" {
 		return nil, fmt.Errorf(`object 'Version' is missing in '%v'`, mongodb.Spec)
 	}
 
-	if mongodb.Spec.Replicas == nil || *mongodb.Spec.Replicas != 1 {
+	if mongodb.Spec.Replicas == nil {
 		mongodb.Spec.Replicas = types.Int32P(1)
 	}
 
@@ -43,10 +35,9 @@ func OnCreate(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface,
 
 	// Set Default DatabaseSecretName
 	if mongodb.Spec.DatabaseSecret == nil {
-		if err := inquireSecret(client, mongodb); err != nil {
+		if err := checkSecret(client, mongodb); err != nil {
 			return nil, err
 		}
-
 		mongodb.Spec.DatabaseSecret = &core.SecretVolumeSource{
 			SecretName: fmt.Sprintf("%v-auth", mongodb.Name),
 		}
@@ -110,7 +101,7 @@ func fuseDormantDB(extClient cs.KubedbV1alpha1Interface, mongodb *api.MongoDB) e
 		})
 	}
 
-	// Delete  Matching dormantDatabase after checking ValidatingWebhook
+	// Delete  Matching dormantDatabase in Controller
 
 	return nil
 }
@@ -129,7 +120,7 @@ func setMonitoringPort(mongodb *api.MongoDB) {
 	}
 }
 
-func inquireSecret(client kubernetes.Interface, mongodb *api.MongoDB) error {
+func checkSecret(client kubernetes.Interface, mongodb *api.MongoDB) error {
 	secretName := fmt.Sprintf("%v-auth", mongodb.Name)
 	secret, err := client.CoreV1().Secrets(mongodb.Namespace).Get(secretName, metav1.GetOptions{})
 	if err != nil {

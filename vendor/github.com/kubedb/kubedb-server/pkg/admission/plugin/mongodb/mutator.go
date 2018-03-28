@@ -69,7 +69,7 @@ func (a *MongoDBMutator) Admit(req *admission.AdmissionRequest) *admission.Admis
 	if err != nil {
 		return hookapi.StatusBadRequest(err)
 	}
-	mongoMod, err := mgm.OnCreate(a.client, a.extClient.KubedbV1alpha1(), obj.(*api.MongoDB).DeepCopy())
+	mongoMod, err := mgm.SetDefaultValues(a.client, a.extClient.KubedbV1alpha1(), obj.(*api.MongoDB).DeepCopy())
 	if err != nil {
 		return hookapi.StatusForbidden(err)
 	} else if mongoMod != nil {

@@ -23,7 +23,7 @@ var (
 	mongodbVersions = sets.NewString("3.4", "3.6")
 )
 
-func OnCreateValidate(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface, mongodb *api.MongoDB) error {
+func ValidateMongoDB(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface, mongodb *api.MongoDB) error {
 	if mongodb.Spec.Version == "" {
 		return fmt.Errorf(`object 'Version' is missing in '%v'`, mongodb.Spec)
 	}
@@ -67,31 +67,7 @@ func OnCreateValidate(client kubernetes.Interface, extClient cs.KubedbV1alpha1In
 	return nil
 }
 
-// OnCreateLeftovers does the additional tasks that is related to editing or deleting other Kinds of Objects
-func OnCreateLeftOvers(extClient cs.KubedbV1alpha1Interface, mongodb *api.MongoDB) error {
-	// Delete matching Dormant Database
-	if err := killMatchingDormantDatabase(extClient, mongodb); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// OnCreate does the additional tasks that is related to editing or deleting other Kinds of Objects
-//
-// Major Tasks:
-// - Create Dormant Database with Finalizer
-// Let kubernetes Garbage Collect of StatefulSets, Service
-func OnDeleteLeftOvers(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface, mongodb *api.MongoDB) error {
-	ddb := getDormantDatabase(mongodb)
-	if _, err := extClient.DormantDatabases(ddb.Namespace).Create(ddb); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// SterilizeSecrets cleans secret that is created for this Ex-MongoDB database by KubeDB-Operator and
+// SterilizeSecrets cleans secret that is created for this Ex-MongoDB (now DormantDatabase) database by KubeDB-Operator and
 // not used by any other MongoDB or DormantDatabases objects.
 func SterilizeSecrets(client kubernetes.Interface, extClient cs.KubedbV1alpha1Interface, ddb *api.DormantDatabase) error {
 	secretFound := false
