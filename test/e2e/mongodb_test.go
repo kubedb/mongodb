@@ -934,6 +934,82 @@ var _ = Describe("MongoDB", func() {
 					deleteTestResource()
 				})
 			})
+
+			Context("Re-Use DormantDatabase's scheduler", func() {
+				BeforeEach(func() {
+					secret = f.SecretForLocalBackend()
+				})
+				It("should re-use schedular successfully", func() {
+					// Create and wait for running MongoDB
+					createAndWaitForRunning()
+
+					By("Insert Document Inside DB")
+					f.EventuallyInsertDocument(mongodb.ObjectMeta).Should(BeTrue())
+
+					By("Checking Inserted Document")
+					f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
+
+					By("Create Secret")
+					f.CreateSecret(secret)
+
+					By("Update mongodb")
+					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
+						in.Spec.BackupSchedule = &api.BackupScheduleSpec{
+							CronExpression: "@every 1m",
+							SnapshotStorageSpec: api.SnapshotStorageSpec{
+								StorageSecretName: secret.Name,
+								Local: &api.LocalSpec{
+									MountPath: "/repo",
+									VolumeSource: core.VolumeSource{
+										EmptyDir: &core.EmptyDirVolumeSource{},
+									},
+								},
+							},
+						}
+						return in
+					})
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Count multiple Snapshot Object")
+					f.EventuallySnapshotCount(mongodb.ObjectMeta).Should(matcher.MoreThan(3))
+
+					By("Delete mongodb")
+					err = f.DeleteMongoDB(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Wait for mongodb to be paused")
+					f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
+
+					// Create MongoDB object again to resume it
+					By("Create MongoDB: " + mongodb.Name)
+					err = f.CreateMongoDB(mongodb)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Wait for DormantDatabase to be deleted")
+					f.EventuallyDormantDatabase(mongodb.ObjectMeta).Should(BeFalse())
+
+					By("Wait for Running mongodb")
+					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+
+					By("Checking Inserted Document")
+					f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
+
+					By("Count multiple Snapshot Object")
+					f.EventuallySnapshotCount(mongodb.ObjectMeta).Should(matcher.MoreThan(5))
+
+					By("Remove Backup Scheduler from MongoDB")
+					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
+						in.Spec.BackupSchedule = nil
+						return in
+					})
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Verify multiple Succeeded Snapshot")
+					f.EventuallyMultipleSnapshotFinishedProcessing(mongodb.ObjectMeta).Should(Succeed())
+
+					deleteTestResource()
+				})
+			})
 		})
 	})
 })

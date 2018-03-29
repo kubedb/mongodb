@@ -88,5 +88,5 @@ func (f *Framework) CleanAdmissionConfigs() {
 		fmt.Printf("error in deletion of Endpoints. Error: %v", err)
 	}
 
-	time.Sleep(time.Second * 2) // let the kube-apiserver know it!!
+	time.Sleep(time.Second * 1) // let the kube-apiserver know it!!
 }

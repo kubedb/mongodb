@@ -56,27 +56,37 @@ func fuseDormantDB(extClient cs.KubedbV1alpha1Interface, mongodb *api.MongoDB) e
 	}
 
 	// Check Origin Spec
-	drmnOriginSpec := dormantDb.Spec.Origin.Spec.MongoDB
+	ddbOriginSpec := dormantDb.Spec.Origin.Spec.MongoDB
 
 	// If DatabaseSecret of new object is not given,
 	// Take dormantDatabaseSecretName
 	if mongodb.Spec.DatabaseSecret == nil {
-		mongodb.Spec.DatabaseSecret = drmnOriginSpec.DatabaseSecret
+		mongodb.Spec.DatabaseSecret = ddbOriginSpec.DatabaseSecret
 	} else {
-		drmnOriginSpec.DatabaseSecret = mongodb.Spec.DatabaseSecret
+		ddbOriginSpec.DatabaseSecret = mongodb.Spec.DatabaseSecret
 	}
 
-	// Skip checking doNotPause
-	drmnOriginSpec.DoNotPause = mongodb.Spec.DoNotPause
+	// If Monitoring Spec of new object is not given,
+	// Take Monitoring Settings from Dormant
+	if mongodb.Spec.Monitor == nil {
+		mongodb.Spec.Monitor = ddbOriginSpec.Monitor
+	} else {
+		ddbOriginSpec.Monitor = mongodb.Spec.Monitor
+	}
 
-	// Skip checking Monitoring
-	drmnOriginSpec.Monitor = mongodb.Spec.Monitor
+	// If Backup Scheduler of new object is not given,
+	// Take Backup Scheduler Settings from Dormant
+	if mongodb.Spec.BackupSchedule == nil {
+		mongodb.Spec.BackupSchedule = ddbOriginSpec.BackupSchedule
+	} else {
+		ddbOriginSpec.BackupSchedule = mongodb.Spec.BackupSchedule
+	}
 
-	// Skip Checking BackUP Scheduler
-	drmnOriginSpec.BackupSchedule = mongodb.Spec.BackupSchedule
+	// Skip checking DoNotPause
+	ddbOriginSpec.DoNotPause = mongodb.Spec.DoNotPause
 
-	if !meta_util.Equal(drmnOriginSpec, &mongodb.Spec) {
-		diff := meta_util.Diff(drmnOriginSpec, &mongodb.Spec)
+	if !meta_util.Equal(ddbOriginSpec, &mongodb.Spec) {
+		diff := meta_util.Diff(ddbOriginSpec, &mongodb.Spec)
 		log.Errorf("mongodb spec mismatches with OriginSpec in DormantDatabases. Diff: %v", diff)
 		return errors.New(fmt.Sprintf("mongodb spec mismatches with OriginSpec in DormantDatabases. Diff: %v", diff))
 	}

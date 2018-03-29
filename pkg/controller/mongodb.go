@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/appscode/go/log"
+	mon_api "github.com/appscode/kube-mon/api"
 	"github.com/appscode/kutil"
 	meta_util "github.com/appscode/kutil/meta"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
@@ -43,6 +44,12 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 			return err
 		}
 		mongodb.Status = mg.Status
+	}
+
+	// Dynamic Defaulting
+	// In case Mutating Webhook is not running, Assign Default Monitoring Port
+	if err := c.setMonitoringPort(mongodb); err != nil {
+		return err
 	}
 
 	// create Governing Service
@@ -126,6 +133,29 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 	return nil
 }
 
+// setMonitoringPort assigns Default Monitoring Port if MonitoringSpec Exists
+// and the AgentVendor is Prometheus.
+func (c *Controller) setMonitoringPort(mongodb *api.MongoDB) error {
+	if mongodb.Spec.Monitor != nil &&
+		mongodb.GetMonitoringVendor() == mon_api.VendorPrometheus {
+		if mongodb.Spec.Monitor.Prometheus == nil {
+			mongodb.Spec.Monitor.Prometheus = &mon_api.PrometheusSpec{}
+		}
+		if mongodb.Spec.Monitor.Prometheus.Port == 0 {
+			mg, _, err := util.PatchMongoDB(c.ExtClient, mongodb, func(in *api.MongoDB) *api.MongoDB {
+				in.Spec.Monitor.Prometheus.Port = api.PrometheusExporterPortNumber
+				return in
+			})
+			if err != nil {
+				c.recorder.Eventf(mongodb.ObjectReference(), core.EventTypeWarning, eventer.EventReasonFailedToUpdate, err.Error())
+				return err
+			}
+			mongodb.Spec = mg.Spec
+		}
+	}
+	return nil
+}
+
 func (c *Controller) ensureBackupScheduler(mongodb *api.MongoDB) {
 	// Setup Schedule backup
 	if mongodb.Spec.BackupSchedule != nil {
@@ -206,9 +236,6 @@ func (c *Controller) pause(mongodb *api.MongoDB) error {
 			return fmt.Errorf(`Failed to create DormantDatabase: "%v". Reason: %v`, mongodb.Name, err)
 		}
 	}
-	c.recorder.Eventf(mongodb.ObjectReference(), core.EventTypeNormal, eventer.EventReasonSuccessfulCreate,
-		`Successfully created DormantDatabase: "%v"`, mongodb.Name,
-	)
 
 	c.cronController.StopBackupScheduling(mongodb.ObjectMeta)
 
