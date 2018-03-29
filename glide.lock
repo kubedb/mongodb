@@ -1,5 +1,5 @@
 hash: e8ff99c3325b1fea798bfb4943f5ae27e428e09ce829aa2e98df6052613057d8
-updated: 2018-03-29T14:46:02.031877631+06:00
+updated: 2018-03-29T16:30:06.9508657+06:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -253,7 +253,7 @@ imports:
 - name: github.com/juju/ratelimit
   version: 5b9ff866471762aa2ab2dced63c9fb6f53921342
 - name: github.com/kubedb/apimachinery
-  version: 7e9276a57c7ecafe2235533689a054159159777f
+  version: a3aafabf011312f9ee0f3e436c75da0e7106d573
   subpackages:
   - apis/kubedb
   - apis/kubedb/v1alpha1
@@ -269,7 +269,7 @@ imports:
   - pkg/storage
   - pkg/validator
 - name: github.com/kubedb/kubedb-server
-  version: 90e6b63ca45aa3f4b0bb26d23ca1498567fad025
+  version: f6f72743d0fbdf438ec925809bb3680ba1e6f257
   subpackages:
   - pkg/admission/plugin/dormant-database
   - pkg/admission/plugin/mongodb

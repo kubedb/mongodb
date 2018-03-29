@@ -939,15 +939,9 @@ var _ = Describe("MongoDB", func() {
 				BeforeEach(func() {
 					secret = f.SecretForLocalBackend()
 				})
-				It("should re-use schedular successfully", func() {
+				It("should re-use scheduler successfully", func() {
 					// Create and wait for running MongoDB
 					createAndWaitForRunning()
-
-					By("Insert Document Inside DB")
-					f.EventuallyInsertDocument(mongodb.ObjectMeta).Should(BeTrue())
-
-					By("Checking Inserted Document")
-					f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
 
 					By("Create Secret")
 					f.CreateSecret(secret)
@@ -969,6 +963,12 @@ var _ = Describe("MongoDB", func() {
 						return in
 					})
 					Expect(err).NotTo(HaveOccurred())
+
+					By("Insert Document Inside DB")
+					f.EventuallyInsertDocument(mongodb.ObjectMeta).Should(BeTrue())
+
+					By("Checking Inserted Document")
+					f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
 
 					By("Count multiple Snapshot Object")
 					f.EventuallySnapshotCount(mongodb.ObjectMeta).Should(matcher.MoreThan(3))

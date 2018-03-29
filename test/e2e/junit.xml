@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <testsuite tests="1" failures="0" time="346.047131202">
+  <testsuite tests="1" failures="0" time="346.911778441">
       <testcase name="MongoDB Test General Without PVC should run successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
@@ -63,5 +63,5 @@
       <testcase name="MongoDB Test SnapshotScheduler With Update - with Local should run schedular successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
-      <testcase name="MongoDB Test SnapshotScheduler Re-Use DormantDatabase&#39;s scheduler should re-use schedular successfully" classname="e2e Suite" time="336.9185777"></testcase>
+      <testcase name="MongoDB Test SnapshotScheduler Re-Use DormantDatabase&#39;s scheduler should re-use scheduler successfully" classname="e2e Suite" time="336.859605911"></testcase>
   </testsuite>

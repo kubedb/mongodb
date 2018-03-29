@@ -31,12 +31,8 @@ func (c *Controller) initWatcher() {
 			}
 		},
 		DeleteFunc: func(obj interface{}) {
-			// IndexerInformer uses a delta queue, therefore for deletes we have to use this
-			// key function.
-			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-			if err == nil {
-				c.queue.Add(key)
-			}
+			// Deletion of Resources are handled in MutatingWebhook
+			// So, no need to handle DeleteFunc
 		},
 		UpdateFunc: func(old, new interface{}) {
 			oldObj, ok := old.(*api.DormantDatabase)
@@ -50,7 +46,7 @@ func (c *Controller) initWatcher() {
 				return
 			}
 
-			if newObj.DeletionTimestamp != nil || !dormantDatabaseEqual(oldObj, newObj) {
+			if !dormantDatabaseEqual(oldObj, newObj) {
 				key, err := cache.MetaNamespaceKeyFunc(new)
 				if err == nil {
 					c.queue.Add(key)
