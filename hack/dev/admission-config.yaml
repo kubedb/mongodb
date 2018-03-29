@@ -45,7 +45,6 @@ webhooks:
     resources: ["dormantdatabases"]
     operations: ["CREATE", "UPDATE", "DELETE"]
   failurePolicy: Fail
-
 ---
 # mutating webhook
 apiVersion: admissionregistration.k8s.io/v1beta1
@@ -83,7 +82,6 @@ spec:
     protocol: TCP
     targetPort: 8443
   type: ClusterIP
-
 ---
 # To get to the host machine from the VM,
 # the IP is 10.0.2.2 (by convention)
@@ -102,7 +100,6 @@ subsets:
   - name: api
     port: 8443
     protocol: TCP
-
 ---
 # register as aggregated apiserver
 apiVersion: apiregistration.k8s.io/v1beta1
