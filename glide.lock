@@ -1,5 +1,5 @@
 hash: e8ff99c3325b1fea798bfb4943f5ae27e428e09ce829aa2e98df6052613057d8
-updated: 2018-03-29T13:04:35.725564292+06:00
+updated: 2018-03-29T14:46:02.031877631+06:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -100,10 +100,6 @@ imports:
   version: 3ac7bf7a47d159a033b107610db8a1b6575507a4
   subpackages:
   - quantile
-- name: github.com/cloudflare/cfssl
-  version: b53da94cf51de120a50cbae533152fb3935375e0
-  subpackages:
-  - log
 - name: github.com/coreos/etcd
   version: 0520cb9304cb2385f7e72b8bc02d6e4d3257158a
   subpackages:
