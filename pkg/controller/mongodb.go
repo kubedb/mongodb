@@ -199,7 +199,6 @@ func (c *Controller) pause(mongodb *api.MongoDB) error {
 			if err != nil {
 				return err
 			}
-
 			if val, _ := meta_util.GetStringValue(ddb.Labels, api.LabelDatabaseKind); val != api.ResourceKindMongoDB {
 				return fmt.Errorf(`DormantDatabase "%v" of kind %v already exists`, mongodb.Name, val)
 			}
