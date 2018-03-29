@@ -36,6 +36,14 @@ func (c *Controller) addOrUpdateMonitor(mongodb *api.MongoDB) (kutil.VerbType, e
 	return agent.CreateOrUpdate(mongodb.StatsAccessor(), mongodb.Spec.Monitor)
 }
 
+func (c *Controller) deleteMonitor(mongodb *api.MongoDB) (kutil.VerbType, error) {
+	agent, err := c.newMonitorController(mongodb)
+	if err != nil {
+		return kutil.VerbUnchanged, err
+	}
+	return agent.Delete(mongodb.StatsAccessor())
+}
+
 func (c *Controller) getOldAgent(mongodb *api.MongoDB) mona.Agent {
 	service, err := c.Client.CoreV1().Services(mongodb.Namespace).Get(mongodb.StatsAccessor().ServiceName(), metav1.GetOptions{})
 	if err != nil {
@@ -79,12 +87,4 @@ func (c *Controller) manageMonitor(mongodb *api.MongoDB) error {
 		}
 	}
 	return nil
-}
-
-func (c *Controller) deleteMonitor(mongodb *api.MongoDB) (kutil.VerbType, error) {
-	agent, err := c.newMonitorController(mongodb)
-	if err != nil {
-		return kutil.VerbUnchanged, err
-	}
-	return agent.Delete(mongodb.StatsAccessor())
 }
