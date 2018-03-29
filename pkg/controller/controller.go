@@ -37,8 +37,10 @@ type Options struct {
 	GoverningService string
 	// Address to listen on for web interface and telemetry.
 	Address string
-	//Max number requests for retries
+	// Max number requests for retries
 	MaxNumRequeues int
+	// Number of threadiness of MongoDB handler
+	NumThreads int
 	// Enable Analytics
 	EnableAnalytics bool
 	// Analytics Client ID
@@ -143,7 +145,7 @@ func (c *Controller) watchDatabaseSnapshot() {
 	listOptions := metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(labelMap).String(),
 	}
-	snapc.NewController(c.Controller, c, listOptions, c.syncPeriod).Run()
+	snapc.NewController(c.Controller, c, listOptions, c.syncPeriod, c.opt.MaxNumRequeues, c.opt.NumThreads).Run()
 }
 
 func (c *Controller) watchDeletedDatabase() {
@@ -166,7 +168,7 @@ func (c *Controller) watchDeletedDatabase() {
 		},
 	}
 
-	drmnc.NewController(c.Controller, c, lw, c.syncPeriod).Run()
+	drmnc.NewController(c.Controller, c, lw, c.syncPeriod, c.opt.MaxNumRequeues, c.opt.NumThreads).Run()
 }
 
 func (c *Controller) pushFailureEvent(mongodb *api.MongoDB, reason string) {

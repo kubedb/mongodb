@@ -27,8 +27,10 @@ type Controller struct {
 	indexer  cache.Indexer
 	queue    workqueue.RateLimitingInterface
 	informer cache.Controller
-	//Max number requests for retries
+	// Max number requests for retries
 	maxNumRequests int
+	// threadiness of DormantDB handler
+	numThreads int
 }
 
 // NewController creates a new DormantDatabase Controller
@@ -37,6 +39,8 @@ func NewController(
 	deleter amc.Deleter,
 	lw *cache.ListWatch,
 	syncPeriod time.Duration,
+	maxNumRequests int,
+	numThreads int,
 ) *Controller {
 	// return new DormantDatabase Controller
 	return &Controller{
@@ -45,7 +49,8 @@ func NewController(
 		lw:             lw,
 		recorder:       eventer.NewEventRecorder(controller.Client, "DormantDatabase Controller"),
 		syncPeriod:     syncPeriod,
-		maxNumRequests: 2,
+		maxNumRequests: maxNumRequests,
+		numThreads:     numThreads,
 	}
 }
 
@@ -68,6 +73,6 @@ func (c *Controller) watchDormantDatabase() {
 	stop := make(chan struct{})
 	defer close(stop)
 
-	c.runWatcher(1, stop)
+	c.runWatcher(c.numThreads, stop)
 	select {}
 }

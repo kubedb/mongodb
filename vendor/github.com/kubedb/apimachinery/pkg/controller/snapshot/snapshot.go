@@ -26,8 +26,9 @@ func (c *Controller) create(snapshot *api.Snapshot) error {
 	}
 	snapshot.Status = snap.Status
 
-	// Validate DatabaseSnapshot spec
+	// Validate DatabaseSnapshot
 	if err := c.snapshotter.ValidateSnapshot(snapshot); err != nil {
+		log.Errorln(err)
 		c.eventRecorder.Event(snapshot.ObjectReference(), core.EventTypeWarning, eventer.EventReasonInvalid, err.Error())
 		_, _, err = util.PatchSnapshot(c.ExtClient, snapshot, func(in *api.Snapshot) *api.Snapshot {
 			t := metav1.Now()
@@ -38,10 +39,10 @@ func (c *Controller) create(snapshot *api.Snapshot) error {
 			return in
 		})
 		if err != nil {
+			log.Errorln(err)
 			c.eventRecorder.Eventf(snapshot.ObjectReference(), core.EventTypeWarning, eventer.EventReasonFailedToUpdate, err.Error())
 			return err
 		}
-		log.Errorln(err)
 		return nil
 	}
 

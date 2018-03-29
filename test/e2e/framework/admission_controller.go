@@ -55,18 +55,6 @@ func (f *Framework) RunAdmissionServer(kubeconfigPath string, stopCh <-chan stru
 }
 
 func (f *Framework) CleanAdmissionConfigs() {
-	// Delete Service
-	if err := f.kubeClient.CoreV1().Services("kube-system").Delete("kubedb-operator", &metav1.DeleteOptions{}); err != nil && !kerr.IsNotFound(err) {
-		fmt.Printf("error in deletion of Service. Error: %v", err)
-	}
-
-	// Delete EndPoints
-	if err := f.kubeClient.CoreV1().Endpoints("kube-system").DeleteCollection(deleteInBackground(), metav1.ListOptions{
-		LabelSelector: "app=kubedb",
-	}); err != nil && !kerr.IsNotFound(err) {
-		fmt.Printf("error in deletion of Endpoints. Error: %v", err)
-	}
-
 	// delete validating Webhook
 	if err := f.kubeClient.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().DeleteCollection(deleteInBackground(), metav1.ListOptions{
 		LabelSelector: "app=kubedb",
@@ -86,6 +74,18 @@ func (f *Framework) CleanAdmissionConfigs() {
 		LabelSelector: "app=kubedb",
 	}); err != nil && !kerr.IsNotFound(err) {
 		fmt.Printf("error in deletion of APIService. Error: %v", err)
+	}
+
+	// Delete Service
+	if err := f.kubeClient.CoreV1().Services("kube-system").Delete("kubedb-operator", &metav1.DeleteOptions{}); err != nil && !kerr.IsNotFound(err) {
+		fmt.Printf("error in deletion of Service. Error: %v", err)
+	}
+
+	// Delete EndPoints
+	if err := f.kubeClient.CoreV1().Endpoints("kube-system").DeleteCollection(deleteInBackground(), metav1.ListOptions{
+		LabelSelector: "app=kubedb",
+	}); err != nil && !kerr.IsNotFound(err) {
+		fmt.Printf("error in deletion of Endpoints. Error: %v", err)
 	}
 
 	time.Sleep(time.Second * 2) // let the kube-apiserver know it!!

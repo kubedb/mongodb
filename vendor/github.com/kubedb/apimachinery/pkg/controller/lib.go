@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"path/filepath"
+
 	core_util "github.com/appscode/kutil/core/v1"
 	"github.com/graymeta/stow"
 	_ "github.com/graymeta/stow/azure"
@@ -33,7 +35,8 @@ func (c *Controller) DeleteSnapshotData(snapshot *api.Snapshot) error {
 		return err
 	}
 
-	prefix, _ := snapshot.Location() // error checked by .Container()
+	prefixLocation, _ := snapshot.Location() // error checked by .Container()
+	prefix := filepath.Join(prefixLocation, snapshot.Name)
 	cursor := stow.CursorStart
 	for {
 		items, next, err := container.Items(prefix, cursor, 50)

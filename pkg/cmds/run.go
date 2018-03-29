@@ -36,6 +36,7 @@ var (
 		GoverningService:  "kubedb",
 		Address:           ":8080",
 		MaxNumRequeues:    5,
+		NumThreads:        5,
 		EnableAnalytics:   true,
 		AnalyticsClientID: analytics.ClientID(),
 	}

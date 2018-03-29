@@ -5,9 +5,11 @@ import (
 
 	core_util "github.com/appscode/kutil/core/v1"
 	meta_util "github.com/appscode/kutil/meta"
+	"github.com/cloudflare/cfssl/log"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	cs "github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1"
 	amv "github.com/kubedb/apimachinery/pkg/validator"
+	"github.com/pkg/errors"
 	coreV1 "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -63,6 +65,47 @@ func ValidateMongoDB(client kubernetes.Interface, extClient cs.KubedbV1alpha1Int
 			return err
 		}
 	}
+
+	if err := matchWithDormantDatabase(extClient, mongodb); err != nil {
+		return err
+	}
+	return nil
+}
+
+func matchWithDormantDatabase(extClient cs.KubedbV1alpha1Interface, mongodb *api.MongoDB) error {
+	// Check if DormantDatabase exists or not
+	dormantDb, err := extClient.DormantDatabases(mongodb.Namespace).Get(mongodb.Name, metav1.GetOptions{})
+	if err != nil {
+		if !kerr.IsNotFound(err) {
+			return err
+		}
+		return nil
+	}
+
+	// Check DatabaseKind
+	if value, _ := meta_util.GetStringValue(dormantDb.Labels, api.LabelDatabaseKind); value != api.ResourceKindMongoDB {
+		return errors.New(fmt.Sprintf(`invalid MongoDB: "%v". Exists DormantDatabase "%v" of different Kind`, mongodb.Name, dormantDb.Name))
+	}
+
+	// Check Origin Spec
+	drmnOriginSpec := dormantDb.Spec.Origin.Spec.MongoDB
+	originalSpec := mongodb.Spec
+
+	// Skip checking doNotPause
+	drmnOriginSpec.DoNotPause = originalSpec.DoNotPause
+
+	// Skip checking Monitoring
+	drmnOriginSpec.Monitor = originalSpec.Monitor
+
+	// Skip Checking BackUP Scheduler
+	drmnOriginSpec.BackupSchedule = originalSpec.BackupSchedule
+
+	if !meta_util.Equal(drmnOriginSpec, &originalSpec) {
+		diff := meta_util.Diff(drmnOriginSpec, &originalSpec)
+		log.Errorf("mongodb spec mismatches with OriginSpec in DormantDatabases. Diff: %v", diff)
+		return errors.New(fmt.Sprintf("mongodb spec mismatches with OriginSpec in DormantDatabases. Diff: %v", diff))
+	}
+
 	return nil
 }
 

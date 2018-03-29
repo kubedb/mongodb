@@ -29,8 +29,10 @@ type Controller struct {
 	indexer  cache.Indexer
 	queue    workqueue.RateLimitingInterface
 	informer cache.Controller
-	//Max number requests for retries
+	// Max number requests for retries
 	maxNumRequests int
+	// threadiness of Snapshot handler
+	numThreads int
 }
 
 // NewController creates a new Controller
@@ -39,8 +41,9 @@ func NewController(
 	snapshotter amc.Snapshotter,
 	listOption metav1.ListOptions,
 	syncPeriod time.Duration,
+	maxNumRequests int,
+	numThreads int,
 ) *Controller {
-
 	// return new DormantDatabase Controller
 	return &Controller{
 		Controller:     controller,
@@ -48,7 +51,8 @@ func NewController(
 		listOption:     listOption,
 		eventRecorder:  eventer.NewEventRecorder(controller.Client, "Snapshot Controller"),
 		syncPeriod:     syncPeriod,
-		maxNumRequests: 5,
+		maxNumRequests: maxNumRequests,
+		numThreads:     numThreads,
 	}
 }
 
@@ -63,7 +67,7 @@ func (c *Controller) Run() {
 	// Watch Snapshot with provided ListOption
 	go c.watchSnapshot()
 	// Watch Job with provided ListOption
-	go jobc.NewController(c.Controller, c.snapshotter, c.listOption, c.syncPeriod).Run()
+	go jobc.NewController(c.Controller, c.snapshotter, c.listOption, c.syncPeriod, c.maxNumRequests, c.numThreads).Run()
 }
 
 func (c *Controller) watchSnapshot() {
@@ -72,6 +76,6 @@ func (c *Controller) watchSnapshot() {
 	stop := make(chan struct{})
 	defer close(stop)
 
-	c.runWatcher(5, stop)
+	c.runWatcher(c.numThreads, stop)
 	select {}
 }

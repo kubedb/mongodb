@@ -10,6 +10,7 @@ import (
 	"github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 	"github.com/kubedb/apimachinery/pkg/storage"
 	. "github.com/onsi/gomega"
+	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -38,6 +39,24 @@ func (f *Framework) GetSnapshot(meta metav1.ObjectMeta) (*api.Snapshot, error) {
 
 func (f *Framework) DeleteSnapshot(meta metav1.ObjectMeta) error {
 	return f.extClient.Snapshots(meta.Namespace).Delete(meta.Name, &metav1.DeleteOptions{})
+}
+
+func (f *Framework) EventuallySnapshot(meta metav1.ObjectMeta) GomegaAsyncAssertion {
+	return Eventually(
+		func() bool {
+			_, err := f.extClient.Snapshots(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+			if err != nil {
+				if kerr.IsNotFound(err) {
+					return false
+				} else {
+					Expect(err).NotTo(HaveOccurred())
+				}
+			}
+			return true
+		},
+		time.Minute*10,
+		time.Second*5,
+	)
 }
 
 func (f *Framework) EventuallySnapshotPhase(meta metav1.ObjectMeta) GomegaAsyncAssertion {
@@ -84,7 +103,7 @@ func (f *Framework) EventuallySnapshotCount(meta metav1.ObjectMeta) GomegaAsyncA
 	)
 }
 
-func (f *Framework) EventuallyMultipleSucceededSnapshot(meta metav1.ObjectMeta) GomegaAsyncAssertion {
+func (f *Framework) EventuallyMultipleSnapshotFinishedProcessing(meta metav1.ObjectMeta) GomegaAsyncAssertion {
 	labelMap := map[string]string{
 		api.LabelDatabaseKind: api.ResourceKindMongoDB,
 		api.LabelDatabaseName: meta.Name,
@@ -97,7 +116,7 @@ func (f *Framework) EventuallyMultipleSucceededSnapshot(meta metav1.ObjectMeta) 
 			Expect(err).NotTo(HaveOccurred())
 
 			for _, snapshot := range snapshotList.Items {
-				if snapshot.Status.Phase != api.SnapshotPhaseSucceeded {
+				if snapshot.Status.CompletionTime == nil {
 					return fmt.Errorf("snapshot phase: %v and Reason: %v", snapshot.Status.Phase, snapshot.Status.Reason)
 				}
 			}
