@@ -193,15 +193,14 @@ func (c *Controller) pause(mongodb *api.MongoDB) error {
 		if kerr.IsAlreadyExists(err) {
 			// if already exists, check if it is database of another Kind and return error in that case.
 			// If the Kind is same, we can safely assume that the DormantDB was not deleted in before,
-			// Probably because, User is more faster (create-delete-create-again-delete) than operator!
+			// Probably because, User is more faster (create-delete-create-again-delete...) than operator!
 			// So reuse that DormantDB!
 			ddb, err := c.ExtClient.DormantDatabases(mongodb.Namespace).Get(mongodb.Name, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
 
-			if val, err := meta_util.GetStringValue(ddb.Labels, api.LabelDatabaseKind); err == kutil.ErrNotFound ||
-				val != api.ResourceKindMongoDB {
+			if val, _ := meta_util.GetStringValue(ddb.Labels, api.LabelDatabaseKind); val != api.ResourceKindMongoDB {
 				return fmt.Errorf(`DormantDatabase "%v" of kind %v already exists`, mongodb.Name, val)
 			}
 		} else {
