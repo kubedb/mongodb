@@ -37,7 +37,7 @@ func (c *Controller) create(ddb *api.DormantDatabase) error {
 	c.recorder.Event(ddb, core.EventTypeNormal, eventer.EventReasonPausing, "Pausing Database")
 
 	// Pause Database workload
-	if err := c.deleter.ExDatabaseStatus(ddb); err != nil {
+	if err := c.deleter.WaitUntilPaused(ddb); err != nil {
 		c.recorder.Eventf(
 			ddb.ObjectReference(),
 			core.EventTypeWarning,
