@@ -80,6 +80,7 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 		in.Annotations = core_util.UpsertMap(in.Annotations, mongodb.StatefulSetAnnotations())
 
 		in.Spec.Replicas = types.Int32P(1)
+		in.Spec.ServiceName = c.opt.GoverningService
 		in.Spec.Template.Labels = in.Labels
 		in.Spec.Selector = &metav1.LabelSelector{
 			MatchLabels: in.Labels,
