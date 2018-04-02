@@ -9,15 +9,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (c *Controller) ExDatabaseStatus(dormantDb *api.DormantDatabase) error {
-	mongodb := &api.MongoDB{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      dormantDb.OffshootName(),
-			Namespace: dormantDb.Namespace,
-		},
-	}
-
-	statefulSet, err := c.Client.AppsV1().StatefulSets(mongodb.Namespace).Get(mongodb.Name, metav1.GetOptions{})
+func (c *Controller) WaitUntilPaused(drmn *api.DormantDatabase) error {
+	statefulSet, err := c.Client.AppsV1().StatefulSets(drmn.Namespace).Get(drmn.OffshootName(), metav1.GetOptions{})
 	if err != nil {
 		if kerr.IsNotFound(err) {
 			return nil
@@ -30,7 +23,7 @@ func (c *Controller) ExDatabaseStatus(dormantDb *api.DormantDatabase) error {
 		return err
 	}
 
-	_, err = c.Client.CoreV1().Services(mongodb.Namespace).Get(mongodb.Name, metav1.GetOptions{})
+	_, err = c.Client.CoreV1().Services(drmn.Namespace).Get(drmn.OffshootName(), metav1.GetOptions{})
 	if err != nil {
 		if kerr.IsNotFound(err) {
 			return nil
