@@ -87,7 +87,7 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 		}
 
 		in.Spec.Template.Spec.Containers = core_util.UpsertContainer(in.Spec.Template.Spec.Containers, core.Container{
-			Name:  api.ResourceNameMongoDB,
+			Name:  api.ResourceSingularMongoDB,
 			Image: c.opt.Docker.GetImageWithTag(mongodb),
 			Ports: []core.ContainerPort{
 				{
@@ -159,7 +159,7 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 
 func upsertDataVolume(statefulSet *apps.StatefulSet, mongodb *api.MongoDB) *apps.StatefulSet {
 	for i, container := range statefulSet.Spec.Template.Spec.Containers {
-		if container.Name == api.ResourceNameMongoDB {
+		if container.Name == api.ResourceSingularMongoDB {
 			volumeMount := core.VolumeMount{
 				Name:      "data",
 				MountPath: "/data/db",
@@ -235,7 +235,7 @@ func upsertEnv(statefulSet *apps.StatefulSet, mongodb *api.MongoDB) *apps.Statef
 		},
 	}
 	for i, container := range statefulSet.Spec.Template.Spec.Containers {
-		if container.Name == api.ResourceNameMongoDB {
+		if container.Name == api.ResourceSingularMongoDB {
 			statefulSet.Spec.Template.Spec.Containers[i].Env = core_util.UpsertEnvVars(container.Env, envList...)
 			return statefulSet
 		}
@@ -245,7 +245,7 @@ func upsertEnv(statefulSet *apps.StatefulSet, mongodb *api.MongoDB) *apps.Statef
 
 func upsertInitScript(statefulSet *apps.StatefulSet, script core.VolumeSource) *apps.StatefulSet {
 	for i, container := range statefulSet.Spec.Template.Spec.Containers {
-		if container.Name == api.ResourceNameMongoDB {
+		if container.Name == api.ResourceSingularMongoDB {
 			volumeMount := core.VolumeMount{
 				Name:      "initial-script",
 				MountPath: "/docker-entrypoint-initdb.d",

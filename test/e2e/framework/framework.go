@@ -32,7 +32,7 @@ func New(
 		extClient:    extClient,
 		kaClient:     kaClient,
 		name:         "mongodb-operator",
-		namespace:    rand.WithUniqSuffix(api.ResourceNameMongoDB),
+		namespace:    rand.WithUniqSuffix(api.ResourceSingularMongoDB),
 		StorageClass: storageClass,
 	}
 }

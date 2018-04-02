@@ -3,7 +3,7 @@ package snapshot
 import (
 	"time"
 
-	apiext_util "github.com/appscode/kutil/apiextensions/v1beta1"
+	crdutils "github.com/appscode/kutil/apiextensions/v1beta1"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	amc "github.com/kubedb/apimachinery/pkg/controller"
 	jobc "github.com/kubedb/apimachinery/pkg/controller/job"
@@ -60,7 +60,7 @@ func (c *Controller) Setup() error {
 	crd := []*crd_api.CustomResourceDefinition{
 		api.Snapshot{}.CustomResourceDefinition(),
 	}
-	return apiext_util.RegisterCRDs(c.ApiExtKubeClient, crd)
+	return crdutils.RegisterCRDs(c.ApiExtKubeClient, crd)
 }
 
 func (c *Controller) Run() {

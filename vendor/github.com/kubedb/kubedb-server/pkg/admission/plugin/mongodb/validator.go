@@ -77,8 +77,6 @@ func (a *MongoDBValidator) Admit(req *admission.AdmissionRequest) *admission.Adm
 			return hookapi.StatusInternalServerError(err)
 		} else if err == nil && obj.Spec.DoNotPause {
 			return hookapi.StatusBadRequest(fmt.Errorf(`mongodb "%s" can't be paused. To continue delete, unset spec.doNotPause and retry`, req.Name))
-		} else if kerr.IsNotFound(err) {
-			break
 		}
 	default:
 		obj, err := meta_util.UnmarshalFromJSON(req.Object.Raw, api.SchemeGroupVersion)
@@ -104,7 +102,7 @@ func (a *MongoDBValidator) Admit(req *admission.AdmissionRequest) *admission.Adm
 			}
 		}
 		// validate database specs
-		if err = mgv.ValidateMongoDB(a.client, a.extClient.KubedbV1alpha1(), obj.(*api.MongoDB).DeepCopy()); err != nil {
+		if err = mgv.ValidateMongoDB(a.client, a.extClient.KubedbV1alpha1(), obj.(*api.MongoDB)); err != nil {
 			return hookapi.StatusForbidden(err)
 		}
 	}
