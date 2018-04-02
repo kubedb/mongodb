@@ -24,8 +24,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
+	clientsetscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/reference"
 	"k8s.io/client-go/util/workqueue"
 )
 
@@ -172,14 +174,16 @@ func (c *Controller) watchDeletedDatabase() {
 }
 
 func (c *Controller) pushFailureEvent(mongodb *api.MongoDB, reason string) {
-	c.recorder.Eventf(
-		mongodb.ObjectReference(),
-		core.EventTypeWarning,
-		eventer.EventReasonFailedToStart,
-		`Fail to be ready MongoDB: "%v". Reason: %v`,
-		mongodb.Name,
-		reason,
-	)
+	if ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb); err == nil {
+		c.recorder.Eventf(
+			ref,
+			core.EventTypeWarning,
+			eventer.EventReasonFailedToStart,
+			`Fail to be ready MongoDB: "%v". Reason: %v`,
+			mongodb.Name,
+			reason,
+		)
+	}
 
 	mg, _, err := kutildb.PatchMongoDB(c.ExtClient, mongodb, func(in *api.MongoDB) *api.MongoDB {
 		in.Status.Phase = api.DatabasePhaseFailed
@@ -187,12 +191,14 @@ func (c *Controller) pushFailureEvent(mongodb *api.MongoDB, reason string) {
 		return in
 	})
 	if err != nil {
-		c.recorder.Eventf(
-			mongodb.ObjectReference(),
-			core.EventTypeWarning,
-			eventer.EventReasonFailedToUpdate,
-			err.Error(),
-		)
+		if ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb); err == nil {
+			c.recorder.Eventf(
+				ref,
+				core.EventTypeWarning,
+				eventer.EventReasonFailedToUpdate,
+				err.Error(),
+			)
+		}
 	}
 	mongodb.Status = mg.Status
 }

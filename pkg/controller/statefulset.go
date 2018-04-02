@@ -33,14 +33,26 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB) (kutil.VerbType, er
 	// Check StatefulSet Pod status
 	if vt != kutil.VerbUnchanged {
 		if err := c.checkStatefulSetPodStatus(statefulSet); err != nil {
-			c.recorder.Eventf(mongodb.ObjectReference(), core.EventTypeWarning, eventer.EventReasonFailedToStart,
-				`Failed to CreateOrPatch StatefulSet. Reason: %v`, err,
-			)
+			if ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb); err == nil {
+				c.recorder.Eventf(
+					ref,
+					core.EventTypeWarning,
+					eventer.EventReasonFailedToStart,
+					`Failed to CreateOrPatch StatefulSet. Reason: %v`,
+					err,
+				)
+			}
 			return kutil.VerbUnchanged, err
 		}
-		c.recorder.Eventf(mongodb.ObjectReference(), core.EventTypeNormal, eventer.EventReasonSuccessful,
-			"Successfully %v StatefulSet", vt,
-		)
+		if ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb); err == nil {
+			c.recorder.Eventf(
+				ref,
+				core.EventTypeNormal,
+				eventer.EventReasonSuccessful,
+				"Successfully %v StatefulSet",
+				vt,
+			)
+		}
 	}
 	return vt, nil
 }

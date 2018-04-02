@@ -6,7 +6,6 @@ import (
 
 	crdutils "github.com/appscode/kutil/apiextensions/v1beta1"
 	"github.com/pkg/errors"
-	core "k8s.io/api/core/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	crd_api "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 )
@@ -75,17 +74,6 @@ func (s SnapshotStorageSpec) Location() (string, error) {
 		return "swift:" + s.Swift.Container, nil
 	}
 	return "", errors.New("no storage provider is configured")
-}
-
-func (s Snapshot) ObjectReference() *core.ObjectReference {
-	return &core.ObjectReference{
-		APIVersion:      SchemeGroupVersion.String(),
-		Kind:            ResourceKindSnapshot,
-		Namespace:       s.Namespace,
-		Name:            s.Name,
-		UID:             s.UID,
-		ResourceVersion: s.ResourceVersion,
-	}
 }
 
 func (s Snapshot) OSMSecretName() string {

@@ -10,32 +10,25 @@ import (
 )
 
 func (c *Controller) WaitUntilPaused(drmn *api.DormantDatabase) error {
-	statefulSet, err := c.Client.AppsV1().StatefulSets(drmn.Namespace).Get(drmn.OffshootName(), metav1.GetOptions{})
-	if err != nil {
-		if kerr.IsNotFound(err) {
-			return nil
-		} else {
-			return err
-		}
+	mongodb := &api.MongoDB{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      drmn.OffshootName(),
+			Namespace: drmn.Namespace,
+		},
 	}
 
-	if err = core_util.WaitUntilPodDeletedBySelector(c.Client, statefulSet.Namespace, statefulSet.Spec.Selector); err != nil {
+	if err := core_util.WaitUntilPodDeletedBySelector(c.Client, mongodb.Namespace, metav1.SetAsLabelSelector(mongodb.StatefulSetLabels())); err != nil {
 		return err
 	}
 
-	_, err = c.Client.CoreV1().Services(drmn.Namespace).Get(drmn.OffshootName(), metav1.GetOptions{})
-	if err != nil {
-		if kerr.IsNotFound(err) {
-			return nil
-		} else {
-			return err
-		}
+	if err := core_util.WaitUntilServiceDeletedBySelector(c.Client, mongodb.Namespace, metav1.SetAsLabelSelector(mongodb.OffshootLabels())); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (c *Controller) killMatchingDormantDatabase(mongodb *api.MongoDB) error {
+func (c *Controller) deleteMatchingDormantDatabase(mongodb *api.MongoDB) error {
 	// Check if DormantDatabase exists or not
 	ddb, err := c.ExtClient.DormantDatabases(mongodb.Namespace).Get(mongodb.Name, metav1.GetOptions{})
 	if err != nil {

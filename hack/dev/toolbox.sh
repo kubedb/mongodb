@@ -24,6 +24,10 @@ while test $# -gt 0; do
             show_help
             exit 0
             ;;
+        --namespace*)
+            export KUBEDB_NAMESPACE=`echo $1 | sed -e 's/^[^=]*=//g'`
+            shift
+            ;;
         --uninstall)
             export KUBEDB_UNINSTALL=1
             shift
@@ -40,15 +44,19 @@ while test $# -gt 0; do
 done
 
 if [ "$KUBEDB_UNINSTALL" -eq 1 ]; then
+# delete webhooks and apiservices
+    kubectl delete validatingwebhookconfiguration -l app=kubedb || true
+    kubectl delete mutatingwebhookconfiguration -l app=kubedb || true
+    kubectl delete apiservice -l app=kubedb
+    # delete kubedb operator
+    kubectl delete deployment -l app=kubedb --namespace $KUBEDB_NAMESPACE
     kubectl delete service -l app=kubedb --namespace $KUBEDB_NAMESPACE
     kubectl delete endpoints -l app=kubedb --namespace $KUBEDB_NAMESPACE
     kubectl delete secret -l app=kubedb --namespace $KUBEDB_NAMESPACE
-    kubectl delete validatingwebhookconfiguration -l app=kubedb --namespace $KUBEDB_NAMESPACE
-    kubectl delete mutatingwebhookconfiguration -l app=kubedb --namespace $KUBEDB_NAMESPACE
-    kubectl delete apiservice -l app=kubedb --namespace $KUBEDB_NAMESPACE
+    # delete RBAC objects, if --rbac flag was used.
     kubectl delete serviceaccount -l app=kubedb --namespace $KUBEDB_NAMESPACE
-    kubectl delete clusterrolebindings -l app=kubedb --namespace $KUBEDB_NAMESPACE
-    kubectl delete clusterrole -l app=kubedb --namespace $KUBEDB_NAMESPACE
+    kubectl delete clusterrolebindings -l app=kubedb
+    kubectl delete clusterrole -l app=kubedb
     kubectl delete rolebindings -l app=kubedb --namespace $KUBEDB_NAMESPACE
     kubectl delete role -l app=kubedb --namespace $KUBEDB_NAMESPACE
 

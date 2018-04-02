@@ -28,7 +28,7 @@ func SetDefaultValues(client kubernetes.Interface, extClient cs.KubedbV1alpha1In
 		mongodb.Spec.Replicas = types.Int32P(1)
 	}
 
-	if err := fuseDormantDB(extClient, mongodb); err != nil {
+	if err := setDefaultsFromDormantDB(extClient, mongodb); err != nil {
 		return nil, err
 	}
 
@@ -39,8 +39,8 @@ func SetDefaultValues(client kubernetes.Interface, extClient cs.KubedbV1alpha1In
 	return mongodb, nil
 }
 
-// fuseDormantDB takes values from Similar Dormant Database
-func fuseDormantDB(extClient cs.KubedbV1alpha1Interface, mongodb *api.MongoDB) error {
+// setDefaultsFromDormantDB takes values from Similar Dormant Database
+func setDefaultsFromDormantDB(extClient cs.KubedbV1alpha1Interface, mongodb *api.MongoDB) error {
 	// Check if DormantDatabase exists or not
 	dormantDb, err := extClient.DormantDatabases(mongodb.Namespace).Get(mongodb.Name, metav1.GetOptions{})
 	if err != nil {

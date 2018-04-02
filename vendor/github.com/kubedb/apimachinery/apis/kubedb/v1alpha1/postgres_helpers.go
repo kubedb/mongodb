@@ -6,7 +6,6 @@ import (
 
 	"github.com/appscode/kube-mon/api"
 	crdutils "github.com/appscode/kutil/apiextensions/v1beta1"
-	core "k8s.io/api/core/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	crd_api "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 )
@@ -58,17 +57,6 @@ func (p Postgres) ResourceSingular() string {
 
 func (p Postgres) ResourcePlural() string {
 	return ResourcePluralPostgres
-}
-
-func (p Postgres) ObjectReference() *core.ObjectReference {
-	return &core.ObjectReference{
-		APIVersion:      SchemeGroupVersion.String(),
-		Kind:            p.ResourceKind(),
-		Namespace:       p.Namespace,
-		Name:            p.Name,
-		UID:             p.UID,
-		ResourceVersion: p.ResourceVersion,
-	}
 }
 
 func (p Postgres) ServiceName() string {
