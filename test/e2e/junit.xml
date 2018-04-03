@@ -1,14 +1,67 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <testsuite tests="9" failures="1" time="635.064303961">
-      <testcase name="MongoDB Test General Without PVC should run successfully" classname="e2e Suite" time="56.716808998"></testcase>
-      <testcase name="MongoDB Test General With PVC should run successfully" classname="e2e Suite" time="103.898579942"></testcase>
-      <testcase name="MongoDB Test DoNotPause should work successfully" classname="e2e Suite" time="62.050399768"></testcase>
-      <testcase name="MongoDB Test Snapshot In Local should take Snapshot successfully" classname="e2e Suite" time="68.351596964"></testcase>
-      <testcase name="MongoDB Test Snapshot In Local Without PVC should run successfully" classname="e2e Suite" time="64.220035723"></testcase>
-      <testcase name="MongoDB Test Snapshot In S3 should take Snapshot successfully" classname="e2e Suite" time="15.657919269">
-          <failure type="Failure">/home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:255&#xA;Expected error:&#xA;    &lt;*errors.errorString | 0xc4216036d0&gt;: {&#xA;        s: &#34;an empty namespace may not be set during creation&#34;,&#xA;    }&#xA;    an empty namespace may not be set during creation&#xA;not to have occurred&#xA;/home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:199</failure>
-          <system-out>[BeforeEach] MongoDB&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:35&#xA;[BeforeEach] Test&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:87&#xA;[BeforeEach] Snapshot&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:188&#xA;[BeforeEach] In S3&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:247&#xA;[It] should take Snapshot successfully&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:255&#xA;�[1mSTEP�[0m: Create MongoDB: mongodb-ypinfq&#xA;�[1mSTEP�[0m: Wait for Running mongodb&#xA;�[1mSTEP�[0m: Create Secret&#xA;[AfterEach] Snapshot&#xA;  /home/maruf/go/src/github.com/kubedb/mongodb/test/e2e/mongodb_test.go:184&#xA;</system-out>
+  <testsuite tests="1" failures="0" time="87.632286164">
+      <testcase name="MongoDB Test General Without PVC should run successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
       </testcase>
-      <testcase name="MongoDB Test Snapshot In GCS Without Init should take Snapshot successfully" classname="e2e Suite" time="74.837602634"></testcase>
-      <testcase name="MongoDB Test Snapshot In GCS With Init should take Snapshot successfully" classname="e2e Suite" time="63.240753532"></testcase>
+      <testcase name="MongoDB Test General With PVC should run successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test DoNotPause should work successfully" classname="e2e Suite" time="70.853611961"></testcase>
+      <testcase name="MongoDB Test Snapshot In Local should take Snapshot successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test Snapshot In Local Without PVC should run successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test Snapshot In S3 should take Snapshot successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test Snapshot In GCS Without Init should take Snapshot successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test Snapshot In GCS With Init should take Snapshot successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test Snapshot In GCS Delete One Snapshot keeping others Delete One Snapshot keeping others" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test Snapshot In Azure should take Snapshot successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test Snapshot In Swift should take Snapshot successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test Initialize With Script should run successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test Initialize With Snapshot should run successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test Resume Super Fast User - Create-Delete-Create-Delete-Create  should resume DormantDatabase successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test Resume Without Init should resume DormantDatabase successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test Resume with init Script should resume DormantDatabase successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test Resume With Snapshot Init should resume successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test Resume Multiple times with init should resume DormantDatabase successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test SnapshotScheduler With Startup with local should run schedular successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test SnapshotScheduler With Startup with GCS and PVC should run schedular successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test SnapshotScheduler With Update - with Local should run schedular successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test SnapshotScheduler Re-Use DormantDatabase&#39;s scheduler should re-use scheduler successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
   </testsuite>
