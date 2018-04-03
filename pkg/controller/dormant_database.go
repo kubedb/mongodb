@@ -10,18 +10,18 @@ import (
 )
 
 func (c *Controller) WaitUntilPaused(drmn *api.DormantDatabase) error {
-	mongodb := &api.MongoDB{
+	db := &api.MongoDB{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      drmn.OffshootName(),
 			Namespace: drmn.Namespace,
 		},
 	}
 
-	if err := core_util.WaitUntilPodDeletedBySelector(c.Client, mongodb.Namespace, metav1.SetAsLabelSelector(mongodb.StatefulSetLabels())); err != nil {
+	if err := core_util.WaitUntilPodDeletedBySelector(c.Client, db.Namespace, metav1.SetAsLabelSelector(db.StatefulSetLabels())); err != nil {
 		return err
 	}
 
-	if err := core_util.WaitUntilServiceDeletedBySelector(c.Client, mongodb.Namespace, metav1.SetAsLabelSelector(mongodb.OffshootLabels())); err != nil {
+	if err := core_util.WaitUntilServiceDeletedBySelector(c.Client, db.Namespace, metav1.SetAsLabelSelector(db.OffshootLabels())); err != nil {
 		return err
 	}
 
