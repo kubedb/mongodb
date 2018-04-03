@@ -25,7 +25,7 @@ func (c *Controller) ensureService(mongodb *api.MongoDB) (kutil.VerbType, error)
 	// create database Service
 	vt, err := c.createService(mongodb)
 	if err != nil {
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
 			c.recorder.Eventf(
 				ref,
 				core.EventTypeWarning,
@@ -36,7 +36,7 @@ func (c *Controller) ensureService(mongodb *api.MongoDB) (kutil.VerbType, error)
 		}
 		return kutil.VerbUnchanged, err
 	} else if vt != kutil.VerbUnchanged {
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
 			c.recorder.Eventf(
 				ref,
 				core.EventTypeNormal,
@@ -73,9 +73,9 @@ func (c *Controller) createService(mongodb *api.MongoDB) (kutil.VerbType, error)
 		Namespace: mongodb.Namespace,
 	}
 
-	ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb)
-	if err != nil {
-		return kutil.VerbUnchanged, err
+	ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb)
+	if rerr != nil {
+		return kutil.VerbUnchanged, rerr
 	}
 
 	_, ok, err := core_util.CreateOrPatchService(c.Client, meta, func(in *core.Service) *core.Service {

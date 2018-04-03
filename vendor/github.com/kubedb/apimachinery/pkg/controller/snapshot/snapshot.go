@@ -23,7 +23,7 @@ func (c *Controller) create(snapshot *api.Snapshot) error {
 		return in
 	})
 	if err != nil {
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, snapshot); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, snapshot); rerr == nil {
 			c.eventRecorder.Eventf(
 				ref,
 				core.EventTypeWarning,
@@ -38,7 +38,7 @@ func (c *Controller) create(snapshot *api.Snapshot) error {
 	// Validate DatabaseSnapshot
 	if err := c.snapshotter.ValidateSnapshot(snapshot); err != nil {
 		log.Errorln(err)
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, snapshot); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, snapshot); rerr == nil {
 			c.eventRecorder.Event(
 				ref,
 				core.EventTypeWarning,
@@ -56,7 +56,7 @@ func (c *Controller) create(snapshot *api.Snapshot) error {
 		})
 		if err != nil {
 			log.Errorln(err)
-			if ref, err := reference.GetReference(clientsetscheme.Scheme, snapshot); err == nil {
+			if ref, rerr := reference.GetReference(clientsetscheme.Scheme, snapshot); rerr == nil {
 				c.eventRecorder.Eventf(
 					ref,
 					core.EventTypeWarning,
@@ -72,7 +72,7 @@ func (c *Controller) create(snapshot *api.Snapshot) error {
 	// Check running snapshot
 	running, err := c.isSnapshotRunning(snapshot)
 	if err != nil {
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, snapshot); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, snapshot); rerr == nil {
 			c.eventRecorder.Event(
 				ref,
 				core.EventTypeWarning,
@@ -91,7 +91,7 @@ func (c *Controller) create(snapshot *api.Snapshot) error {
 			return in
 		})
 		if err != nil {
-			if ref, err := reference.GetReference(clientsetscheme.Scheme, snapshot); err == nil {
+			if ref, rerr := reference.GetReference(clientsetscheme.Scheme, snapshot); rerr == nil {
 				c.eventRecorder.Eventf(
 					ref,
 					core.EventTypeWarning,
@@ -106,7 +106,7 @@ func (c *Controller) create(snapshot *api.Snapshot) error {
 
 	runtimeObj, err := c.snapshotter.GetDatabase(metav1.ObjectMeta{Name: snapshot.Spec.DatabaseName, Namespace: snapshot.Namespace})
 	if err != nil {
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, snapshot); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, snapshot); rerr == nil {
 			c.eventRecorder.Event(
 				ref,
 				core.EventTypeWarning,
@@ -117,7 +117,7 @@ func (c *Controller) create(snapshot *api.Snapshot) error {
 		return err
 	}
 
-	if ref, err := reference.GetReference(clientsetscheme.Scheme, runtimeObj); err == nil {
+	if ref, rerr := reference.GetReference(clientsetscheme.Scheme, runtimeObj); rerr == nil {
 		c.eventRecorder.Event(
 			ref,
 			core.EventTypeNormal,
@@ -125,7 +125,7 @@ func (c *Controller) create(snapshot *api.Snapshot) error {
 			"Backup running",
 		)
 	}
-	if ref, err := reference.GetReference(clientsetscheme.Scheme, snapshot); err == nil {
+	if ref, rerr := reference.GetReference(clientsetscheme.Scheme, snapshot); rerr == nil {
 		c.eventRecorder.Event(
 			ref,
 			core.EventTypeNormal,
@@ -136,7 +136,7 @@ func (c *Controller) create(snapshot *api.Snapshot) error {
 	secret, err := storage.NewOSMSecret(c.Client, snapshot)
 	if err != nil {
 		message := fmt.Sprintf("Failed to generate osm secret. Reason: %v", err)
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, runtimeObj); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, runtimeObj); rerr == nil {
 			c.eventRecorder.Event(
 				ref,
 				core.EventTypeWarning,
@@ -144,7 +144,7 @@ func (c *Controller) create(snapshot *api.Snapshot) error {
 				message,
 			)
 		}
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, snapshot); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, snapshot); rerr == nil {
 			c.eventRecorder.Event(
 				ref,
 				core.EventTypeWarning,
@@ -157,7 +157,7 @@ func (c *Controller) create(snapshot *api.Snapshot) error {
 	_, err = c.Client.CoreV1().Secrets(secret.Namespace).Create(secret)
 	if err != nil && !kerr.IsAlreadyExists(err) {
 		message := fmt.Sprintf("Failed to create osm secret. Reason: %v", err)
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, runtimeObj); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, runtimeObj); rerr == nil {
 			c.eventRecorder.Event(
 				ref,
 				core.EventTypeWarning,
@@ -165,7 +165,7 @@ func (c *Controller) create(snapshot *api.Snapshot) error {
 				message,
 			)
 		}
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, snapshot); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, snapshot); rerr == nil {
 			c.eventRecorder.Event(
 				ref,
 				core.EventTypeWarning,
@@ -179,7 +179,7 @@ func (c *Controller) create(snapshot *api.Snapshot) error {
 	job, err := c.snapshotter.GetSnapshotter(snapshot)
 	if err != nil {
 		message := fmt.Sprintf("Failed to take snapshot. Reason: %v", err)
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, runtimeObj); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, runtimeObj); rerr == nil {
 			c.eventRecorder.Event(
 				ref,
 				core.EventTypeWarning,
@@ -187,7 +187,7 @@ func (c *Controller) create(snapshot *api.Snapshot) error {
 				message,
 			)
 		}
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, snapshot); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, snapshot); rerr == nil {
 			c.eventRecorder.Event(
 				ref,
 				core.EventTypeWarning,
@@ -205,7 +205,7 @@ func (c *Controller) create(snapshot *api.Snapshot) error {
 		return in
 	})
 	if err != nil {
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, snapshot); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, snapshot); rerr == nil {
 			c.eventRecorder.Eventf(
 				ref,
 				core.EventTypeWarning,
@@ -219,7 +219,7 @@ func (c *Controller) create(snapshot *api.Snapshot) error {
 	job, err = c.Client.BatchV1().Jobs(snapshot.Namespace).Create(job)
 	if err != nil {
 		message := fmt.Sprintf("Failed to take snapshot. Reason: %v", err)
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, runtimeObj); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, runtimeObj); rerr == nil {
 			c.eventRecorder.Event(
 				ref,
 				core.EventTypeWarning,
@@ -227,7 +227,7 @@ func (c *Controller) create(snapshot *api.Snapshot) error {
 				message,
 			)
 		}
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, snapshot); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, snapshot); rerr == nil {
 			c.eventRecorder.Event(
 				ref,
 				core.EventTypeWarning,
@@ -249,7 +249,7 @@ func (c *Controller) delete(snapshot *api.Snapshot) error {
 	runtimeObj, err := c.snapshotter.GetDatabase(metav1.ObjectMeta{Name: snapshot.Spec.DatabaseName, Namespace: snapshot.Namespace})
 	if err != nil {
 		if !kerr.IsNotFound(err) {
-			if ref, err := reference.GetReference(clientsetscheme.Scheme, snapshot); err == nil {
+			if ref, rerr := reference.GetReference(clientsetscheme.Scheme, snapshot); rerr == nil {
 				c.eventRecorder.Event(
 					ref,
 					core.EventTypeWarning,
@@ -262,7 +262,7 @@ func (c *Controller) delete(snapshot *api.Snapshot) error {
 	}
 
 	if runtimeObj != nil {
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, runtimeObj); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, runtimeObj); rerr == nil {
 			c.eventRecorder.Eventf(
 				ref,
 				core.EventTypeNormal,
@@ -275,7 +275,7 @@ func (c *Controller) delete(snapshot *api.Snapshot) error {
 
 	if err := c.snapshotter.WipeOutSnapshot(snapshot); err != nil {
 		if runtimeObj != nil {
-			if ref, err := reference.GetReference(clientsetscheme.Scheme, runtimeObj); err == nil {
+			if ref, rerr := reference.GetReference(clientsetscheme.Scheme, runtimeObj); rerr == nil {
 				c.eventRecorder.Eventf(
 					ref,
 					core.EventTypeWarning,
@@ -289,7 +289,7 @@ func (c *Controller) delete(snapshot *api.Snapshot) error {
 	}
 
 	if runtimeObj != nil {
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, runtimeObj); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, runtimeObj); rerr == nil {
 			c.eventRecorder.Eventf(
 				ref,
 				core.EventTypeNormal,

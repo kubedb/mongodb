@@ -133,7 +133,7 @@ func (s *snapshotInvoker) createScheduledSnapshot() {
 		LabelSelector: labels.Set(labelMap).AsSelector().String(),
 	})
 	if err != nil {
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, s.runtimeObject); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, s.runtimeObject); rerr == nil {
 			s.eventRecorder.Eventf(
 				ref,
 				core.EventTypeWarning,
@@ -147,7 +147,7 @@ func (s *snapshotInvoker) createScheduledSnapshot() {
 	}
 
 	if len(snapshotList.Items) > 0 {
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, s.runtimeObject); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, s.runtimeObject); rerr == nil {
 			s.eventRecorder.Event(
 				ref,
 				core.EventTypeNormal,

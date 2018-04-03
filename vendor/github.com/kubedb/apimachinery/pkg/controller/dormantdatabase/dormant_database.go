@@ -18,7 +18,7 @@ func (c *Controller) create(ddb *api.DormantDatabase) error {
 			return in
 		})
 		if err != nil {
-			if ref, err := reference.GetReference(clientsetscheme.Scheme, ddb); err == nil {
+			if ref, rerr := reference.GetReference(clientsetscheme.Scheme, ddb); rerr == nil {
 				c.recorder.Eventf(
 					ref,
 					core.EventTypeWarning,
@@ -47,7 +47,7 @@ func (c *Controller) create(ddb *api.DormantDatabase) error {
 
 	// Pause Database workload
 	if err := c.deleter.WaitUntilPaused(ddb); err != nil {
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, ddb); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, ddb); rerr == nil {
 			c.recorder.Eventf(
 				ref,
 				core.EventTypeWarning,
@@ -59,7 +59,7 @@ func (c *Controller) create(ddb *api.DormantDatabase) error {
 		return err
 	}
 
-	if ref, err := reference.GetReference(clientsetscheme.Scheme, ddb); err == nil {
+	if ref, rerr := reference.GetReference(clientsetscheme.Scheme, ddb); rerr == nil {
 		c.recorder.Event(
 			ref,
 			core.EventTypeNormal,

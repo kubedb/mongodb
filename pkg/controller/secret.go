@@ -27,7 +27,7 @@ func (c *Controller) ensureDatabaseSecret(mongodb *api.MongoDB) error {
 	if mongodb.Spec.DatabaseSecret == nil {
 		secretVolumeSource, err := c.createDatabaseSecret(mongodb)
 		if err != nil {
-			if ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb); err == nil {
+			if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
 				c.recorder.Eventf(
 					ref,
 					core.EventTypeWarning,
@@ -44,7 +44,7 @@ func (c *Controller) ensureDatabaseSecret(mongodb *api.MongoDB) error {
 			return in
 		})
 		if err != nil {
-			if ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb); err == nil {
+			if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
 				c.recorder.Eventf(
 					ref,
 					core.EventTypeWarning,

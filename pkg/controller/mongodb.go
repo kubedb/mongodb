@@ -20,7 +20,7 @@ import (
 
 func (c *Controller) create(mongodb *api.MongoDB) error {
 	if err := validator.ValidateMongoDB(c.Client, c.ExtClient, mongodb); err != nil {
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
 			c.recorder.Event(
 				ref,
 				core.EventTypeWarning,
@@ -33,7 +33,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 
 	// Delete Matching DormantDatabase if exists any
 	if err := c.deleteMatchingDormantDatabase(mongodb); err != nil {
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
 			c.recorder.Eventf(
 				ref,
 				core.EventTypeWarning,
@@ -54,7 +54,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 			return in
 		})
 		if err != nil {
-			if ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb); err == nil {
+			if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
 				c.recorder.Eventf(
 					ref,
 					core.EventTypeWarning,
@@ -70,7 +70,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 	// create Governing Service
 	governingService := c.opt.GoverningService
 	if err := c.CreateGoverningService(governingService, mongodb.Namespace); err != nil {
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
 			c.recorder.Eventf(
 				ref,
 				core.EventTypeWarning,
@@ -100,7 +100,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 	}
 
 	if vt1 == kutil.VerbCreated && vt2 == kutil.VerbCreated {
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
 			c.recorder.Event(
 				ref,
 				core.EventTypeNormal,
@@ -109,7 +109,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 			)
 		}
 	} else if vt1 == kutil.VerbPatched || vt2 == kutil.VerbPatched {
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
 			c.recorder.Event(
 				ref,
 				core.EventTypeNormal,
@@ -146,7 +146,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 		return in
 	})
 	if err != nil {
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
 			c.recorder.Eventf(
 				ref,
 				core.EventTypeWarning,
@@ -162,7 +162,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 	c.ensureBackupScheduler(mongodb)
 
 	if err := c.manageMonitor(mongodb); err != nil {
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
 			c.recorder.Eventf(
 				ref,
 				core.EventTypeWarning,
@@ -185,7 +185,7 @@ func (c *Controller) ensureBackupScheduler(mongodb *api.MongoDB) {
 		err := c.cronController.ScheduleBackup(mongodb, mongodb.ObjectMeta, mongodb.Spec.BackupSchedule)
 		if err != nil {
 			log.Errorln(err)
-			if ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb); err == nil {
+			if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
 				c.recorder.Eventf(
 					ref,
 					core.EventTypeWarning,
@@ -206,7 +206,7 @@ func (c *Controller) initialize(mongodb *api.MongoDB) error {
 		return in
 	})
 	if err != nil {
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
 			c.recorder.Eventf(
 				ref,
 				core.EventTypeWarning,
@@ -220,7 +220,7 @@ func (c *Controller) initialize(mongodb *api.MongoDB) error {
 
 	snapshotSource := mongodb.Spec.Init.SnapshotSource
 	// Event for notification that kubernetes objects are creating
-	if ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb); err == nil {
+	if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
 		c.recorder.Eventf(
 			ref,
 			core.EventTypeNormal,

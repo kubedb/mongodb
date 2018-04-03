@@ -133,9 +133,9 @@ func (a *DormantDatabaseValidator) setOwnerReferenceToObjects(ddb *api.DormantDa
 	labelSelector := labels.SelectorFromSet(labelMap)
 
 	// Get object reference of dormant database
-	ref, err := reference.GetReference(clientsetscheme.Scheme, ddb)
-	if err != nil {
-		return err
+	ref, rerr := reference.GetReference(clientsetscheme.Scheme, ddb)
+	if rerr != nil {
+		return rerr
 	}
 
 	// Set Owner Reference of Snapshots to this Dormant Database Object
@@ -195,9 +195,9 @@ func (a *DormantDatabaseValidator) removeOwnerReferenceFromObjects(ddb *api.Dorm
 	labelSelector := labels.SelectorFromSet(labelMap)
 
 	// Get object reference of dormant database
-	ref, err := reference.GetReference(clientsetscheme.Scheme, ddb)
-	if err != nil {
-		return err
+	ref, rerr := reference.GetReference(clientsetscheme.Scheme, ddb)
+	if rerr != nil {
+		return rerr
 	}
 
 	// Set Owner Reference of Snapshots to this Dormant Database Object
@@ -281,9 +281,9 @@ func (a *DormantDatabaseValidator) sterilizeSecrets(ddb *api.DormantDatabase) er
 	secretFound := false
 
 	// Get object reference of dormant database
-	ref, err := reference.GetReference(clientsetscheme.Scheme, ddb)
-	if err != nil {
-		return err
+	ref, rerr := reference.GetReference(clientsetscheme.Scheme, ddb)
+	if rerr != nil {
+		return rerr
 	}
 
 	dbKind, err := meta_util.GetStringValue(ddb.ObjectMeta.Labels, api.LabelDatabaseKind)

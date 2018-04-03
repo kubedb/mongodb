@@ -57,7 +57,7 @@ func (c *Controller) handleBackupJob(job *batch.Job) error {
 				return in
 			})
 			if err != nil {
-				if ref, err := reference.GetReference(clientsetscheme.Scheme, snapshot); err == nil {
+				if ref, rerr := reference.GetReference(clientsetscheme.Scheme, snapshot); rerr == nil {
 					c.eventRecorder.Eventf(
 						ref,
 						core.EventTypeWarning,
@@ -73,7 +73,7 @@ func (c *Controller) handleBackupJob(job *batch.Job) error {
 				return nil
 			}
 			if jobSucceeded {
-				if ref, err := reference.GetReference(clientsetscheme.Scheme, runtimeObj); err == nil {
+				if ref, rerr := reference.GetReference(clientsetscheme.Scheme, runtimeObj); rerr == nil {
 					c.eventRecorder.Event(
 						ref,
 						core.EventTypeNormal,
@@ -81,7 +81,7 @@ func (c *Controller) handleBackupJob(job *batch.Job) error {
 						"Successfully completed snapshot",
 					)
 				}
-				if ref, err := reference.GetReference(clientsetscheme.Scheme, snapshot); err == nil {
+				if ref, rerr := reference.GetReference(clientsetscheme.Scheme, snapshot); rerr == nil {
 					c.eventRecorder.Event(
 						ref,
 						core.EventTypeNormal,
@@ -90,7 +90,7 @@ func (c *Controller) handleBackupJob(job *batch.Job) error {
 					)
 				}
 			} else {
-				if ref, err := reference.GetReference(clientsetscheme.Scheme, runtimeObj); err == nil {
+				if ref, rerr := reference.GetReference(clientsetscheme.Scheme, runtimeObj); rerr == nil {
 					c.eventRecorder.Event(
 						ref,
 						core.EventTypeWarning,
@@ -98,7 +98,7 @@ func (c *Controller) handleBackupJob(job *batch.Job) error {
 						"Failed to complete snapshot",
 					)
 				}
-				if ref, err := reference.GetReference(clientsetscheme.Scheme, snapshot); err == nil {
+				if ref, rerr := reference.GetReference(clientsetscheme.Scheme, snapshot); rerr == nil {
 					c.eventRecorder.Event(
 						ref,
 						core.EventTypeWarning,
@@ -150,7 +150,7 @@ func (c *Controller) handleRestoreJob(job *batch.Job) error {
 				return nil
 			}
 			if jobSucceeded {
-				if ref, err := reference.GetReference(clientsetscheme.Scheme, runtimeObj); err == nil {
+				if ref, rerr := reference.GetReference(clientsetscheme.Scheme, runtimeObj); rerr == nil {
 					c.eventRecorder.Event(
 						ref,
 						core.EventTypeNormal,
@@ -159,7 +159,7 @@ func (c *Controller) handleRestoreJob(job *batch.Job) error {
 					)
 				}
 			} else {
-				if ref, err := reference.GetReference(clientsetscheme.Scheme, runtimeObj); err == nil {
+				if ref, rerr := reference.GetReference(clientsetscheme.Scheme, runtimeObj); rerr == nil {
 					c.eventRecorder.Event(
 						ref,
 						core.EventTypeWarning,

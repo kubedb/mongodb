@@ -33,7 +33,7 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB) (kutil.VerbType, er
 	// Check StatefulSet Pod status
 	if vt != kutil.VerbUnchanged {
 		if err := c.checkStatefulSetPodStatus(statefulSet); err != nil {
-			if ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb); err == nil {
+			if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
 				c.recorder.Eventf(
 					ref,
 					core.EventTypeWarning,
@@ -44,7 +44,7 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB) (kutil.VerbType, er
 			}
 			return kutil.VerbUnchanged, err
 		}
-		if ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb); err == nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
 			c.recorder.Eventf(
 				ref,
 				core.EventTypeNormal,
@@ -81,9 +81,9 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 		Namespace: mongodb.Namespace,
 	}
 
-	ref, err := reference.GetReference(clientsetscheme.Scheme, mongodb)
-	if err != nil {
-		return nil, kutil.VerbUnchanged, err
+	ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb)
+	if rerr != nil {
+		return nil, kutil.VerbUnchanged, rerr
 	}
 
 	return app_util.CreateOrPatchStatefulSet(c.Client, statefulSetMeta, func(in *apps.StatefulSet) *apps.StatefulSet {
