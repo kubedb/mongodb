@@ -97,7 +97,7 @@ var _ = BeforeSuite(func() {
 	// Start Cron
 	cronController.StartCron()
 
-	opt := controller.Options{
+	opt := controller.Config{
 		Docker: docker.Docker{
 			Registry: dockerRegistry,
 		},
@@ -111,7 +111,7 @@ var _ = BeforeSuite(func() {
 
 	// Controller
 	ctrl = controller.New(kubeClient, apiExtKubeClient, extClient, promClient, cronController, opt)
-	err = ctrl.Setup()
+	err = ctrl.EnsureCustomResourceDefinitions()
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -119,7 +119,7 @@ var _ = BeforeSuite(func() {
 	stopCh := genericapiserver.SetupSignalHandler()
 	go root.RunAdmissionServer(kubeconfigPath, stopCh)
 
-	ctrl.Run()
+	ctrl.RunControllers()
 	root.EventuallyCRD().Should(Succeed())
 	root.EventuallyApiServiceReady().Should(Succeed())
 })

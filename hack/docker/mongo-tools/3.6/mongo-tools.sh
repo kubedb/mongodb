@@ -18,7 +18,7 @@ show_help() {
     echo "    --bucket=BUCKET                name of bucket"
     echo "    --folder=FOLDER                name of folder in bucket"
     echo "    --snapshot=SNAPSHOT            name of snapshot"
-    echo "    --analytics=ENABLE_ANALYTICS   send analytical events to Google Analytics (default true)"
+    echo "    --enable-analytics=ENABLE_ANALYTICS   send analytical events to Google Analytics (default true)"
 }
 
 RETVAL=0
@@ -67,7 +67,7 @@ while test $# -gt 0; do
             export DB_SNAPSHOT=`echo $1 | sed -e 's/^[^=]*=//g'`
             shift
             ;;
-        --analytics*)
+        --enable-analytics*)
             export ENABLE_ANALYTICS=`echo $1 | sed -e 's/^[^=]*=//g'`
             shift
             ;;
@@ -95,10 +95,10 @@ rm -rf *
 case "$op" in
     backup)
         mongodump --host "$DB_HOST" --port $DB_PORT --username "$DB_USER" --password "$DB_PASSWORD" --out "$DB_DATA_DIR"
-        osm push --analytics="$ENABLE_ANALYTICS" --osmconfig="$OSM_CONFIG_FILE" -c "$DB_BUCKET" "$DB_DATA_DIR" "$DB_FOLDER/$DB_SNAPSHOT"
+        osm push --enable-analytics="$ENABLE_ANALYTICS" --osmconfig="$OSM_CONFIG_FILE" -c "$DB_BUCKET" "$DB_DATA_DIR" "$DB_FOLDER/$DB_SNAPSHOT"
         ;;
     restore)
-        osm pull --analytics="$ENABLE_ANALYTICS" --osmconfig="$OSM_CONFIG_FILE" -c "$DB_BUCKET" "$DB_FOLDER/$DB_SNAPSHOT" "$DB_DATA_DIR"
+        osm pull --enable-analytics="$ENABLE_ANALYTICS" --osmconfig="$OSM_CONFIG_FILE" -c "$DB_BUCKET" "$DB_FOLDER/$DB_SNAPSHOT" "$DB_DATA_DIR"
         mongorestore --host "$DB_HOST" --port $DB_PORT --username "$DB_USER" --password "$DB_PASSWORD"  "$DB_DATA_DIR"
         ;;
     *)  (10)

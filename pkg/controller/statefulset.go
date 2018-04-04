@@ -92,7 +92,7 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 		in.Annotations = core_util.UpsertMap(in.Annotations, mongodb.StatefulSetAnnotations())
 
 		in.Spec.Replicas = types.Int32P(1)
-		in.Spec.ServiceName = c.opt.GoverningService
+		in.Spec.ServiceName = c.GoverningService
 		in.Spec.Template.Labels = in.Labels
 		in.Spec.Selector = &metav1.LabelSelector{
 			MatchLabels: in.Labels,
@@ -100,7 +100,7 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 
 		in.Spec.Template.Spec.Containers = core_util.UpsertContainer(in.Spec.Template.Spec.Containers, core.Container{
 			Name:  api.ResourceSingularMongoDB,
-			Image: c.opt.Docker.GetImageWithTag(mongodb),
+			Image: c.Docker.GetImageWithTag(mongodb),
 			Ports: []core.ContainerPort{
 				{
 					Name:          "db",
@@ -119,9 +119,9 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 				Args: append([]string{
 					"export",
 					fmt.Sprintf("--address=:%d", mongodb.Spec.Monitor.Prometheus.Port),
-					fmt.Sprintf("--analytics=%v", c.opt.EnableAnalytics),
-				}, c.opt.LoggerOptions.ToFlags()...),
-				Image: c.opt.Docker.GetOperatorImageWithTag(mongodb),
+					fmt.Sprintf("--enable-analytics=%v", c.EnableAnalytics),
+				}, c.LoggerOptions.ToFlags()...),
+				Image: c.Docker.GetOperatorImageWithTag(mongodb),
 				Ports: []core.ContainerPort{
 					{
 						Name:          api.PrometheusExporterPortName,

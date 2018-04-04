@@ -68,7 +68,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 	}
 
 	// create Governing Service
-	governingService := c.opt.GoverningService
+	governingService := c.GoverningService
 	if err := c.CreateGoverningService(governingService, mongodb.Namespace); err != nil {
 		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
 			c.recorder.Eventf(

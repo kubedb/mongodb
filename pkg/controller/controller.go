@@ -3,9 +3,7 @@ package controller
 import (
 	"time"
 
-	"github.com/appscode/go/hold"
 	"github.com/appscode/go/log"
-	"github.com/appscode/go/log/golog"
 	apiext_util "github.com/appscode/kutil/apiextensions/v1beta1"
 	pcm "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
@@ -15,7 +13,6 @@ import (
 	drmnc "github.com/kubedb/apimachinery/pkg/controller/dormantdatabase"
 	snapc "github.com/kubedb/apimachinery/pkg/controller/snapshot"
 	"github.com/kubedb/apimachinery/pkg/eventer"
-	"github.com/kubedb/mongodb/pkg/docker"
 	core "k8s.io/api/core/v1"
 	crd_api "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	crd_cs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
@@ -31,27 +28,9 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
-type Options struct {
-	Docker docker.Docker
-	// Exporter namespace
-	OperatorNamespace string
-	// Governing service
-	GoverningService string
-	// Address to listen on for web interface and telemetry.
-	Address string
-	// Max number requests for retries
-	MaxNumRequeues int
-	// Number of threadiness of MongoDB handler
-	NumThreads int
-	// Enable Analytics
-	EnableAnalytics bool
-	// Analytics Client ID
-	AnalyticsClientID string
-	// Logger Options
-	LoggerOptions golog.Options
-}
-
 type Controller struct {
+	Config
+
 	*amc.Controller
 	// Prometheus client
 	promClient pcm.MonitoringV1Interface
@@ -59,8 +38,6 @@ type Controller struct {
 	cronController snapc.CronControllerInterface
 	// Event Recorder
 	recorder record.EventRecorder
-	// Flag data
-	opt Options
 	// sync time to sync the list.
 	syncPeriod time.Duration
 
@@ -79,7 +56,7 @@ func New(
 	extClient cs.KubedbV1alpha1Interface,
 	promClient pcm.MonitoringV1Interface,
 	cronController snapc.CronControllerInterface,
-	opt Options,
+	opt Config,
 ) *Controller {
 	return &Controller{
 		Controller: &amc.Controller{
@@ -90,13 +67,12 @@ func New(
 		promClient:     promClient,
 		cronController: cronController,
 		recorder:       eventer.NewEventRecorder(client, "MongoDB operator"),
-		opt:            opt,
 		syncPeriod:     time.Minute * 5,
 	}
 }
 
 // Ensuring Custom Resource Definitions
-func (c *Controller) Setup() error {
+func (c *Controller) EnsureCustomResourceDefinitions() error {
 	log.Infoln("Ensuring CustomResourceDefinition...")
 	crds := []*crd_api.CustomResourceDefinition{
 		api.MongoDB{}.CustomResourceDefinition(),
@@ -107,7 +83,7 @@ func (c *Controller) Setup() error {
 }
 
 // Blocks caller. Intended to be called as a Go routine.
-func (c *Controller) Run() {
+func (c *Controller) RunControllers() {
 	// Start Cron
 	c.cronController.StartCron()
 
@@ -120,13 +96,14 @@ func (c *Controller) Run() {
 }
 
 // Blocks caller. Intended to be called as a Go routine.
-func (c *Controller) RunAndHold() {
-	c.Run()
+func (c *Controller) Run(stopCh <-chan struct{}) {
+	c.RunControllers()
 
 	// Run HTTP server to expose metrics, audit endpoint & debug profiles.
 	go c.runHTTPServer()
-	// hold
-	hold.Hold()
+
+	<-stopCh
+	c.cronController.StopCron()
 }
 
 func (c *Controller) watchMongoDB() {
@@ -147,7 +124,7 @@ func (c *Controller) watchDatabaseSnapshot() {
 	listOptions := metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(labelMap).String(),
 	}
-	snapc.NewController(c.Controller, c, listOptions, c.syncPeriod, c.opt.MaxNumRequeues, c.opt.NumThreads).Run()
+	snapc.NewController(c.Controller, c, listOptions, c.syncPeriod, c.MaxNumRequeues, c.NumThreads).Run()
 }
 
 func (c *Controller) watchDeletedDatabase() {
@@ -170,7 +147,7 @@ func (c *Controller) watchDeletedDatabase() {
 		},
 	}
 
-	drmnc.NewController(c.Controller, c, lw, c.syncPeriod, c.opt.MaxNumRequeues, c.opt.NumThreads).Run()
+	drmnc.NewController(c.Controller, c, lw, c.syncPeriod, c.MaxNumRequeues, c.NumThreads).Run()
 }
 
 func (c *Controller) pushFailureEvent(mongodb *api.MongoDB, reason string) {

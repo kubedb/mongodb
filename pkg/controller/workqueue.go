@@ -138,7 +138,7 @@ func (c *Controller) processNextItem() bool {
 	log.Errorf("Failed to process MongoDB %v. Reason: %s", key, err)
 
 	// This controller retries 5 times if something goes wrong. After that, it stops trying.
-	if c.queue.NumRequeues(key) < c.opt.MaxNumRequeues {
+	if c.queue.NumRequeues(key) < c.MaxNumRequeues {
 		log.Infof("Error syncing crd %v: %v", key, err)
 		// Re-enqueue the key rate limited. Based on the rate limiter on the
 		// queue and the re-enqueue history, the key will be processed later again.
