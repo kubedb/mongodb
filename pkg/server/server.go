@@ -45,7 +45,7 @@ func init() {
 	)
 }
 
-type PackServerConfig struct {
+type MongoDBServerConfig struct {
 	GenericConfig  *genericapiserver.RecommendedConfig
 	ExtraConfig    ExtraConfig
 	OperatorConfig *controller.OperatorConfig
@@ -55,13 +55,13 @@ type ExtraConfig struct {
 	AdmissionHooks []hooks.AdmissionHook
 }
 
-// PackServer contains state for a Kubernetes cluster master/api server.
-type PackServer struct {
+// MongoDBServer contains state for a Kubernetes cluster master/api server.
+type MongoDBServer struct {
 	GenericAPIServer *genericapiserver.GenericAPIServer
 	Operator         *controller.Controller
 }
 
-func (op *PackServer) Run(stopCh <-chan struct{}) error {
+func (op *MongoDBServer) Run(stopCh <-chan struct{}) error {
 	go op.Operator.Run(stopCh)
 	return op.GenericAPIServer.PrepareRun().Run(stopCh)
 }
@@ -78,7 +78,7 @@ type CompletedConfig struct {
 }
 
 // Complete fills in any fields not set that are required to have valid data. It's mutating the receiver.
-func (c *PackServerConfig) Complete() CompletedConfig {
+func (c *MongoDBServerConfig) Complete() CompletedConfig {
 	completedCfg := completedConfig{
 		c.GenericConfig.Complete(),
 		c.ExtraConfig,
@@ -93,8 +93,8 @@ func (c *PackServerConfig) Complete() CompletedConfig {
 	return CompletedConfig{&completedCfg}
 }
 
-// New returns a new instance of PackServer from the given config.
-func (c completedConfig) New() (*PackServer, error) {
+// New returns a new instance of MongoDBServer from the given config.
+func (c completedConfig) New() (*MongoDBServer, error) {
 	genericServer, err := c.GenericConfig.New("pack-server", genericapiserver.EmptyDelegate) // completion is done in Complete, no need for a second time
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ func (c completedConfig) New() (*PackServer, error) {
 		return nil, err
 	}
 
-	s := &PackServer{
+	s := &MongoDBServer{
 		GenericAPIServer: genericServer,
 		Operator:         ctrl,
 	}

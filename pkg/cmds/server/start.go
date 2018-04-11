@@ -15,7 +15,7 @@ import (
 
 const defaultEtcdPathPrefix = "/registry/kubedb.com"
 
-type PackServerOptions struct {
+type MongoDBServerOptions struct {
 	RecommendedOptions *genericoptions.RecommendedOptions
 	ExtraOptions       *ExtraOptions
 
@@ -23,8 +23,8 @@ type PackServerOptions struct {
 	StdErr io.Writer
 }
 
-func NewMongoDBServerOptions(out, errOut io.Writer) *PackServerOptions {
-	o := &PackServerOptions{
+func NewMongoDBServerOptions(out, errOut io.Writer) *MongoDBServerOptions {
+	o := &MongoDBServerOptions{
 		// TODO we will nil out the etcd storage options.  This requires a later level of k8s.io/apiserver
 		RecommendedOptions: genericoptions.NewRecommendedOptions(defaultEtcdPathPrefix, server.Codecs.LegacyCodec(admissionv1beta1.SchemeGroupVersion)),
 		ExtraOptions:       NewExtraOptions(),
@@ -36,20 +36,20 @@ func NewMongoDBServerOptions(out, errOut io.Writer) *PackServerOptions {
 	return o
 }
 
-func (o PackServerOptions) AddFlags(fs *pflag.FlagSet) {
+func (o MongoDBServerOptions) AddFlags(fs *pflag.FlagSet) {
 	o.RecommendedOptions.AddFlags(fs)
 	o.ExtraOptions.AddFlags(fs)
 }
 
-func (o PackServerOptions) Validate(args []string) error {
+func (o MongoDBServerOptions) Validate(args []string) error {
 	return nil
 }
 
-func (o *PackServerOptions) Complete() error {
+func (o *MongoDBServerOptions) Complete() error {
 	return nil
 }
 
-func (o PackServerOptions) Config() (*server.PackServerConfig, error) {
+func (o MongoDBServerOptions) Config() (*server.MongoDBServerConfig, error) {
 	// TODO have a "real" external address
 	if err := o.RecommendedOptions.SecureServing.MaybeDefaultWithSelfSignedCerts("localhost", nil, []net.IP{net.ParseIP("127.0.0.1")}); err != nil {
 		return nil, fmt.Errorf("error creating self-signed certificates: %v", err)
@@ -65,7 +65,7 @@ func (o PackServerOptions) Config() (*server.PackServerConfig, error) {
 		return nil, err
 	}
 
-	config := &server.PackServerConfig{
+	config := &server.MongoDBServerConfig{
 		GenericConfig:  serverConfig,
 		ExtraConfig:    server.ExtraConfig{},
 		OperatorConfig: controllerConfig,
@@ -73,7 +73,7 @@ func (o PackServerOptions) Config() (*server.PackServerConfig, error) {
 	return config, nil
 }
 
-func (o PackServerOptions) Run(stopCh <-chan struct{}) error {
+func (o MongoDBServerOptions) Run(stopCh <-chan struct{}) error {
 	config, err := o.Config()
 	if err != nil {
 		return err
