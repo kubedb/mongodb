@@ -7,8 +7,6 @@ import (
 	"github.com/appscode/go/types"
 	"github.com/appscode/kutil/tools/queue"
 	batch "k8s.io/api/batch/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	batchinformer "k8s.io/client-go/informers/batch/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
@@ -21,37 +19,21 @@ func (c *Controller) initWatcher() {
 			c.WatchNamespace,
 			resyncPeriod,
 			cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
-			func(options *metav1.ListOptions) {
-				options.LabelSelector = labels.SelectorFromSet(c.labelMap).String()
-			},
+			c.tweakListOptions,
 		)
 	})
 	c.jobQueue = queue.New("Job", c.MaxNumRequeues, c.NumThreads, c.runJob)
 	c.jobLister = c.KubeInformerFactory.Batch().V1().Jobs().Lister()
 	c.jobInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			job, ok := obj.(*batch.Job)
-			if !ok {
-				log.Errorln("Invalid Job object")
-				return
-			}
+			job := obj.(*batch.Job)
 			if job.Status.Succeeded > 0 || job.Status.Failed > types.Int32(job.Spec.BackoffLimit) {
-				// IndexerInformer uses a delta queue, therefore for deletes we have to use this
-				// key function.
 				queue.Enqueue(c.jobQueue.GetQueue(), obj)
 			}
 		},
 		UpdateFunc: func(old interface{}, new interface{}) {
-			oldObj, ok := old.(*batch.Job)
-			if !ok {
-				log.Errorln("Invalid Job object")
-				return
-			}
-			newObj, ok := new.(*batch.Job)
-			if !ok {
-				log.Errorln("Invalid Job object")
-				return
-			}
+			oldObj := old.(*batch.Job)
+			newObj := new.(*batch.Job)
 			if isJobCompleted(oldObj, newObj) {
 				queue.Enqueue(c.jobQueue.GetQueue(), new)
 			}
@@ -59,12 +41,10 @@ func (c *Controller) initWatcher() {
 		DeleteFunc: func(obj interface{}) {
 			job, ok := obj.(*batch.Job)
 			if !ok {
-				log.Errorln("Invalid Job object")
+				log.Warningln("Invalid Job object")
 				return
 			}
 			if job.Status.Succeeded == 0 && job.Status.Failed <= types.Int32(job.Spec.BackoffLimit) {
-				// IndexerInformer uses a delta queue, therefore for deletes we have to use this
-				// key function.
 				queue.Enqueue(c.jobQueue.GetQueue(), obj)
 			}
 		},

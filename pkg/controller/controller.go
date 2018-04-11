@@ -17,6 +17,8 @@ import (
 	core "k8s.io/api/core/v1"
 	crd_api "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	crd_cs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
 	clientsetscheme "k8s.io/client-go/kubernetes/scheme"
@@ -80,10 +82,14 @@ func (c *Controller) EnsureCustomResourceDefinitions() error {
 	return apiext_util.RegisterCRDs(c.ApiExtKubeClient, crds)
 }
 
-// InitMongoDBWatcher initializes MongoDB, DormantDB amd Snapshot watcher
-func (c *Controller) InitMongoDBWatcher() error {
+// Init initializes MongoDB, DormantDB amd Snapshot watcher
+func (c *Controller) Init() error {
 	labelMap := map[string]string{
 		api.LabelDatabaseKind: api.ResourceKindMongoDB,
+	}
+
+	tweakListOptions := func(options *metav1.ListOptions) {
+		options.LabelSelector = labels.SelectorFromSet(labelMap).String()
 	}
 
 	if err := c.EnsureCustomResourceDefinitions(); err != nil {
@@ -91,8 +97,8 @@ func (c *Controller) InitMongoDBWatcher() error {
 	}
 
 	c.initWatcher()
-	c.DDBQueue = dormantdatabase.NewController(c.Controller, c, c.Config, labelMap).InitDormantDatabaseWatcher()
-	c.SNQueue, c.JobQueue = snapc.NewController(c.Controller, c, c.Config, labelMap).InitSnapshotWatcher()
+	c.DDBQueue = dormantdatabase.NewController(c.Controller, c, c.Config, tweakListOptions).Init()
+	c.SNQueue, c.JobQueue = snapc.NewController(c.Controller, c, c.Config, tweakListOptions).Init()
 
 	return nil
 }

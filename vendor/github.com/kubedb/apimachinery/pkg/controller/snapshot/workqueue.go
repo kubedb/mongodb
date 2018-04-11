@@ -10,8 +10,6 @@ import (
 	cs "github.com/kubedb/apimachinery/client/clientset/versioned"
 	"github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 	kubedb_informers "github.com/kubedb/apimachinery/client/informers/externalversions/kubedb/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -22,23 +20,14 @@ func (c *Controller) initWatcher() {
 			c.WatchNamespace,
 			resyncPeriod,
 			cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
-			func(options *metav1.ListOptions) {
-				options.LabelSelector = labels.SelectorFromSet(c.labelMap).String()
-			},
+			c.tweakListOptions,
 		)
 	})
 	c.snQueue = queue.New("Snapshot", c.MaxNumRequeues, c.NumThreads, c.runSnapshot)
 	c.snLister = c.KubedbInformerFactory.Kubedb().V1alpha1().Snapshots().Lister()
 	c.snInformer.AddEventHandler(queue.NewEventHandler(c.snQueue.GetQueue(), func(old interface{}, new interface{}) bool {
-		snapshot, ok := new.(*api.Snapshot)
-		if !ok {
-			log.Errorln("Invalid Snapshot object")
-			return false
-		}
-		if snapshot.DeletionTimestamp != nil {
-			return true
-		}
-		return false
+		snapshot := new.(*api.Snapshot)
+		return snapshot.DeletionTimestamp != nil
 	}))
 }
 

@@ -7,7 +7,6 @@ import (
 	stringz "github.com/appscode/go/strings"
 	v "github.com/appscode/go/version"
 	"github.com/appscode/kutil/meta"
-	"github.com/appscode/kutil/tools/queue"
 	prom "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
 	cs "github.com/kubedb/apimachinery/client/clientset/versioned"
 	kubedbinformers "github.com/kubedb/apimachinery/client/informers/externalversions"
@@ -37,19 +36,6 @@ type ExtraOptions struct {
 
 	// Address to listen on for web interface and telemetry.
 	OpsAddress string
-
-	// Informer factory
-	KubeInformerFactory   informers.SharedInformerFactory
-	KubedbInformerFactory kubedbinformers.SharedInformerFactory
-
-	// DormantDb queue
-	DDBQueue *queue.Worker
-
-	// job queue
-	JobQueue *queue.Worker
-
-	// snapshot queue
-	SNQueue *queue.Worker
 }
 
 func (s ExtraOptions) WatchNamespace() string {

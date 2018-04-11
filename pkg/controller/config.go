@@ -51,7 +51,7 @@ func (c *OperatorConfig) New() (*Controller, error) {
 		recorder:       eventer.NewEventRecorder(c.KubeClient, "mongodb operator"),
 	}
 
-	if err := ctrl.InitMongoDBWatcher(); err != nil {
+	if err := ctrl.Init(); err != nil {
 		return nil, err
 	}
 

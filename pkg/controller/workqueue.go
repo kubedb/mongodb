@@ -14,21 +14,9 @@ func (c *Controller) initWatcher() {
 	c.mgQueue = queue.New("MongoDB", c.MaxNumRequeues, c.NumThreads, c.runMongoDB)
 	c.mgLister = c.KubedbInformerFactory.Kubedb().V1alpha1().MongoDBs().Lister()
 	c.mgInformer.AddEventHandler(queue.NewEventHandler(c.mgQueue.GetQueue(), func(old interface{}, new interface{}) bool {
-		oldObj, ok := old.(*api.MongoDB)
-		if !ok {
-			log.Errorln("Invalid MongoDB object")
-			return true
-		}
-		newObj, ok := new.(*api.MongoDB)
-		if !ok {
-			log.Errorln("Invalid MongoDB object")
-			return true
-		}
-		if newObj.DeletionTimestamp != nil || !mongodbEqual(oldObj, newObj) {
-			return true
-
-		}
-		return false
+		oldObj := old.(*api.MongoDB)
+		newObj := new.(*api.MongoDB)
+		return newObj.DeletionTimestamp != nil || !mongodbEqual(oldObj, newObj)
 	}))
 }
 

@@ -1,5 +1,5 @@
 hash: be5cfcf26021afeb511a66d1af2cddc6e088d557d72775955da815fd80b291ed
-updated: 2018-04-11T11:28:35.549064908+06:00
+updated: 2018-04-11T17:39:12.390958596+06:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -16,6 +16,7 @@ imports:
   - crypto/rand
   - encoding/json/types
   - encoding/yaml
+  - hold
   - homedir
   - log
   - log/golog
@@ -302,7 +303,7 @@ imports:
 - name: github.com/juju/ratelimit
   version: 5b9ff866471762aa2ab2dced63c9fb6f53921342
 - name: github.com/kubedb/apimachinery
-  version: 06b513b960eb07766788df9f72f651b52da10589
+  version: b180f82f79e92500f670dfe02a597bf0e90927cf
   subpackages:
   - apis/kubedb
   - apis/kubedb/v1alpha1
@@ -337,6 +338,12 @@ imports:
   version: fc2b8d3a73c4867e51861bbdd5ae3c1f0869dd6a
   subpackages:
   - pbutil
+- name: github.com/mikespook/golib
+  version: 38fe6917d34b267a79c3432369e7dcc379e2d5b3
+  subpackages:
+  - autoinc
+  - idgen
+  - signal
 - name: github.com/mxk/go-flowrate
   version: cca7078d478f8520f85629ad7c68962d31ed7682
   subpackages:
