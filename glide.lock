@@ -1,5 +1,5 @@
-hash: be5cfcf26021afeb511a66d1af2cddc6e088d557d72775955da815fd80b291ed
-updated: 2018-04-11T17:39:12.390958596+06:00
+hash: ed734ae85fc8f1db2bbf72f9fe4aae4468e78aa1c088597ba70cb65fb35ef3cb
+updated: 2018-04-11T05:41:46.128961971-07:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -16,7 +16,6 @@ imports:
   - crypto/rand
   - encoding/json/types
   - encoding/yaml
-  - hold
   - homedir
   - log
   - log/golog
@@ -26,7 +25,7 @@ imports:
   - types
   - version
 - name: github.com/appscode/jsonpatch
-  version: 1359b374de83fa14fd58ab10aa8ea4935f84d249
+  version: 58a38a46ddb591a543c6b1003213353e29331c5a
 - name: github.com/appscode/kube-mon
   version: 4dfc335dfdf2cda1652896fa15aa11aa1ae42edd
   subpackages:
@@ -209,7 +208,7 @@ imports:
 - name: github.com/go-bongo/go-dotaccess
   version: ae070a2d2a38fd7233e255ded21fb26fe36b4796
 - name: github.com/go-ini/ini
-  version: d3de07a94d22b4a0972deb4b96d790c2c0ce8333
+  version: 20b96f641a5ea98f2f8619ff4f3e061cff4833bd
 - name: github.com/go-openapi/jsonpointer
   version: 46af16f9f7b149af66e5d1bd010e3574dc06de98
 - name: github.com/go-openapi/jsonreference
@@ -251,7 +250,7 @@ imports:
 - name: github.com/google/gofuzz
   version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
 - name: github.com/google/uuid
-  version: e367a344cbe8e08149f9951115dc299ebd42b919
+  version: dec09d789f3dba190787f8b4454c7d3c936fed9e
 - name: github.com/googleapis/gnostic
   version: 0c5108395e2debce0d731cf0287ddf7242066aba
   subpackages:
@@ -259,7 +258,7 @@ imports:
   - compiler
   - extensions
 - name: github.com/graymeta/stow
-  version: db723d93e5b1b0cc0d404c2c5fb0ac4919bda55e
+  version: 1df3851b8fc06f775b3daed2f19442b3c5b26a37
   repo: https://github.com/appscode/stow.git
   vcs: git
   subpackages:
@@ -303,7 +302,7 @@ imports:
 - name: github.com/juju/ratelimit
   version: 5b9ff866471762aa2ab2dced63c9fb6f53921342
 - name: github.com/kubedb/apimachinery
-  version: b180f82f79e92500f670dfe02a597bf0e90927cf
+  version: c8aa25a4c97547714fb002045a59e151ef731029
   subpackages:
   - apis/kubedb
   - apis/kubedb/v1alpha1
@@ -338,12 +337,6 @@ imports:
   version: fc2b8d3a73c4867e51861bbdd5ae3c1f0869dd6a
   subpackages:
   - pbutil
-- name: github.com/mikespook/golib
-  version: 38fe6917d34b267a79c3432369e7dcc379e2d5b3
-  subpackages:
-  - autoinc
-  - idgen
-  - signal
 - name: github.com/mxk/go-flowrate
   version: cca7078d478f8520f85629ad7c68962d31ed7682
   subpackages:
@@ -389,7 +382,7 @@ imports:
   - matchers/support/goraph/util
   - types
 - name: github.com/orcaman/concurrent-map
-  version: 2ae17bc4c860c83513ee50feb9746f3e50d7515d
+  version: a05df785d2dcc16310fb997ee1702100d047cfe1
 - name: github.com/pborman/uuid
   version: ca53cad383cad2479bbba7f7a1a05797ec1386e4
 - name: github.com/peterbourgon/diskv
@@ -514,7 +507,7 @@ imports:
   - googleapi/internal/uritemplates
   - storage/v1
 - name: google.golang.org/appengine
-  version: 0a24098c0ec68416ec050f567f75df563d6b231e
+  version: 4f7eeb5305a4ba1966344836ba4af9996b7b4e05
   subpackages:
   - internal
   - internal/app_identity
