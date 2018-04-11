@@ -100,7 +100,7 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 
 		in.Spec.Template.Spec.Containers = core_util.UpsertContainer(in.Spec.Template.Spec.Containers, core.Container{
 			Name:  api.ResourceSingularMongoDB,
-			Image: c.Docker.GetImageWithTag(mongodb),
+			Image: c.docker.GetImageWithTag(mongodb),
 			Ports: []core.ContainerPort{
 				{
 					Name:          "db",
@@ -121,7 +121,7 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 					fmt.Sprintf("--address=:%d", mongodb.Spec.Monitor.Prometheus.Port),
 					fmt.Sprintf("--enable-analytics=%v", c.EnableAnalytics),
 				}, c.LoggerOptions.ToFlags()...),
-				Image: c.Docker.GetOperatorImageWithTag(mongodb),
+				Image: c.docker.GetOperatorImageWithTag(mongodb),
 				Ports: []core.ContainerPort{
 					{
 						Name:          api.PrometheusExporterPortName,

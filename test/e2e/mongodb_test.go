@@ -765,7 +765,7 @@ var _ = Describe("MongoDB", func() {
 				})
 			})
 
-			Context("Multiple times with init", func() {
+			Context("Multiple times with init script", func() {
 				BeforeEach(func() {
 					usedInitScript = true
 					mongodb.Spec.Init = &api.InitSpec{
@@ -783,6 +783,9 @@ var _ = Describe("MongoDB", func() {
 				It("should resume DormantDatabase successfully", func() {
 					// Create and wait for running MongoDB
 					createAndWaitForRunning()
+
+					By("Checking Inserted Document")
+					f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
 
 					for i := 0; i < 3; i++ {
 						By(fmt.Sprintf("%v-th", i+1) + " time running.")
@@ -806,6 +809,9 @@ var _ = Describe("MongoDB", func() {
 
 						_, err := f.GetMongoDB(mongodb.ObjectMeta)
 						Expect(err).NotTo(HaveOccurred())
+
+						By("Checking Inserted Document")
+						f.EventuallyDocumentExists(mongodb.ObjectMeta).Should(BeTrue())
 
 						if usedInitScript {
 							Expect(mongodb.Spec.Init).ShouldNot(BeNil())

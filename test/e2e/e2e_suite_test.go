@@ -10,17 +10,13 @@ import (
 	"github.com/appscode/go/log"
 	logs "github.com/appscode/go/log/golog"
 	pcm "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
-	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/apimachinery/client/clientset/versioned/scheme"
 	cs "github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1"
-	snapc "github.com/kubedb/apimachinery/pkg/controller/snapshot"
 	"github.com/kubedb/mongodb/pkg/controller"
-	"github.com/kubedb/mongodb/pkg/docker"
 	"github.com/kubedb/mongodb/test/e2e/framework"
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
-	crd_cs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	"k8s.io/client-go/kubernetes"
 	clientSetScheme "k8s.io/client-go/kubernetes/scheme"
@@ -29,8 +25,7 @@ import (
 )
 
 var (
-	storageClass   string
-	dockerRegistry string
+	storageClass string
 
 	prometheusCrdGroup = pcm.Group
 	prometheusCrdKinds = pcm.DefaultCrdKinds
@@ -40,7 +35,8 @@ func init() {
 	scheme.AddToScheme(clientSetScheme.Scheme)
 
 	flag.StringVar(&storageClass, "storageclass", "standard", "Kubernetes StorageClass name")
-	flag.StringVar(&dockerRegistry, "docker-registry", "kubedb", "User provided docker repository")
+	flag.StringVar(&framework.DockerRegistry, "docker-registry", "kubedb", "User provided docker repository")
+	flag.StringVar(&framework.ExporterTag, "exporter-tag", "canary", "Tag of kubedb/operator used as exporter")
 }
 
 const (
@@ -77,10 +73,8 @@ var _ = BeforeSuite(func() {
 
 	// Clients
 	kubeClient := kubernetes.NewForConfigOrDie(config)
-	apiExtKubeClient := crd_cs.NewForConfigOrDie(config)
 	extClient := cs.NewForConfigOrDie(config)
 	kaClient := ka.NewForConfigOrDie(config)
-	promClient, err := pcm.NewForConfig(&prometheusCrdKinds, prometheusCrdGroup, config)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -93,33 +87,9 @@ var _ = BeforeSuite(func() {
 	err = root.CreateNamespace()
 	Expect(err).NotTo(HaveOccurred())
 
-	cronController := snapc.NewCronController(kubeClient, extClient)
-	// Start Cron
-	cronController.StartCron()
-
-	opt := controller.Config{
-		Docker: docker.Docker{
-			Registry: dockerRegistry,
-		},
-		EnableAnalytics:   true,
-		OperatorNamespace: root.Namespace(),
-		GoverningService:  api.DatabaseNamePrefix,
-		AnalyticsClientID: "$kubedb$mongodb$e2e",
-		MaxNumRequeues:    3,
-		NumThreads:        5,
-	}
-
-	// Controller
-	ctrl = controller.New(kubeClient, apiExtKubeClient, extClient, promClient, cronController, opt)
-	err = ctrl.EnsureCustomResourceDefinitions()
-	if err != nil {
-		log.Fatalln(err)
-	}
-
 	stopCh := genericapiserver.SetupSignalHandler()
-	go root.RunAdmissionServer(kubeconfigPath, stopCh)
+	go root.RunOperatorAndServer(kubeconfigPath, stopCh)
 
-	ctrl.RunControllers()
 	root.EventuallyCRD().Should(Succeed())
 	root.EventuallyApiServiceReady().Should(Succeed())
 })

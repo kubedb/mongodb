@@ -13,7 +13,7 @@ import (
 	genericoptions "k8s.io/apiserver/pkg/server/options"
 )
 
-const defaultEtcdPathPrefix = "/registry/kubepack.com"
+const defaultEtcdPathPrefix = "/registry/kubedb.com"
 
 type PackServerOptions struct {
 	RecommendedOptions *genericoptions.RecommendedOptions

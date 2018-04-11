@@ -1,8 +1,6 @@
 package controller
 
 import (
-	"time"
-
 	"github.com/appscode/go/log/golog"
 	pcm "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
 	cs "github.com/kubedb/apimachinery/client/clientset/versioned"
@@ -21,25 +19,8 @@ var (
 	LoggerOptions     golog.Options
 )
 
-type Config struct {
-	Docker            docker.Docker
-	OperatorNamespace string
-	GoverningService  string
-
-	ResyncPeriod   time.Duration
-	MaxNumRequeues int
-	NumThreads     int
-
-	OpsAddress string
-
-	LoggerOptions golog.Options
-
-	EnableAnalytics   bool
-	AnalyticsClientID string
-}
-
 type OperatorConfig struct {
-	Config
+	amc.Config
 
 	ClientConfig     *rest.Config
 	KubeClient       kubernetes.Interface
@@ -47,6 +28,7 @@ type OperatorConfig struct {
 	DBClient         cs.Interface
 	PromClient       pcm.MonitoringV1Interface
 	CronController   snapc.CronControllerInterface
+	Docker           docker.Docker
 }
 
 func NewOperatorConfig(clientConfig *rest.Config) *OperatorConfig {
@@ -62,23 +44,16 @@ func (c *OperatorConfig) New() (*Controller, error) {
 			ExtClient:        c.DBClient.KubedbV1alpha1(),
 			ApiExtKubeClient: c.APIExtKubeClient,
 		},
+		Config:         c.Config,
+		docker:         c.Docker,
 		promClient:     c.PromClient,
 		cronController: c.CronController,
-		recorder:       eventer.NewEventRecorder(c.KubeClient, "MongoDB operator"),
-		syncPeriod:     time.Minute * 5,
+		recorder:       eventer.NewEventRecorder(c.KubeClient, "mongodb operator"),
 	}
 
-	if err := ctrl.EnsureCustomResourceDefinitions(); err != nil {
+	if err := ctrl.InitMongoDBWatcher(); err != nil {
 		return nil, err
 	}
 
-	// ---------------------------
-	// ctrl.packInformerFactory = packinformers.NewSharedInformerFactory(ctrl.PackClient, c.ResyncPeriod)
-	// ctrl.setupInformers()
-	// ---------------------------
-
-	// if err := ctrl.Configure(); err != nil {
-	// 	return nil, err
-	// }
 	return ctrl, nil
 }

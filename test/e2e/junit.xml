@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <testsuite tests="8" failures="0" time="1228.056808135">
+  <testsuite tests="1" failures="0" time="480.09568216">
       <testcase name="MongoDB Test General Without PVC should run successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
-      <testcase name="MongoDB Test General With PVC should run successfully" classname="e2e Suite" time="108.770854482"></testcase>
-      <testcase name="MongoDB Test DoNotPause should work successfully" classname="e2e Suite" time="80.38941048"></testcase>
+      <testcase name="MongoDB Test General With PVC should run successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test DoNotPause should work successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
       <testcase name="MongoDB Test Snapshot In Local should take Snapshot successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
@@ -14,17 +18,27 @@
       <testcase name="MongoDB Test Snapshot In S3 should take Snapshot successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
-      <testcase name="MongoDB Test Snapshot In GCS Without Init should take Snapshot successfully" classname="e2e Suite" time="81.049664612"></testcase>
-      <testcase name="MongoDB Test Snapshot In GCS With Init should take Snapshot successfully" classname="e2e Suite" time="88.352802494"></testcase>
-      <testcase name="MongoDB Test Snapshot In GCS Delete One Snapshot keeping others Delete One Snapshot keeping others" classname="e2e Suite" time="142.379387992"></testcase>
+      <testcase name="MongoDB Test Snapshot In GCS Without Init should take Snapshot successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test Snapshot In GCS With Init should take Snapshot successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test Snapshot In GCS Delete One Snapshot keeping others Delete One Snapshot keeping others" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
       <testcase name="MongoDB Test Snapshot In Azure should take Snapshot successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
       <testcase name="MongoDB Test Snapshot In Swift should take Snapshot successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
-      <testcase name="MongoDB Test Initialize With Script should run successfully" classname="e2e Suite" time="59.201766734"></testcase>
-      <testcase name="MongoDB Test Initialize With Snapshot should run successfully" classname="e2e Suite" time="181.321942896"></testcase>
+      <testcase name="MongoDB Test Initialize With Script should run successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MongoDB Test Initialize With Snapshot should run successfully" classname="e2e Suite" time="0">
+          <skipped></skipped>
+      </testcase>
       <testcase name="MongoDB Test Resume Super Fast User - Create-Delete-Create-Delete-Create  should resume DormantDatabase successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
@@ -37,7 +51,7 @@
       <testcase name="MongoDB Test Resume With Snapshot Init should resume successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
-      <testcase name="MongoDB Test Resume Multiple times with init should resume DormantDatabase successfully" classname="e2e Suite" time="0">
+      <testcase name="MongoDB Test Resume Multiple times with init script should resume DormantDatabase successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
       <testcase name="MongoDB Test SnapshotScheduler With Startup with local should run schedular successfully" classname="e2e Suite" time="0">
@@ -49,5 +63,5 @@
       <testcase name="MongoDB Test SnapshotScheduler With Update - with Local should run schedular successfully" classname="e2e Suite" time="0">
           <skipped></skipped>
       </testcase>
-      <testcase name="MongoDB Test SnapshotScheduler Re-Use DormantDatabase&#39;s scheduler should re-use scheduler successfully" classname="e2e Suite" time="469.191646665"></testcase>
+      <testcase name="MongoDB Test SnapshotScheduler Re-Use DormantDatabase&#39;s scheduler should re-use scheduler successfully" classname="e2e Suite" time="463.453245679"></testcase>
   </testsuite>
