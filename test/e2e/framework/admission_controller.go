@@ -19,7 +19,7 @@ var (
 	ExporterTag    string
 )
 
-func (f *Framework) EventuallyApiServiceReady() GomegaAsyncAssertion {
+func (f *Framework) EventuallyAPIServiceReady() GomegaAsyncAssertion {
 	return Eventually(
 		func() error {
 			crd, err := f.kaClient.ApiregistrationV1beta1().APIServices().Get("v1alpha1.admission.kubedb.com", metav1.GetOptions{})
@@ -49,7 +49,6 @@ func (f *Framework) RunOperatorAndServer(kubeconfigPath string, stopCh <-chan st
 	serverOpt.RecommendedOptions.SecureServing.BindAddress = net.ParseIP("127.0.0.1")
 	serverOpt.RecommendedOptions.Authorization.RemoteKubeConfigFile = kubeconfigPath
 	serverOpt.RecommendedOptions.Authentication.RemoteKubeConfigFile = kubeconfigPath
-	serverOpt.RecommendedOptions.Authentication.SkipInClusterLookup = true
 
 	serverOpt.ExtraOptions.Docker.Registry = DockerRegistry
 	serverOpt.ExtraOptions.Docker.ExporterTag = ExporterTag

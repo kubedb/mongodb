@@ -71,7 +71,7 @@ func New(
 	}
 }
 
-// Ensuring Custom Resource Definitions
+// EnsureCustomResourceDefinitions ensures CRD for MySQl, DormantDatabase and Snapshot
 func (c *Controller) EnsureCustomResourceDefinitions() error {
 	log.Infoln("Ensuring CustomResourceDefinition...")
 	crds := []*crd_api.CustomResourceDefinition{

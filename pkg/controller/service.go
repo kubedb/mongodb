@@ -55,9 +55,8 @@ func (c *Controller) checkService(mongodb *api.MongoDB) error {
 	if err != nil {
 		if kerr.IsNotFound(err) {
 			return nil
-		} else {
-			return err
 		}
+		return err
 	}
 
 	if service.Spec.Selector[api.LabelDatabaseName] != name {

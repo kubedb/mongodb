@@ -98,9 +98,8 @@ func (c *Controller) checkSecret(secretName string, mongodb *api.MongoDB) (*core
 	if err != nil {
 		if kerr.IsNotFound(err) {
 			return nil, nil
-		} else {
-			return nil, err
 		}
+		return nil, err
 	}
 	if secret.Labels[api.LabelDatabaseKind] != api.ResourceKindMongoDB ||
 		secret.Labels[api.LabelDatabaseName] != mongodb.Name {

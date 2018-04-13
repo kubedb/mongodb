@@ -73,7 +73,6 @@ func (f *Framework) EventuallyInsertDocument(meta metav1.ObjectMeta) GomegaAsync
 		time.Minute*15,
 		time.Second*10,
 	)
-	return nil
 }
 
 func (f *Framework) EventuallyDocumentExists(meta metav1.ObjectMeta) GomegaAsyncAssertion {

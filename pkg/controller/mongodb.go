@@ -180,7 +180,6 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 
 func (c *Controller) ensureBackupScheduler(mongodb *api.MongoDB) {
 	// Setup Schedule backup
-
 	if mongodb.Spec.BackupSchedule != nil {
 		err := c.cronController.ScheduleBackup(mongodb, mongodb.ObjectMeta, mongodb.Spec.BackupSchedule)
 		if err != nil {
