@@ -291,6 +291,9 @@ func editStatus(old api.MongoDB) api.MongoDB {
 func editSpecMonitor(old api.MongoDB) api.MongoDB {
 	old.Spec.Monitor = &kubeMon.AgentSpec{
 		Agent: kubeMon.AgentPrometheusBuiltin,
+		Prometheus: &kubeMon.PrometheusSpec{
+			Port: 1289,
+		},
 	}
 	return old
 }
