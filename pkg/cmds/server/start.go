@@ -59,6 +59,7 @@ func (o MongoDBServerOptions) Config() (*server.MongoDBServerConfig, error) {
 	if err := o.RecommendedOptions.ApplyTo(serverConfig); err != nil {
 		return nil, err
 	}
+	serverConfig.EnableMetrics = true
 
 	controllerConfig := controller.NewOperatorConfig(serverConfig.ClientConfig)
 	if err := o.ExtraOptions.ApplyTo(controllerConfig); err != nil {
