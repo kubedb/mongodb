@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
-func (c *Controller) initWatcher(selector labels.Selector) {
+func (c *Controller) addEventHandler(selector labels.Selector) {
 	c.DDBQueue = queue.New("DormantDatabase", c.MaxNumRequeues, c.NumThreads, c.runDormantDatabase)
 	c.DDBInformer.AddEventHandler(queue.NewFilteredHandler(queue.NewEventHandler(c.DDBQueue.GetQueue(), func(old interface{}, new interface{}) bool {
 		oldObj := old.(*api.DormantDatabase)

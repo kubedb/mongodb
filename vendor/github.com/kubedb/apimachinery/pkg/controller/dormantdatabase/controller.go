@@ -68,6 +68,6 @@ func (c *Controller) InitInformer() cache.SharedIndexInformer {
 }
 
 func (c *Controller) AddEventHandlerFunc(selector labels.Selector) *queue.Worker {
-	c.initWatcher(selector)
+	c.addEventHandler(selector)
 	return c.DDBQueue
 }

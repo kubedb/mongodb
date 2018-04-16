@@ -1,5 +1,5 @@
 hash: 02fe7670d6f987bd6c078f1a69b3f495190122c3a53cf3b0c3831aef19f25793
-updated: 2018-04-16T14:53:15.823444872+06:00
+updated: 2018-04-16T17:03:42.661209437+06:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -302,7 +302,7 @@ imports:
 - name: github.com/juju/ratelimit
   version: 5b9ff866471762aa2ab2dced63c9fb6f53921342
 - name: github.com/kubedb/apimachinery
-  version: 3e016d35966465bdbcf88f01add9c1fc0ebd099f
+  version: 3e145678696a6b61aeb423a11ea4092b3e5c1b1b
   subpackages:
   - apis/kubedb
   - apis/kubedb/v1alpha1

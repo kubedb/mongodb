@@ -77,7 +77,7 @@ func (c *Controller) InitInformer() (cache.SharedIndexInformer, cache.SharedInde
 // controller.Informer needs to be initialized
 // Return type: Snapshot queue as 1st parameter and Job.Queue as 2nd.
 func (c *Controller) AddEventHandlerFunc(selector labels.Selector) (*queue.Worker, *queue.Worker) {
-	c.initWatcher(selector)
+	c.addEventHandler(selector)
 	c.JobQueue = jobc.NewController(c.Controller, c.snapshotter, c.Config, c.tweakListOptions).AddEventHandlerFunc(selector)
 	return c.SNQueue, c.JobQueue
 }

@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
-func (c *Controller) initWatcher(selector labels.Selector) {
+func (c *Controller) addEventHandler(selector labels.Selector) {
 	c.SNQueue = queue.New("Snapshot", c.MaxNumRequeues, c.NumThreads, c.runSnapshot)
 	c.snLister = c.KubedbInformerFactory.Kubedb().V1alpha1().Snapshots().Lister()
 	c.SNInformer.AddEventHandler(queue.NewFilteredHandler(queue.NewEventHandler(c.SNQueue.GetQueue(), func(old interface{}, new interface{}) bool {

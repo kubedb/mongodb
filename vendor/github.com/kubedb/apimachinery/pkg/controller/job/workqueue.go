@@ -9,7 +9,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-func (c *Controller) initWatcher(selector labels.Selector) {
+func (c *Controller) addEventHandler(selector labels.Selector) {
 	c.JobQueue = queue.New("Job", c.MaxNumRequeues, c.NumThreads, c.runJob)
 	c.jobLister = c.KubeInformerFactory.Batch().V1().Jobs().Lister()
 	c.JobInformer.AddEventHandler(queue.NewFilteredHandler(cache.ResourceEventHandlerFuncs{
