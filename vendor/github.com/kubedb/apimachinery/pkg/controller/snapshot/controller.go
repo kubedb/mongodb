@@ -60,7 +60,7 @@ func (c *Controller) EnsureCustomResourceDefinitions() error {
 // So, it is possible to start queue.run from other package/repositories
 // Return type: snapshotInformer, JobInformer
 func (c *Controller) InitInformer() (cache.SharedIndexInformer, cache.SharedIndexInformer) {
-	c.SNInformer = c.KubedbInformerFactory.InformerFor(&api.Snapshot{}, func(client cs.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	c.SnapInformer = c.KubedbInformerFactory.InformerFor(&api.Snapshot{}, func(client cs.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
 		return kubedb_informers.NewFilteredSnapshotInformer(
 			client,
 			c.WatchNamespace,
@@ -70,7 +70,7 @@ func (c *Controller) InitInformer() (cache.SharedIndexInformer, cache.SharedInde
 		)
 	})
 	c.JobInformer = jobc.NewController(c.Controller, c.snapshotter, c.Config, c.tweakListOptions).InitInformer()
-	return c.SNInformer, c.JobInformer
+	return c.SnapInformer, c.JobInformer
 }
 
 // AddEventHandlerFunc adds EventHandler func. Before calling this,
@@ -79,5 +79,5 @@ func (c *Controller) InitInformer() (cache.SharedIndexInformer, cache.SharedInde
 func (c *Controller) AddEventHandlerFunc(selector labels.Selector) (*queue.Worker, *queue.Worker) {
 	c.addEventHandler(selector)
 	c.JobQueue = jobc.NewController(c.Controller, c.snapshotter, c.Config, c.tweakListOptions).AddEventHandlerFunc(selector)
-	return c.SNQueue, c.JobQueue
+	return c.SnapQueue, c.JobQueue
 }

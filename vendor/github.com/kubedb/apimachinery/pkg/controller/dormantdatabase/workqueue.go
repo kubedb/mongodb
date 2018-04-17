@@ -10,8 +10,8 @@ import (
 )
 
 func (c *Controller) addEventHandler(selector labels.Selector) {
-	c.DDBQueue = queue.New("DormantDatabase", c.MaxNumRequeues, c.NumThreads, c.runDormantDatabase)
-	c.DDBInformer.AddEventHandler(queue.NewFilteredHandler(queue.NewEventHandler(c.DDBQueue.GetQueue(), func(old interface{}, new interface{}) bool {
+	c.DrmnQueue = queue.New("DormantDatabase", c.MaxNumRequeues, c.NumThreads, c.runDormantDatabase)
+	c.DrmnInformer.AddEventHandler(queue.NewFilteredHandler(queue.NewEventHandler(c.DrmnQueue.GetQueue(), func(old interface{}, new interface{}) bool {
 		oldObj := old.(*api.DormantDatabase)
 		newObj := new.(*api.DormantDatabase)
 		if !dormantDatabaseEqual(oldObj, newObj) {
@@ -33,7 +33,7 @@ func dormantDatabaseEqual(old, new *api.DormantDatabase) bool {
 
 func (c *Controller) runDormantDatabase(key string) error {
 	log.Debugf("started processing, key: %v\n", key)
-	obj, exists, err := c.DDBInformer.GetIndexer().GetByKey(key)
+	obj, exists, err := c.DrmnInformer.GetIndexer().GetByKey(key)
 	if err != nil {
 		log.Errorf("Fetching object with key %s from store failed with %v\n", key, err)
 		return err

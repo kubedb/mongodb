@@ -54,8 +54,8 @@ func (c *OperatorConfig) New() (*Controller, error) {
 	}
 
 	// Initialize Job and Snapshot Informer. Later EventHandler will be added to these informers.
-	ctrl.DDBInformer = dormantdatabase.NewController(ctrl.Controller, ctrl, ctrl.Config, tweakListOptions).InitInformer()
-	ctrl.SNInformer, ctrl.JobInformer = snapc.NewController(ctrl.Controller, ctrl, ctrl.Config, tweakListOptions).InitInformer()
+	ctrl.DrmnInformer = dormantdatabase.NewController(ctrl.Controller, ctrl, ctrl.Config, tweakListOptions).InitInformer()
+	ctrl.SnapInformer, ctrl.JobInformer = snapc.NewController(ctrl.Controller, ctrl, ctrl.Config, tweakListOptions).InitInformer()
 
 	if err := ctrl.Init(); err != nil {
 		return nil, err

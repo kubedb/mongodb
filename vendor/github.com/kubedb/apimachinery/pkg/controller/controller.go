@@ -32,14 +32,14 @@ type Config struct {
 	KubedbInformerFactory kubedbinformers.SharedInformerFactory
 
 	// DormantDb queue
-	DDBQueue    *queue.Worker
-	DDBInformer cache.SharedIndexInformer
+	DrmnQueue    *queue.Worker
+	DrmnInformer cache.SharedIndexInformer
 	// job queue
 	JobQueue    *queue.Worker
 	JobInformer cache.SharedIndexInformer
 	// snapshot queue
-	SNQueue    *queue.Worker
-	SNInformer cache.SharedIndexInformer
+	SnapQueue    *queue.Worker
+	SnapInformer cache.SharedIndexInformer
 
 	OperatorNamespace string
 	GoverningService  string

@@ -92,8 +92,8 @@ func (c *Controller) Init() error {
 		return err
 	}
 	c.initWatcher()
-	c.DDBQueue = dormantdatabase.NewController(c.Controller, c, c.Config, nil).AddEventHandlerFunc(c.selector)
-	c.SNQueue, c.JobQueue = snapc.NewController(c.Controller, c, c.Config, nil).AddEventHandlerFunc(c.selector)
+	c.DrmnQueue = dormantdatabase.NewController(c.Controller, c, c.Config, nil).AddEventHandlerFunc(c.selector)
+	c.SnapQueue, c.JobQueue = snapc.NewController(c.Controller, c, c.Config, nil).AddEventHandlerFunc(c.selector)
 
 	return nil
 }
@@ -105,8 +105,8 @@ func (c *Controller) RunControllers(stopCh <-chan struct{}) {
 
 	// Watch x  TPR objects
 	c.mgQueue.Run(stopCh)
-	c.DDBQueue.Run(stopCh)
-	c.SNQueue.Run(stopCh)
+	c.DrmnQueue.Run(stopCh)
+	c.SnapQueue.Run(stopCh)
 	c.JobQueue.Run(stopCh)
 }
 

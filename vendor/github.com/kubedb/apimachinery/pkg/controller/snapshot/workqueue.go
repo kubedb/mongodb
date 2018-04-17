@@ -10,9 +10,9 @@ import (
 )
 
 func (c *Controller) addEventHandler(selector labels.Selector) {
-	c.SNQueue = queue.New("Snapshot", c.MaxNumRequeues, c.NumThreads, c.runSnapshot)
+	c.SnapQueue = queue.New("Snapshot", c.MaxNumRequeues, c.NumThreads, c.runSnapshot)
 	c.snLister = c.KubedbInformerFactory.Kubedb().V1alpha1().Snapshots().Lister()
-	c.SNInformer.AddEventHandler(queue.NewFilteredHandler(queue.NewEventHandler(c.SNQueue.GetQueue(), func(old interface{}, new interface{}) bool {
+	c.SnapInformer.AddEventHandler(queue.NewFilteredHandler(queue.NewEventHandler(c.SnapQueue.GetQueue(), func(old interface{}, new interface{}) bool {
 		snapshot := new.(*api.Snapshot)
 		return snapshot.DeletionTimestamp != nil
 	}), selector))
@@ -20,7 +20,7 @@ func (c *Controller) addEventHandler(selector labels.Selector) {
 
 func (c *Controller) runSnapshot(key string) error {
 	log.Debugf("started processing, key: %v\n", key)
-	obj, exists, err := c.SNInformer.GetIndexer().GetByKey(key)
+	obj, exists, err := c.SnapInformer.GetIndexer().GetByKey(key)
 	if err != nil {
 		log.Errorf("Fetching object with key %s from store failed with %v\n", key, err)
 		return err
