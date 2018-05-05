@@ -32,6 +32,7 @@ func NewMongoDBServerOptions(out, errOut io.Writer) *MongoDBServerOptions {
 		StdErr:             errOut,
 	}
 	o.RecommendedOptions.Etcd = nil
+	o.RecommendedOptions.Admission = nil
 
 	return o
 }
