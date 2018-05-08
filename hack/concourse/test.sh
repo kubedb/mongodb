@@ -83,6 +83,9 @@ mkdir -p $GOPATH/src/github.com/kubedb
 cp -r mongodb $GOPATH/src/github.com/kubedb
 pushd $GOPATH/src/github.com/kubedb/mongodb
 
+#### currently tests only work on release branch
+git fetch --all --tags --prune
+git checkout tags/0.1.0-beta.2 -b test-test
 
 #run tests
 ./hack/builddeps.sh
