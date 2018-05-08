@@ -1,0 +1,13 @@
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: golang
+    tag: 1.10-stretch
+
+inputs:
+- name: mongodb
+
+run:
+  path: mongodb/hack/concourse/test.sh
