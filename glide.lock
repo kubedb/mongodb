@@ -1,5 +1,5 @@
-hash: 26359be8515a50a91b93e0309304d22f1dec4720240175ad78ad8aedd3562b3e
-updated: 2018-05-08T12:56:31.201859166+06:00
+hash: acd97b454cc2338acb2ae41d3132a4d4ff20541382bc51e7c9607bbb855371bc
+updated: 2018-05-08T15:30:05.624390793+06:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -103,6 +103,10 @@ imports:
   version: 3ac7bf7a47d159a033b107610db8a1b6575507a4
   subpackages:
   - quantile
+- name: github.com/codegangsta/inject
+  version: 33e0aa1cb7c019ccc3fbe049a8262a6403d30504
+- name: github.com/codeskyblue/go-sh
+  version: cf804ac79dffabb6b16342e24362cc744afc144f
 - name: github.com/coreos/etcd
   version: 95a726a27e09030f9ccbd9982a1508f5a6d25ada
   subpackages:
@@ -189,7 +193,7 @@ imports:
   - daemon
   - journal
 - name: github.com/coreos/prometheus-operator
-  version: 0608eb688913e3c2523bb503fc8ab76c771e4018
+  version: 384704f533c2b4bb2beb45f4522548ba21947ccd
   repo: https://github.com/tamalsaha/prometheus-operator.git
   subpackages:
   - pkg/client/monitoring/v1
@@ -263,7 +267,7 @@ imports:
 - name: github.com/google/gofuzz
   version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
 - name: github.com/google/uuid
-  version: e367a344cbe8e08149f9951115dc299ebd42b919
+  version: 8c31c18f31ede9fc8eae72290a7e7a8064e9b3e3
 - name: github.com/googleapis/gnostic
   version: 0c5108395e2debce0d731cf0287ddf7242066aba
   subpackages:
