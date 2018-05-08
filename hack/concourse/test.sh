@@ -11,6 +11,11 @@ curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s htt
 chmod +x ./kubectl
 mv ./kubectl /bin/kubectl
 
+#install onessl
+curl -fsSL -o onessl https://github.com/kubepack/onessl/releases/download/0.3.0/onessl-linux-amd64 \
+  && chmod +x onessl \
+  && mv onessl /usr/local/bin/
+
 #install pharmer
 mkdir -p $GOPATH/src/github.com/pharmer
 pushd $GOPATH/src/github.com/pharmer
@@ -77,6 +82,7 @@ kubectl get storageclass
 mkdir -p $GOPATH/src/github.com/kubedb
 cp -r mongodb $GOPATH/src/github.com/kubedb
 pushd $GOPATH/src/github.com/kubedb/mongodb
+
 
 #run tests
 ./hack/builddeps.sh
