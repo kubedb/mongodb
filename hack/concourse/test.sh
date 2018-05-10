@@ -86,7 +86,7 @@ cp -r mongodb $GOPATH/src/github.com/kubedb
 pushd $GOPATH/src/github.com/kubedb/mongodb
 
 # create config/.env file that have all necessary creds
-cat > config/.env <<EOF
+cat > hack/config/.env <<EOF
 AWS_ACCESS_KEY_ID=$AWS_KEY_ID
 AWS_SECRET_ACCESS_KEY=$AWS_SECRET
 
@@ -95,6 +95,8 @@ GOOGLE_APPLICATION_CREDENTIALS=$CRED_DIR
 
 AZURE_ACCOUNT_NAME=$AZURE_ACCOUNT_NAME
 AZURE_ACCOUNT_KEY=$AZURE_ACCOUNT_KEY
+AZURE_CONTAINER_NAME=$AZURE_BUCKET_NAME
+
 
 S3_BUCKET_NAME=$S3_BUCKET_NAME
 GCS_BUCKET_NAME=$GCS_BUCKET_NAME
@@ -110,5 +112,5 @@ export APPSCODE_ENV=dev
 export DOCKER_REGISTRY=kubedbci
 ./hack/docker/mg-operator/make.sh build
 ./hack/docker/mg-operator/make.sh push
-./hack/deploy/setup.sh --docker-registry=kubedbci
-./hack/make.py test e2e --v=1 --storageclass=standard --docker-registry=kubedbci --provided-controller=true
+./hack/deploy/kubedb.sh --docker-registry=kubedbci --operator-name=mg-operator
+./hack/make.py test e2e --v=1 --storageclass=standard --selfhosted-operator=true

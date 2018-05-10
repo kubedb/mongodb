@@ -48,6 +48,7 @@ jobs:
       GCE_PROJECT_ID: ((gce_project_id))
       AZURE_ACCOUNT_NAME: ((azure_account_name))
       AZURE_ACCOUNT_KEY: ((azure_account_key))
+      AZURE_BUCKET_NAME: ((azure_bucket_name))
       S3_BUCKET_NAME: ((s3_bucket_name))
       GCS_BUCKET_NAME: ((gcs_bucket_name))
 
@@ -57,6 +58,9 @@ jobs:
     trigger: true
   - put: pull-request
     params: { path: pull-request, status: pending}
+  - get: creds
+    params:
+      unpack: true
   - task: test-e2e
     privileged: true
     file: pull-request/hack/concourse/task.yml
@@ -68,6 +72,7 @@ jobs:
       DOCKER_PASS: ((docker_pass))
       AWS_KEY_ID: ((aws_key_id))
       AWS_SECRET: ((aws_secret))
+      AZURE_BUCKET_NAME: ((azure_bucket_name))
       GCE_PROJECT_ID: ((gce_project_id))
       AZURE_ACCOUNT_NAME: ((azure_account_name))
       S3_BUCKET_NAME: ((s3_bucket_name))
