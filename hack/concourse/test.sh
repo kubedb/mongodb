@@ -78,15 +78,37 @@ kubectl create -f sc.yaml
 sleep 120
 kubectl get storageclass
 
+export CRED_DIR=creds/gcs/gcs.json
+
 #copy mongodb to $GOPATH
 mkdir -p $GOPATH/src/github.com/kubedb
 cp -r mongodb $GOPATH/src/github.com/kubedb
 pushd $GOPATH/src/github.com/kubedb/mongodb
 
-#### currently tests only work on release branch
-git fetch --all --tags --prune
-git checkout tags/0.1.0-beta.2 -b test-test
+# create config/.env file that have all necessary creds
+cat > config/.env <<EOF
+AWS_ACCESS_KEY_ID=$AWS_KEY_ID
+AWS_SECRET_ACCESS_KEY=$AWS_SECRET
 
-#run tests
+GOOGLE_PROJECT_ID=$GCE_PROJECT_ID
+GOOGLE_APPLICATION_CREDENTIALS=$CRED_DIR
+
+AZURE_ACCOUNT_NAME=$AZURE_ACCOUNT_NAME
+AZURE_ACCOUNT_KEY=$AZURE_ACCOUNT_KEY
+
+S3_BUCKET_NAME=$S3_BUCKET_NAME
+GCS_BUCKET_NAME=$GCS_BUCKET_NAME
+EOF
+
+# login to docker-hub
+# required for pushing image
+docker login --username=$DOCKER_USER --password=$DOCKER_PASS
+
+# run tests
 ./hack/builddeps.sh
-./hack/make.py test e2e --v=1
+export APPSCODE_ENV=dev
+export DOCKER_REGISTRY=kubedbci
+./hack/docker/mg-operator/make.sh build
+./hack/docker/mg-operator/make.sh push
+./hack/deploy/setup.sh --docker-registry=kubedbci
+./hack/make.py test e2e --v=1 --storageclass=standard --docker-registry=kubedbci --provided-controller=true

@@ -20,15 +20,36 @@ resources:
     org: appscode
     access_token: ((access_token))
 
+- name: creds
+  type: s3
+  source:
+    bucket: kubedbci
+    access_key_id: ((s3-access-key))
+    secret_access_key: ((s3-secret))
+    versioned_file: gcs.zip
+
 jobs:
 - name: test-mongodb
   plan:
   - get: mongodb
     trigger: true
+  - get: creds
+    params:
+      unpack: true
   - task: test-e2e
+    privileged: true
     file: mongodb/hack/concourse/task.yml
     params:
       TOKEN: ((digitaloceanToken))
+      DOCKER_USER: ((docker_user))
+      DOCKER_PASS: ((docker_pass))
+      AWS_KEY_ID: ((aws_key_id))
+      AWS_SECRET: ((aws_secret))
+      GCE_PROJECT_ID: ((gce_project_id))
+      AZURE_ACCOUNT_NAME: ((azure_account_name))
+      AZURE_ACCOUNT_KEY: ((azure_account_key))
+      S3_BUCKET_NAME: ((s3_bucket_name))
+      GCS_BUCKET_NAME: ((gcs_bucket_name))
 
 - name: test-mongodb-pr
   plan:
@@ -37,11 +58,20 @@ jobs:
   - put: pull-request
     params: { path: pull-request, status: pending}
   - task: test-e2e
+    privileged: true
     file: pull-request/hack/concourse/task.yml
     input_mapping:
       mongodb: pull-request
     params:
       TOKEN: ((digitaloceanToken))
+      DOCKER_USER: ((docker_user))
+      DOCKER_PASS: ((docker_pass))
+      AWS_KEY_ID: ((aws_key_id))
+      AWS_SECRET: ((aws_secret))
+      GCE_PROJECT_ID: ((gce_project_id))
+      AZURE_ACCOUNT_NAME: ((azure_account_name))
+      S3_BUCKET_NAME: ((s3_bucket_name))
+      GCS_BUCKET_NAME: ((gcs_bucket_name))
     on_success:
       put: pull-request
       params: { path: pull-request, status: success}
