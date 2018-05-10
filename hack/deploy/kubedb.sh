@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eou pipefail
 
-crds=(mongodbs snapshots dormantdatabases)
+crds=(elasticsearches memcacheds mongodbs mysqls postgreses redises snapshots dormantdatabases)
 apiServices=(v1alpha1.validators v1alpha1.mutators)
 
 echo "checking kubeconfig context"
@@ -88,13 +88,14 @@ fi
 # ref: http://tldp.org/LDP/abs/html/comparison-ops.html
 
 export KUBEDB_NAMESPACE=kube-system
-export KUBEDB_SERVICE_ACCOUNT=kubedb-mg-operator
+export KUBEDB_SERVICE_ACCOUNT=kubedb-operator
 export KUBEDB_ENABLE_RBAC=true
 export KUBEDB_RUN_ON_MASTER=0
 export KUBEDB_ENABLE_VALIDATING_WEBHOOK=false
 export KUBEDB_ENABLE_MUTATING_WEBHOOK=false
 export KUBEDB_DOCKER_REGISTRY=kubedb
-export KUBEDB_OPERATOR_TAG=0.1.0-beta.2
+export KUBEDB_OPERATOR_TAG=0.8.0-beta.2
+export KUBEDB_OPERATOR_NAME=operator
 export KUBEDB_IMAGE_PULL_SECRET=
 export KUBEDB_IMAGE_PULL_POLICY=IfNotPresent
 export KUBEDB_ENABLE_ANALYTICS=true
@@ -114,20 +115,21 @@ KUBE_APISERVER_VERSION=$(kubectl version -o=json | $ONESSL jsonpath '{.serverVer
 $ONESSL semver --check='<1.9.0' $KUBE_APISERVER_VERSION || { export KUBEDB_ENABLE_VALIDATING_WEBHOOK=true; export KUBEDB_ENABLE_MUTATING_WEBHOOK=true; }
 
 show_help() {
-    echo "setup.sh - install kubedb mg-operator"
+    echo "kubedb.sh - install kubedb operator"
     echo " "
-    echo "setup.sh [options]"
+    echo "kubedb.sh [options]"
     echo " "
     echo "options:"
     echo "-h, --help                         show brief help"
     echo "-n, --namespace=NAMESPACE          specify namespace (default: kube-system)"
     echo "    --rbac                         create RBAC roles and bindings (default: true)"
     echo "    --docker-registry              docker registry used to pull KubeDB images (default: appscode)"
-    echo "    --image-pull-secret            name of secret used to pull KubeDB mg-operator images"
-    echo "    --run-on-master                run KubeDB mg-operator on master"
+    echo "    --image-pull-secret            name of secret used to pull KubeDB operator images"
+    echo "    --run-on-master                run KubeDB operator on master"
     echo "    --enable-validating-webhook    enable/disable validating webhooks for KubeDB CRDs"
     echo "    --enable-mutating-webhook      enable/disable mutating webhooks for KubeDB CRDs"
     echo "    --enable-analytics             send usage events to Google Analytics (default: true)"
+    echo "    --operator-name                specify which kubedb operator to deploy (default: operator)"
     echo "    --uninstall                    uninstall KubeDB"
     echo "    --purge                        purges KubeDB crd objects and crds"
 }
@@ -194,6 +196,10 @@ while test $# -gt 0; do
             export KUBEDB_RUN_ON_MASTER=1
             shift
             ;;
+        --operator-name*)
+            export KUBEDB_OPERATOR_NAME=`echo $1 | sed -e 's/^[^=]*=//g'`
+            shift
+            ;;
         --uninstall)
             export KUBEDB_UNINSTALL=1
             shift
@@ -203,6 +209,7 @@ while test $# -gt 0; do
             shift
             ;;
         *)
+            echo "Error: unknown flag:" $1
             show_help
             exit 1
             ;;
@@ -214,7 +221,7 @@ if [ "$KUBEDB_UNINSTALL" -eq 1 ]; then
     kubectl delete validatingwebhookconfiguration -l app=kubedb || true
     kubectl delete mutatingwebhookconfiguration -l app=kubedb || true
     kubectl delete apiservice -l app=kubedb
-    # delete kubedb mg-operator
+    # delete kubedb operator
     kubectl delete deployment -l app=kubedb --namespace $KUBEDB_NAMESPACE
     kubectl delete service -l app=kubedb --namespace $KUBEDB_NAMESPACE
     kubectl delete secret -l app=kubedb --namespace $KUBEDB_NAMESPACE
@@ -225,7 +232,7 @@ if [ "$KUBEDB_UNINSTALL" -eq 1 ]; then
     kubectl delete rolebindings -l app=kubedb --namespace $KUBEDB_NAMESPACE
     kubectl delete role -l app=kubedb --namespace $KUBEDB_NAMESPACE
 
-    echo "waiting for kubedb mg-operator pod to stop running"
+    echo "waiting for kubedb operator pod to stop running"
     for (( ; ; )); do
        pods=($(kubectl get pods --all-namespaces -l app=kubedb -o jsonpath='{range .items[*]}{.metadata.name} {end}'))
        total=${#pods[*]}
@@ -284,7 +291,7 @@ echo ""
 # - a local CA key and cert
 # - a webhook server key and cert signed by the local CA
 $ONESSL create ca-cert
-$ONESSL create server-cert server --domains=kubedb-mg-operator.$KUBEDB_NAMESPACE.svc
+$ONESSL create server-cert server --domains=kubedb-$KUBEDB_OPERATOR_NAME.$KUBEDB_NAMESPACE.svc
 export SERVICE_SERVING_CERT_CA=$(cat ca.crt | $ONESSL base64)
 export TLS_SERVING_CERT=$(cat server.crt | $ONESSL base64)
 export TLS_SERVING_KEY=$(cat server.key | $ONESSL base64)
@@ -300,7 +307,7 @@ if [ "$KUBEDB_ENABLE_RBAC" = true ]; then
 fi
 
 if [ "$KUBEDB_RUN_ON_MASTER" -eq 1 ]; then
-    kubectl patch deploy kubedb-operator -n $KUBEDB_NAMESPACE \
+    kubectl patch deploy kubedb-$KUBEDB_OPERATOR_NAME -n $KUBEDB_NAMESPACE \
       --patch="$(${SCRIPT_LOCATION}hack/deploy/run-on-master.yaml)"
 fi
 
@@ -313,18 +320,20 @@ if [ "$KUBEDB_ENABLE_MUTATING_WEBHOOK" = true ]; then
 fi
 
 echo
-echo "waiting until kubedb mg-operator deployment is ready"
-$ONESSL wait-until-ready deployment kubedb-mg-operator --namespace $KUBEDB_NAMESPACE || { echo "KubeDB mg-operator deployment failed to be ready"; exit 1; }
+echo "waiting until kubedb operator deployment is ready"
+$ONESSL wait-until-ready deployment kubedb-$KUBEDB_OPERATOR_NAME --namespace $KUBEDB_NAMESPACE || { echo "KubeDB operator deployment failed to be ready"; exit 1; }
 
 echo "waiting until kubedb apiservice is available"
 for api in "${apiServices[@]}"; do
     $ONESSL wait-until-ready apiservice ${api}.kubedb.com || { echo "KubeDB apiservice $api failed to be ready"; exit 1; }
 done
 
-echo "waiting until kubedb crds are ready"
-for crd in "${crds[@]}"; do
-    $ONESSL wait-until-ready crd ${crd}.kubedb.com || { echo "$crd crd failed to be ready"; exit 1; }
-done
+if [ "$KUBEDB_OPERATOR_NAME" = "operator" ]; then
+    echo "waiting until kubedb crds are ready"
+    for crd in "${crds[@]}"; do
+        $ONESSL wait-until-ready crd ${crd}.kubedb.com || { echo "$crd crd failed to be ready"; exit 1; }
+    done
+fi
 
 echo
-echo "Successfully installed KubeDB mg-operator in $KUBEDB_NAMESPACE namespace!"
+echo "Successfully installed KubeDB operator in $KUBEDB_NAMESPACE namespace!"

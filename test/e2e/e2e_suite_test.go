@@ -37,7 +37,7 @@ func init() {
 	flag.StringVar(&storageClass, "storageclass", "standard", "Kubernetes StorageClass name")
 	flag.StringVar(&framework.DockerRegistry, "docker-registry", "kubedb", "User provided docker repository")
 	flag.StringVar(&framework.ExporterTag, "exporter-tag", "canary", "Tag of kubedb/operator used as exporter")
-	flag.BoolVar(&framework.ProvidedController, "provided-controller", false, "Enable this for provided controller")
+	flag.BoolVar(&framework.SelfHostedOperator, "selfhosted-operator", false, "Enable this for provided controller")
 }
 
 const (
@@ -88,7 +88,7 @@ var _ = BeforeSuite(func() {
 	err = root.CreateNamespace()
 	Expect(err).NotTo(HaveOccurred())
 
-	if !framework.ProvidedController {
+	if !framework.SelfHostedOperator {
 		stopCh := genericapiserver.SetupSignalHandler()
 		go root.RunOperatorAndServer(kubeconfigPath, stopCh)
 	}

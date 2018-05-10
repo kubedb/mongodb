@@ -1,0 +1,20 @@
+Do not make changes in the files of this folder.
+
+The files are auto-updated from https://github.com/kubedb/cli repo.
+
+
+>> To update the files:
+
+1. Make appropriate changes in 'hack/deploy' folder of https://github.com/kubedb/cli.
+2. Push the changes into "kubedb/cli" repo of GitHub.
+3. Now run any of following command to pull files from https://github.com/kubedb/cli.
+
+    $ ./hack/dev/update-deploy.sh
+ or,
+    $ ./hack/dev/update-deploy.sh --branch-name=<cli-branch-name>
+    # If the branch is not master, provide the branch-name.
+
+
+>> To deploy operator:
+
+    $ ./hack/deploy/kubedb.sh --operator-name=mg-operator --docker-registry=<docker-registry-name>

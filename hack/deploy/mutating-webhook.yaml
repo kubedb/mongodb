@@ -6,6 +6,45 @@ metadata:
   labels:
     app: kubedb
 webhooks:
+- name: elasticsearch.mutators.kubedb.com
+  clientConfig:
+    service:
+      namespace: default
+      name: kubernetes
+      path: /apis/mutators.kubedb.com/v1alpha1/elasticsearches
+    caBundle: ${KUBE_CA}
+  rules:
+  - apiGroups: ["kubedb.com"]
+    apiVersions: ["*"]
+    resources: ["elasticsearches"]
+    operations: ["CREATE", "UPDATE", "DELETE"]
+  failurePolicy: Fail
+- name: postgres.mutators.kubedb.com
+  clientConfig:
+    service:
+      namespace: default
+      name: kubernetes
+      path: /apis/mutators.kubedb.com/v1alpha1/postgreses
+    caBundle: ${KUBE_CA}
+  rules:
+  - apiGroups: ["kubedb.com"]
+    apiVersions: ["*"]
+    resources: ["postgreses"]
+    operations: ["CREATE", "UPDATE", "DELETE"]
+  failurePolicy: Fail
+- name: mysql.mutators.kubedb.com
+  clientConfig:
+    service:
+      namespace: default
+      name: kubernetes
+      path: /apis/mutators.kubedb.com/v1alpha1/mysqls
+    caBundle: ${KUBE_CA}
+  rules:
+  - apiGroups: ["kubedb.com"]
+    apiVersions: ["*"]
+    resources: ["mysqls"]
+    operations: ["CREATE", "UPDATE", "DELETE"]
+  failurePolicy: Fail
 - name: mongodb.mutators.kubedb.com
   clientConfig:
     service:
@@ -17,5 +56,31 @@ webhooks:
   - apiGroups: ["kubedb.com"]
     apiVersions: ["*"]
     resources: ["mongodbs"]
+    operations: ["CREATE", "UPDATE", "DELETE"]
+  failurePolicy: Fail
+- name: redis.mutators.kubedb.com
+  clientConfig:
+    service:
+      namespace: default
+      name: kubernetes
+      path: /apis/mutators.kubedb.com/v1alpha1/redises
+    caBundle: ${KUBE_CA}
+  rules:
+  - apiGroups: ["kubedb.com"]
+    apiVersions: ["*"]
+    resources: ["redises"]
+    operations: ["CREATE", "UPDATE", "DELETE"]
+  failurePolicy: Fail
+- name: memcached.mutators.kubedb.com
+  clientConfig:
+    service:
+      namespace: default
+      name: kubernetes
+      path: /apis/mutators.kubedb.com/v1alpha1/memcacheds
+    caBundle: ${KUBE_CA}
+  rules:
+  - apiGroups: ["kubedb.com"]
+    apiVersions: ["*"]
+    resources: ["memcacheds"]
     operations: ["CREATE", "UPDATE", "DELETE"]
   failurePolicy: Fail

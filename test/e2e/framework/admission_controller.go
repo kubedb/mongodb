@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"time"
-
 	"path/filepath"
+	"time"
 
 	"github.com/appscode/go/log"
 	shell "github.com/codeskyblue/go-sh"
@@ -21,7 +20,7 @@ import (
 var (
 	DockerRegistry     string
 	ExporterTag        string
-	ProvidedController bool
+	SelfHostedOperator bool
 )
 
 func (f *Framework) isApiSvcReady(apiSvcName string) error {
