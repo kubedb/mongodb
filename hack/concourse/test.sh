@@ -2,6 +2,11 @@
 
 set -x -e
 
+# start docker and log-in to docker-hub
+entrypoint.sh
+docker login --username=$DOCKER_USER --password=$DOCKER_PASS
+docker run hello-world
+
 #install python pip
 apt-get update > /dev/null
 apt-get install -y python python-pip > /dev/null
@@ -101,10 +106,6 @@ AZURE_CONTAINER_NAME=$AZURE_BUCKET_NAME
 S3_BUCKET_NAME=$S3_BUCKET_NAME
 GCS_BUCKET_NAME=$GCS_BUCKET_NAME
 EOF
-
-# login to docker-hub
-# required for pushing image
-docker login --username=$DOCKER_USER --password=$DOCKER_PASS
 
 # run tests
 ./hack/builddeps.sh
