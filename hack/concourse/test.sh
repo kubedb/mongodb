@@ -61,7 +61,7 @@ EOF
 #"We're sorry! Volumes are not available for Droplets on legacy hardware in the NYC3 region"
 pharmer create credential --from-file=cred.json --provider=DigitalOcean cred
 pharmer create cluster $NAME --provider=digitalocean --zone=nyc1 --nodes=2gb=1 --credential-uid=cred --kubernetes-version=v1.10.0
-pharmer apply $NAME &> /dev/null
+pharmer apply $NAME
 pharmer use cluster $NAME
 #wait for cluster to be ready
 sleep 300
@@ -83,7 +83,7 @@ kubectl create -f sc.yaml
 sleep 120
 kubectl get storageclass
 
-export CRED_DIR=creds/gcs/gcs.json
+export CRED_DIR=$(pwd)/creds/gcs/gcs.json
 
 #copy mongodb to $GOPATH
 mkdir -p $GOPATH/src/github.com/kubedb
@@ -100,11 +100,11 @@ GOOGLE_APPLICATION_CREDENTIALS=$CRED_DIR
 
 AZURE_ACCOUNT_NAME=$AZURE_ACCOUNT_NAME
 AZURE_ACCOUNT_KEY=$AZURE_ACCOUNT_KEY
-AZURE_CONTAINER_NAME=$AZURE_BUCKET_NAME
 
 
 S3_BUCKET_NAME=$S3_BUCKET_NAME
 GCS_BUCKET_NAME=$GCS_BUCKET_NAME
+AZURE_CONTAINER_NAME=$AZURE_BUCKET_NAME
 EOF
 
 # run tests

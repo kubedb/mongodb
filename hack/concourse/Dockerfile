@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y \
     rm -rf /root/.cache
 
 COPY entrypoint.sh /bin/entrypoint.sh
-RUN curl -LO https://raw.githubusercontent.com/karlkfi/concourse-dcind/master/entrypoint.sh && \
+RUN curl -LO https://gist.githubusercontent.com/tahsinrahman/db0626153488f88ceac544404f33cc0f/raw/f9ba010b5dd194dbbf96f1431e5d8a46966ed79a/entrypoint.sh && \
     chmod +x entrypoint.sh && \
     mv entrypoint.sh /bin/
 
