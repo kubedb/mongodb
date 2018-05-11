@@ -1,5 +1,5 @@
 #!/bin/bash
-set -o pipefail
+set -eou pipefail
 
 GOPATH=$(go env GOPATH)
 
@@ -16,7 +16,7 @@ export KUBEDB_SCRIPT="curl -fsSL https://raw.githubusercontent.com/kubedb/cli/0.
 
 
 if [ "$APPSCODE_ENV" = "dev" ]; then
-    detect_tag
+    detect_tag ''
     export KUBEDB_SCRIPT="cat "
     export CUSTOM_OPERATOR_TAG=$TAG
     echo ""
@@ -24,10 +24,15 @@ if [ "$APPSCODE_ENV" = "dev" ]; then
     if [[ ! -d $CLI_ROOT ]]; then
         echo ">>> Cloning cli repo"
         git clone -b $CLI_BRANCH https://github.com/kubedb/cli.git "${CLI_ROOT}"
+        pushd $CLI_ROOT
     else
-        echo ">>> Reusing CLI repo at ${CLI_ROOT}"
+        pushd $CLI_ROOT
+        detect_tag ''
+        if [[ $git_branch != $CLI_BRANCH ]]; then
+            git fetch --all
+            git checkout $CLI_BRANCH
+        fi
     fi
-    pushd $CLI_ROOT
 fi
 
 ${KUBEDB_SCRIPT}hack/deploy/kubedb.sh | bash -s -- --operator-name=mg-operator "$@"
