@@ -38,3 +38,8 @@ fi
 echo ""
 echo "${KUBEDB_SCRIPT}hack/deploy/kubedb.sh | bash -s -- --operator-name=mg-operator "$@""
 ${KUBEDB_SCRIPT}hack/deploy/kubedb.sh | bash -s -- --operator-name=mg-operator "$@"
+
+if [ `pwd` = "$CLI_ROOT" ]; then
+    popd
+fi
+popd
