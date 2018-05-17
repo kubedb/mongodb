@@ -87,6 +87,7 @@ func (f *Framework) CleanMongoDB() {
 	for _, e := range mongodbList.Items {
 		if _, _, err := util.PatchMongoDB(f.extClient, &e, func(in *api.MongoDB) *api.MongoDB {
 			in.ObjectMeta.Finalizers = nil
+			in.Spec.DoNotPause = false
 			return in
 		}); err != nil {
 			fmt.Printf("error Patching MongoDB. error: %v", err)

@@ -100,9 +100,10 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 
 	By("Cleanup Left Overs")
-
-	By("Delete Admission Controller Configs")
-	root.CleanAdmissionConfigs()
+	if !framework.SelfHostedOperator {
+		By("Delete Admission Controller Configs")
+		root.CleanAdmissionConfigs()
+	}
 	By("Delete left over MongoDB objects")
 	root.CleanMongoDB()
 	By("Delete left over Dormant Database objects")
