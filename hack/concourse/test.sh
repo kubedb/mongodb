@@ -28,7 +28,6 @@ chmod +x pharmer-linux-amd64
 mv pharmer-linux-amd64 /bin/pharmer
 popd
 
-# delete cluster on exit
 function cleanup {
     # delete cluster on exit
     pharmer get cluster || true
@@ -44,7 +43,6 @@ function cleanup {
     ./docker.py del_tag kubedbci mg-operator $CUSTOM_OPERATOR_TAG
 }
 trap cleanup EXIT
-
 
 # copy mongodb to $GOPATH
 mkdir -p $GOPATH/src/github.com/kubedb
@@ -77,7 +75,7 @@ pharmer create cluster $NAME --provider=digitalocean --zone=nyc1 --nodes=2gb=1 -
 pharmer apply $NAME
 pharmer use cluster $NAME
 #wait for cluster to be ready
-sleep 120
+sleep 300
 kubectl get nodes
 
 # create storageclass
@@ -93,7 +91,7 @@ EOF
 
 # create storage-class
 kubectl create -f sc.yaml
-sleep 60
+sleep 120
 kubectl get storageclass
 
 export CRED_DIR=$(pwd)/creds/gcs/gcs.json
