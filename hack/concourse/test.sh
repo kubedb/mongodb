@@ -22,11 +22,12 @@ curl -fsSL -o onessl https://github.com/kubepack/onessl/releases/download/0.3.0/
   && mv onessl /usr/local/bin/
 
 # install pharmer
-pushd /tmp
-curl -LO https://cdn.appscode.com/binaries/pharmer/0.1.0-rc.3/pharmer-linux-amd64
-chmod +x pharmer-linux-amd64
-mv pharmer-linux-amd64 /bin/pharmer
-popd
+go get -u github.com/pharmer/pharmer
+#pushd /tmp
+#curl -LO https://cdn.appscode.com/binaries/pharmer/0.1.0-rc.3/pharmer-linux-amd64
+#chmod +x pharmer-linux-amd64
+#mv pharmer-linux-amd64 /bin/pharmer
+#popd
 
 function cleanup {
     # delete cluster on exit
