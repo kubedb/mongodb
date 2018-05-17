@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/appscode/go/types"
 	meta_util "github.com/appscode/kutil/meta"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/mongodb/test/e2e/framework"
@@ -12,7 +11,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 const (
@@ -71,42 +69,14 @@ var _ = Describe("MongoDB", func() {
 		f.EventuallyWipedOut(mongodb.ObjectMeta).Should(Succeed())
 	}
 
-	var shouldSuccessfullyRunning = func() {
-		if skipMessage != "" {
-			Skip(skipMessage)
-		}
-
-		// Create MongoDB
-		createAndWaitForRunning()
-
-		// Delete test resource
-		deleteTestResource()
-	}
-
 	Describe("Test", func() {
 		BeforeEach(func() {
 			if f.StorageClass == "" {
 				Skip("Missing StorageClassName. Provide as flag to test this.")
 			}
-			mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
-				Resources: core.ResourceRequirements{
-					Requests: core.ResourceList{
-						core.ResourceStorage: resource.MustParse("1Gi"),
-					},
-				},
-				StorageClassName: types.StringP(f.StorageClass),
-			}
-
 		})
 
 		Context("General", func() {
-
-			Context("Without PVC", func() {
-				BeforeEach(func() {
-					mongodb.Spec.Storage = nil
-				})
-				It("should run successfully", shouldSuccessfullyRunning)
-			})
 
 			Context("With PVC", func() {
 				It("should run successfully", func() {
@@ -233,14 +203,6 @@ var _ = Describe("MongoDB", func() {
 				})
 
 				It("should take Snapshot successfully", shouldTakeSnapshot)
-
-				// Additional
-				Context("Without PVC", func() {
-					BeforeEach(func() {
-						mongodb.Spec.Storage = nil
-					})
-					It("should run successfully", shouldTakeSnapshot)
-				})
 			})
 
 			Context("In S3", func() {
@@ -469,16 +431,7 @@ var _ = Describe("MongoDB", func() {
 
 					By("Create mongodb from snapshot")
 					mongodb = f.MongoDB()
-					if f.StorageClass != "" {
-						mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
-							Resources: core.ResourceRequirements{
-								Requests: core.ResourceList{
-									core.ResourceStorage: resource.MustParse("1Gi"),
-								},
-							},
-							StorageClassName: types.StringP(f.StorageClass),
-						}
-					}
+
 					mongodb.Spec.Init = &api.InitSpec{
 						SnapshotSource: &api.SnapshotSourceSpec{
 							Namespace: snapshot.Namespace,
@@ -536,6 +489,9 @@ var _ = Describe("MongoDB", func() {
 					By("Delete mongodb")
 					err = f.DeleteMongoDB(mongodb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
+
+					By("Wait for MongoDB to be deleted")
+					f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeFalse())
 
 					// Create MongoDB object again to resume it
 					By("Create MongoDB: " + mongodb.Name)
@@ -700,16 +656,6 @@ var _ = Describe("MongoDB", func() {
 
 					By("Create mongodb from snapshot")
 					mongodb = f.MongoDB()
-					if f.StorageClass != "" {
-						mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
-							Resources: core.ResourceRequirements{
-								Requests: core.ResourceList{
-									core.ResourceStorage: resource.MustParse("1Gi"),
-								},
-							},
-							StorageClassName: types.StringP(f.StorageClass),
-						}
-					}
 					mongodb.Spec.Init = &api.InitSpec{
 						SnapshotSource: &api.SnapshotSourceSpec{
 							Namespace: snapshot.Namespace,
@@ -861,7 +807,7 @@ var _ = Describe("MongoDB", func() {
 					BeforeEach(func() {
 						secret = f.SecretForLocalBackend()
 						mongodb.Spec.BackupSchedule = &api.BackupScheduleSpec{
-							CronExpression: "@every 1m",
+							CronExpression: "@every 20s",
 							SnapshotStorageSpec: api.SnapshotStorageSpec{
 								StorageSecretName: secret.Name,
 								Local: &api.LocalSpec{
@@ -877,11 +823,11 @@ var _ = Describe("MongoDB", func() {
 					It("should run schedular successfully", shouldStartupSchedular)
 				})
 
-				Context("with GCS and PVC", func() {
+				Context("with GCS", func() {
 					BeforeEach(func() {
 						secret = f.SecretForGCSBackend()
 						mongodb.Spec.BackupSchedule = &api.BackupScheduleSpec{
-							CronExpression: "@every 1m",
+							CronExpression: "@every 20s",
 							SnapshotStorageSpec: api.SnapshotStorageSpec{
 								StorageSecretName: secret.Name,
 								GCS: &api.GCSSpec{
@@ -909,7 +855,7 @@ var _ = Describe("MongoDB", func() {
 					By("Update mongodb")
 					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
 						in.Spec.BackupSchedule = &api.BackupScheduleSpec{
-							CronExpression: "@every 1m",
+							CronExpression: "@every 20s",
 							SnapshotStorageSpec: api.SnapshotStorageSpec{
 								StorageSecretName: secret.Name,
 								Local: &api.LocalSpec{
@@ -956,7 +902,7 @@ var _ = Describe("MongoDB", func() {
 					By("Update mongodb")
 					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
 						in.Spec.BackupSchedule = &api.BackupScheduleSpec{
-							CronExpression: "@every 1m",
+							CronExpression: "@every 20s",
 							SnapshotStorageSpec: api.SnapshotStorageSpec{
 								StorageSecretName: secret.Name,
 								Local: &api.LocalSpec{

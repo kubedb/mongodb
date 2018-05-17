@@ -4,12 +4,16 @@ import (
 	"fmt"
 	"time"
 
+	core "k8s.io/api/core/v1"
+
 	"github.com/appscode/go/crypto/rand"
-	"github.com/appscode/go/encoding/json/types"
+	jsonTypes "github.com/appscode/go/encoding/json/types"
+	"github.com/appscode/go/types"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 	. "github.com/onsi/gomega"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -23,7 +27,15 @@ func (f *Invocation) MongoDB() *api.MongoDB {
 			},
 		},
 		Spec: api.MongoDBSpec{
-			Version: types.StrYo("3.6"),
+			Version: jsonTypes.StrYo("3.6"),
+			Storage: core.PersistentVolumeClaimSpec{
+				Resources: core.ResourceRequirements{
+					Requests: core.ResourceList{
+						core.ResourceStorage: resource.MustParse("1Gi"),
+					},
+				},
+				StorageClassName: types.StringP(f.StorageClass),
+			},
 		},
 	}
 }

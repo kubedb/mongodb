@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+
 	"github.com/appscode/go/homedir"
 	"github.com/appscode/go/log"
 	logs "github.com/appscode/go/log/golog"
