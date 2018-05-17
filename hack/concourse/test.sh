@@ -22,24 +22,26 @@ curl -fsSL -o onessl https://github.com/kubepack/onessl/releases/download/0.3.0/
   && mv onessl /usr/local/bin/
 
 #install pharmer
-mkdir -p $GOPATH/src/github.com/pharmer
-pushd $GOPATH/src/github.com/pharmer
-git clone https://github.com/pharmer/pharmer &> /dev/null
-cd pharmer
-go get -u golang.org/x/tools/cmd/goimports
-./hack/builddeps.sh &> /dev/null
-./hack/make.py &> /dev/null
-pharmer
+pushd /tmp
+curl -LO https://cdn.appscode.com/binaries/pharmer/0.1.0-rc.3/pharmer-linux-amd64
+chmod +x pharmer-linux-amd64
+mv pharmer-linux-amd64 /bin/pharmer
 popd
 
 #delete cluster on exit
 function cleanup {
-    pharmer get cluster
-    pharmer delete cluster $NAME
-    pharmer get cluster
-    sleep 120
-    pharmer apply $NAME
-    pharmer get cluster
+    # delete cluster on exit
+    pharmer get cluster || true
+    pharmer delete cluster $NAME || true
+    pharmer get cluster || true
+    sleep 120 || true
+    pharmer apply $NAME || true
+    pharmer get cluster || true
+
+    # delete docker image on exit
+    curl -LO https://raw.githubusercontent.com/appscodelabs/libbuild/master/docker.py || true
+    chmod +x docker.py || true
+    ./docker.py del_tag kubedbci mg-operator $CUSTOM_OPERATOR_TAG
 }
 trap cleanup EXIT
 
@@ -101,10 +103,17 @@ GOOGLE_APPLICATION_CREDENTIALS=$CRED_DIR
 AZURE_ACCOUNT_NAME=$AZURE_ACCOUNT_NAME
 AZURE_ACCOUNT_KEY=$AZURE_ACCOUNT_KEY
 
+OS_AUTH_URL=$OS_AUTH_URL
+OS_TENANT_ID=$OS_TENANT_ID
+OS_TENANT_NAME=$OS_TENANT_NAME
+OS_USERNAME=$OS_USERNAME
+OS_PASSWORD=$OS_PASSWORD
+OS_REGION_NAME=$OS_REGION_NAME
 
 S3_BUCKET_NAME=$S3_BUCKET_NAME
 GCS_BUCKET_NAME=$GCS_BUCKET_NAME
-AZURE_CONTAINER_NAME=$AZURE_BUCKET_NAME
+AZURE_CONTAINER_NAME=$AZURE_CONTAINER_NAME
+SWIFT_CONTAINER_NAME=$SWIFT_CONTAINER_NAME
 EOF
 
 # run tests
@@ -113,5 +122,5 @@ export APPSCODE_ENV=dev
 export DOCKER_REGISTRY=kubedbci
 ./hack/docker/mg-operator/make.sh build
 ./hack/docker/mg-operator/make.sh push
-./hack/deploy/kubedb.sh --docker-registry=kubedbci --operator-name=mg-operator
+./hack/deploy/kubedb.sh --docker-registry=kubedbci
 ./hack/make.py test e2e --v=1 --storageclass=standard --selfhosted-operator=true
