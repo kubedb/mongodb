@@ -40,7 +40,6 @@ function cleanup {
         echo ""
         echo ""
         kubectl describe pods -n kube-system -l app=kubedb || true
-        exit 1
     fi
 
     # delete cluster on exit
