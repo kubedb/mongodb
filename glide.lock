@@ -1,5 +1,5 @@
 hash: acd97b454cc2338acb2ae41d3132a4d4ff20541382bc51e7c9607bbb855371bc
-updated: 2018-05-08T15:51:53.177995903+06:00
+updated: 2018-05-18T12:06:33.96210557+06:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -39,7 +39,7 @@ imports:
   - admission/v1beta1
   - registry/admissionreview/v1beta1
 - name: github.com/appscode/kutil
-  version: 7c06d378914d77d52a1e2eda9c61560a38950794
+  version: 58e34c2195a0b9eee67eea40701f7f7759f3f79f
   subpackages:
   - apiextensions/v1beta1
   - apps/v1
@@ -223,8 +223,15 @@ imports:
   version: 944e07253867aacae43c04b2e6a239005443f33a
 - name: github.com/ghodss/yaml
   version: 0ca9ea5df5451ffdf184b4428c902747c2c11cd7
+- name: github.com/globalsign/mgo
+  version: efe0945164a7e582241f37ae8983c075f8f2e870
+  subpackages:
+  - bson
+  - internal/json
+  - internal/sasl
+  - internal/scram
 - name: github.com/go-bongo/bongo
-  version: b02e65079c431db9bed1118b72b1679cc8f624e0
+  version: 761759e31d8fed917377aa7085db01d218ce50d8
 - name: github.com/go-bongo/go-dotaccess
   version: ae070a2d2a38fd7233e255ded21fb26fe36b4796
 - name: github.com/go-ini/ini
@@ -274,6 +281,15 @@ imports:
   - OpenAPIv2
   - compiler
   - extensions
+- name: github.com/gophercloud/gophercloud
+  version: 6da026c32e2d622cc242d32984259c77237aefe1
+  subpackages:
+  - openstack
+  - openstack/identity/v2/tenants
+  - openstack/identity/v2/tokens
+  - openstack/identity/v3/tokens
+  - openstack/utils
+  - pagination
 - name: github.com/graymeta/stow
   version: 42dc7dbf948d85803a205b39e5d3790470651c73
   repo: https://github.com/appscode/stow.git
@@ -305,7 +321,7 @@ imports:
 - name: github.com/json-iterator/go
   version: 13f86432b882000a51c6e610c620974462691a97
 - name: github.com/kubedb/apimachinery
-  version: ef349e6021d9b4905eb64e0335be83613a2afb7f
+  version: a8071385b2fc35db545bc8a3b516e711217d3cce
   subpackages:
   - apis/kubedb
   - apis/kubedb/v1alpha1
@@ -503,14 +519,14 @@ imports:
   subpackages:
   - rate
 - name: google.golang.org/api
-  version: 20530fd5d65ad2caee87891f9896d7547cb400c9
+  version: aedc137bffcaca05f836e35c6d182fcb7a68b1c0
   subpackages:
   - gensupport
   - googleapi
   - googleapi/internal/uritemplates
   - storage/v1
 - name: google.golang.org/appengine
-  version: 962cbd1200af94a5a35ba8d512e9f91271b4d01a
+  version: b9aad5d628b283f265adf8d3557faae187a8d015
   subpackages:
   - internal
   - internal/app_identity
@@ -553,8 +569,6 @@ imports:
   subpackages:
   - bson
   - internal/json
-  - internal/sasl
-  - internal/scram
 - name: gopkg.in/natefinch/lumberjack.v2
   version: 20b71e5b60d756d3d2f80def009790325acc2b23
 - name: gopkg.in/robfig/cron.v2
@@ -646,7 +660,6 @@ imports:
   - pkg/util/mergepatch
   - pkg/util/net
   - pkg/util/rand
-  - pkg/util/remotecommand
   - pkg/util/runtime
   - pkg/util/sets
   - pkg/util/strategicpatch
@@ -883,10 +896,16 @@ imports:
   - pkg/apis/clientauthentication
   - pkg/apis/clientauthentication/v1alpha1
   - pkg/version
+  - plugin/pkg/client/auth
+  - plugin/pkg/client/auth/azure
   - plugin/pkg/client/auth/exec
+  - plugin/pkg/client/auth/gcp
+  - plugin/pkg/client/auth/oidc
+  - plugin/pkg/client/auth/openstack
   - rest
   - rest/watch
   - testing
+  - third_party/forked/golang/template
   - tools/auth
   - tools/cache
   - tools/clientcmd
@@ -898,15 +917,14 @@ imports:
   - tools/portforward
   - tools/record
   - tools/reference
-  - tools/remotecommand
   - transport
   - transport/spdy
   - util/buffer
   - util/cert
-  - util/exec
   - util/flowcontrol
   - util/homedir
   - util/integer
+  - util/jsonpath
   - util/retry
   - util/workqueue
 - name: k8s.io/kube-aggregator

@@ -138,11 +138,8 @@ func ValidateMongoDB(client kubernetes.Interface, extClient kubedbv1alpha1.Kubed
 		return fmt.Errorf(`spec.replicas "%v" invalid. Value must be one`, mongodb.Spec.Replicas)
 	}
 
-	if mongodb.Spec.Storage != nil {
-		var err error
-		if err = amv.ValidateStorage(client, mongodb.Spec.Storage); err != nil {
-			return err
-		}
+	if err := amv.ValidateStorage(client, mongodb.Spec.Storage); err != nil {
+		return err
 	}
 
 	databaseSecret := mongodb.Spec.DatabaseSecret
