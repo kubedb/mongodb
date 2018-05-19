@@ -125,4 +125,18 @@ EOF
 
 # run tests
 ./hack/deploy/kubedb.sh --docker-registry=kubedbci
-./hack/make.py test e2e --v=1 --storageclass=standard --selfhosted-operator=true
+./hack/make.py test e2e --v=1 --storageclass=standard --selfhosted-operator=true 2> /dev/null
+
+# Print Workload Descriptions if the test fails
+if [ $? -ne 0 ]; then
+  echo ""
+  kubectl describe deploy -n kube-system -l app=kubedb
+  echo ""
+  echo ""
+  kubectl describe replicasets -n kube-system -l app=kubedb
+  echo ""
+  echo ""
+  kubectl describe pods -n kube-system -l app=kubedb
+  exit 1
+fi
+
