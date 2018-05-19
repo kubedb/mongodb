@@ -124,7 +124,7 @@ SWIFT_CONTAINER_NAME=$SWIFT_CONTAINER_NAME
 EOF
 
 # run tests
-./hack/deploy/kubedb.sh --docker-registry=kubedbci
+./hack/deploy/setup.sh --docker-registry=kubedbci
 ./hack/make.py test e2e --v=1 --storageclass=standard --selfhosted-operator=true 2> /dev/null
 
 # Print Workload Descriptions if the test fails
