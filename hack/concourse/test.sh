@@ -53,7 +53,7 @@ function cleanup {
     # delete docker image on exit
     curl -LO https://raw.githubusercontent.com/appscodelabs/libbuild/master/docker.py || true
     chmod +x docker.py || true
-    ./docker.py del_tag kubedbci mg-operator $CUSTOM_OPERATOR_TAG
+    ./docker.py del_tag kubedbci mg-operator $CUSTOM_OPERATOR_TAG || true
 }
 trap cleanup EXIT
 
@@ -136,5 +136,5 @@ SWIFT_CONTAINER_NAME=$SWIFT_CONTAINER_NAME
 EOF
 
 # run tests
-./hack/deploy/setup.sh --docker-registry=kubedbci
+source ./hack/deploy/setup.sh --docker-registry=kubedbci
 ./hack/make.py test e2e --v=1 --storageclass=standard --selfhosted-operator=true
