@@ -138,3 +138,6 @@ EOF
 # run tests
 source ./hack/deploy/setup.sh --docker-registry=kubedbci
 ./hack/make.py test e2e --v=1 --storageclass=standard --selfhosted-operator=true
+
+# state of operator pod
+kubectl describe pods -n kube-system -l app=kubedb || true
