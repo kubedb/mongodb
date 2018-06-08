@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/appscode/kutil/tools/portforward"
+	"github.com/globalsign/mgo/bson"
 	"github.com/go-bongo/bongo"
 	. "github.com/onsi/gomega"
-	"gopkg.in/mgo.v2/bson"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

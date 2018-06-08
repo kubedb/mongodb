@@ -1,7 +1,7 @@
 package bongo
 
 import (
-	"github.com/globalsign/mgo/bson"
+	"gopkg.in/mgo.v2/bson"
 	"reflect"
 )
 
@@ -13,11 +13,14 @@ func ValidateRequired(val interface{}) bool {
 func ValidateMongoIdRef(id bson.ObjectId, collection *Collection) bool {
 	count, err := collection.Collection().Find(bson.M{"_id": id}).Count()
 
-	if err != nil || count <= 0 {
+	if err != nil {
 		return false
 	}
 
-	return true
+	if count > 0 {
+		return true
+	}
+	return false
 }
 
 func stringInSlice(a string, list []string) bool {
