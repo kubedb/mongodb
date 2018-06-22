@@ -4,7 +4,7 @@ set -eou pipefail
 GOPATH=$(go env GOPATH)
 REPO_ROOT="$GOPATH/src/github.com/kubedb/mongodb"
 
-pushd $REPO_ROOT
+pushd "$REPO_ROOT"
 
 echo "" > coverage.txt
 

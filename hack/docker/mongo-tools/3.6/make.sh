@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#shellcheck disable=SC1090
+
 set -xeou pipefail
 
 GOPATH=$(go env GOPATH)
@@ -13,21 +15,21 @@ TAG=3.6
 OSM_VER=${OSM_VER:-0.7.0}
 
 DIST=$REPO_ROOT/dist
-mkdir -p $DIST
+mkdir -p "$DIST"
 
 build() {
     pushd "$REPO_ROOT/hack/docker/mongo-tools/$TAG"
 
     # Download osm
-    wget https://cdn.appscode.com/binaries/osm/${OSM_VER}/osm-alpine-amd64
+    wget https://cdn.appscode.com/binaries/osm/"$OSM_VER"/osm-alpine-amd64
     chmod +x osm-alpine-amd64
     mv osm-alpine-amd64 osm
 
     local cmd="docker build -t $DOCKER_REGISTRY/$IMG:$TAG ."
-    echo $cmd; $cmd
+    echo "$cmd"; $cmd
 
     rm osm
     popd
 }
 
-binary_repo $@
+binary_repo "$@"
