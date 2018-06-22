@@ -1,10 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# shellcheck disable=SC2002
+
 set -eou pipefail
 
 GOPATH=$(go env GOPATH)
 REPO_ROOT="$GOPATH/src/github.com/kubedb/mongodb"
 
-pushd $REPO_ROOT
+pushd "$REPO_ROOT"
 
 # https://stackoverflow.com/a/677212/244009
 if  [[ ! -z "$(command -v onessl)" ]]; then
@@ -36,7 +38,8 @@ else
 fi
 
 export KUBEDB_NAMESPACE=kube-system
-export KUBE_CA=$($ONESSL get kube-ca | $ONESSL base64)
+KUBE_CA=$($ONESSL get kube-ca | $ONESSL base64)
+export KUBE_CA
 while test $# -gt 0; do
     case "$1" in
         -n)
@@ -60,14 +63,14 @@ while test $# -gt 0; do
             shift
             ;;
          *)
-            echo $1
+            echo "$1"
             exit 1
             ;;
     esac
 done
 
-cat $REPO_ROOT/hack/dev/validating-webhook.yaml | $ONESSL envsubst | kubectl apply -f -
-cat $REPO_ROOT/hack/dev/mutating-webhook.yaml | $ONESSL envsubst | kubectl apply -f -
-cat $REPO_ROOT/hack/dev/apiregistration.yaml | $ONESSL envsubst | kubectl apply -f -
+cat "$REPO_ROOT"/hack/dev/validating-webhook.yaml | $ONESSL envsubst | kubectl apply -f -
+cat "$REPO_ROOT"/hack/dev/mutating-webhook.yaml | $ONESSL envsubst | kubectl apply -f -
+cat "$REPO_ROOT"/hack/dev/apiregistration.yaml | $ONESSL envsubst | kubectl apply -f -
 rm -f ./onessl
 popd

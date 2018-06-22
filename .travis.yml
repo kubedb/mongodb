@@ -8,6 +8,9 @@ install: true
 script:
   - go build ./...
   - ./hack/coverage.sh
+  - shopt -s globstar
+  - ls **/*.sh
+  - shellcheck **/*.sh
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

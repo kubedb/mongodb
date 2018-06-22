@@ -1,10 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# shellcheck disable=SC1091
 
 set -x -e
 
 # start docker and log-in to docker-hub
 entrypoint.sh
-docker login --username=$DOCKER_USER --password=$DOCKER_PASS
+docker login --username="$DOCKER_USER" --password="$DOCKER_PASS"
 docker run hello-world
 
 # install python pip
@@ -12,7 +13,7 @@ apt-get update > /dev/null
 apt-get install -y python python-pip > /dev/null
 
 # install kubectl
-curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl &> /dev/null
+curl -LO https://storage.googleapis.com/kubernetes-release/release/"$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)"/bin/linux/amd64/kubectl &> /dev/null
 chmod +x ./kubectl
 mv ./kubectl /bin/kubectl
 
@@ -30,37 +31,26 @@ go get -u github.com/pharmer/pharmer
 #popd
 
 function cleanup {
-    # Workload Descriptions if the test fails
-    if [ $? -ne 0 ]; then
-        echo ""
-        kubectl describe deploy -n kube-system -l app=kubedb || true
-        echo ""
-        echo ""
-        kubectl describe replicasets -n kube-system -l app=kubedb || true
-        echo ""
-        echo ""
-        kubectl describe pods -n kube-system -l app=kubedb || true
-    fi
-
+    set +e
     # delete cluster on exit
-    pharmer get cluster || true
-    pharmer delete cluster $NAME || true
-    pharmer get cluster || true
-    sleep 120 || true
-    pharmer apply $NAME || true
-    pharmer get cluster || true
+    pharmer get cluster
+    pharmer delete cluster "$NAME"
+    pharmer get cluster
+    sleep 120
+    pharmer apply "$NAME"
+    pharmer get cluster
 
     # delete docker image on exit
-    curl -LO https://raw.githubusercontent.com/appscodelabs/libbuild/master/docker.py || true
-    chmod +x docker.py || true
-    ./docker.py del_tag kubedbci mg-operator $CUSTOM_OPERATOR_TAG || true
+    curl -LO https://raw.githubusercontent.com/appscodelabs/libbuild/master/docker.py
+    chmod +x docker.py
+    ./docker.py del_tag kubedbci mg-operator "$CUSTOM_OPERATOR_TAG"
 }
 trap cleanup EXIT
 
 # copy mongodb to $GOPATH
-mkdir -p $GOPATH/src/github.com/kubedb
-cp -r mongodb $GOPATH/src/github.com/kubedb
-pushd $GOPATH/src/github.com/kubedb/mongodb
+mkdir -p "$GOPATH"/src/github.com/kubedb
+cp -r mongodb "$GOPATH"/src/github.com/kubedb
+pushd "$GOPATH"/src/github.com/kubedb/mongodb
 
 # name of the cluster
 # nameing is based on repo+commit_hash
@@ -84,9 +74,9 @@ EOF
 # note: make sure the zone supports volumes, not all regions support that
 # "We're sorry! Volumes are not available for Droplets on legacy hardware in the NYC3 region"
 pharmer create credential --from-file=cred.json --provider=DigitalOcean cred
-pharmer create cluster $NAME --provider=digitalocean --zone=nyc1 --nodes=2gb=1 --credential-uid=cred --kubernetes-version=v1.10.0
-pharmer apply $NAME
-pharmer use cluster $NAME
+pharmer create cluster "$NAME" --provider=digitalocean --zone=nyc1 --nodes=2gb=1 --credential-uid=cred --kubernetes-version=v1.10.0
+pharmer apply "$NAME"
+pharmer use cluster "$NAME"
 #wait for cluster to be ready
 sleep 300
 kubectl get nodes
@@ -107,9 +97,10 @@ kubectl create -f sc.yaml
 sleep 120
 kubectl get storageclass
 
-export CRED_DIR=$(pwd)/creds/gcs/gcs.json
+CRED_DIR="$(pwd)"/creds/gcs/gcs.json
+export CRED_DIR
 
-pushd $GOPATH/src/github.com/kubedb/mongodb
+pushd "$GOPATH"/src/github.com/kubedb/mongodb
 
 # create config/.env file that have all necessary creds
 cat > hack/config/.env <<EOF

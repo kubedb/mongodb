@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# shellcheck disable=SC2001
+
 set -eou pipefail
 
 # ref: https://stackoverflow.com/a/7069755/244009
@@ -44,31 +46,38 @@ while test $# -gt 0; do
             exit 0
             ;;
         --data-dir*)
-            export DB_DATA_DIR=`echo $1 | sed -e 's/^[^=]*=//g'`
+            DB_DATA_DIR="$(echo "$1" | sed -e 's/^[^=]*=//g')"
+            export DB_DATA_DIR
             shift
             ;;
         --host*)
-            export DB_HOST=`echo $1 | sed -e 's/^[^=]*=//g'`
+            DB_HOST="$(echo "$1" | sed -e 's/^[^=]*=//g')"
+            export DB_HOST
             shift
             ;;
         --user*)
-            export DB_USER=`echo $1 | sed -e 's/^[^=]*=//g'`
+            DB_USER="$(echo "$1" | sed -e 's/^[^=]*=//g')"
+            export DB_USER
             shift
             ;;
         --bucket*)
-            export DB_BUCKET=`echo $1 | sed -e 's/^[^=]*=//g'`
+            DB_BUCKET="$(echo "$1" | sed -e 's/^[^=]*=//g')"
+            export DB_BUCKET
             shift
             ;;
         --folder*)
-            export DB_FOLDER=`echo $1 | sed -e 's/^[^=]*=//g'`
+            DB_FOLDER="$(echo "$1" | sed -e 's/^[^=]*=//g')"
+            export DB_FOLDER
             shift
             ;;
         --snapshot*)
-            export DB_SNAPSHOT=`echo $1 | sed -e 's/^[^=]*=//g'`
+            DB_SNAPSHOT="$(echo "$1" | sed -e 's/^[^=]*=//g')"
+            export DB_SNAPSHOT
             shift
             ;;
         --analytics* | --enable-analytics*)
-            export ENABLE_ANALYTICS=`echo $1 | sed -e 's/^[^=]*=//g'`
+            ENABLE_ANALYTICS="$(echo "$1" | sed -e 's/^[^=]*=//g')"
+            export ENABLE_ANALYTICS
             shift
             ;;
         *)
@@ -79,27 +88,27 @@ while test $# -gt 0; do
 done
 
 if [ -n "$DEBUG" ]; then
-    env | sort | grep DB_*
+    env | sort | grep "DB_*"
     echo ""
 fi
 
 # Wait for mongodb to start
 # ref: http://unix.stackexchange.com/a/5279
-while ! nc -q 1 $DB_HOST $DB_PORT </dev/null; do echo "Waiting... database is not ready yet"; sleep 5; done
+while ! nc -q 1 "$DB_HOST" "$DB_PORT" </dev/null; do echo "Waiting... database is not ready yet"; sleep 5; done
 
 # cleanup data dump dir
 mkdir -p "$DB_DATA_DIR"
 cd "$DB_DATA_DIR"
-rm -rf *
+rm -rf -- *
 
 case "$op" in
     backup)
-        mongodump --host "$DB_HOST" --port $DB_PORT --username "$DB_USER" --password "$DB_PASSWORD" --out "$DB_DATA_DIR"
+        mongodump --host "$DB_HOST" --port "$DB_PORT" --username "$DB_USER" --password "$DB_PASSWORD" --out "$DB_DATA_DIR"
         osm push --enable-analytics="$ENABLE_ANALYTICS" --osmconfig="$OSM_CONFIG_FILE" -c "$DB_BUCKET" "$DB_DATA_DIR" "$DB_FOLDER/$DB_SNAPSHOT"
         ;;
     restore)
         osm pull --enable-analytics="$ENABLE_ANALYTICS" --osmconfig="$OSM_CONFIG_FILE" -c "$DB_BUCKET" "$DB_FOLDER/$DB_SNAPSHOT" "$DB_DATA_DIR"
-        mongorestore --host "$DB_HOST" --port $DB_PORT --username "$DB_USER" --password "$DB_PASSWORD"  "$DB_DATA_DIR"
+        mongorestore --host "$DB_HOST" --port "$DB_PORT" --username "$DB_USER" --password "$DB_PASSWORD"  "$DB_DATA_DIR"
         ;;
     *)  (10)
         echo $"Unknown op!"

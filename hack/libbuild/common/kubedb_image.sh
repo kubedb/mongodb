@@ -1,7 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 DOCKER_REGISTRY=${DOCKER_REGISTRY:-kubedb}
-source $(dirname "${BASH_SOURCE}")/lib.sh
+# shellcheck disable=SC1091,SC1090
+source "$(dirname "${BASH_SOURCE[0]}")"/lib.sh
 
 # override this one if you need to change push & pull
 docker_push() {
@@ -48,10 +49,10 @@ source_repo() {
 			docker_check
 			;;
 		run)
-			docker_run
+			docker_run "$@"
 			;;
 		sh)
-			docker_sh
+			docker_sh "$@"
 			;;
 		rm)
 			docker_rm

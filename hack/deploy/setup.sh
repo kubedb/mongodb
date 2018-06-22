@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# shellcheck disable=SC1090
+
 set -eou pipefail
 
 GOPATH=$(go env GOPATH)
@@ -6,7 +8,7 @@ GOPATH=$(go env GOPATH)
 REPO_ROOT="$GOPATH/src/github.com/kubedb/mongodb"
 CLI_ROOT="$GOPATH/src/github.com/kubedb/cli"
 
-pushd $REPO_ROOT
+pushd "$REPO_ROOT"
 
 source "$REPO_ROOT/hack/deploy/settings"
 source "$REPO_ROOT/hack/libbuild/common/lib.sh"
@@ -22,24 +24,24 @@ if [ "$APPSCODE_ENV" = "dev" ]; then
 
     if [[ ! -d $CLI_ROOT ]]; then
         echo ">>> Cloning cli repo"
-        git clone -b $CLI_BRANCH https://github.com/kubedb/cli.git "${CLI_ROOT}"
-        pushd $CLI_ROOT
+        git clone -b "$CLI_BRANCH" https://github.com/kubedb/cli.git "${CLI_ROOT}"
+        pushd "$CLI_ROOT"
     else
-        pushd $CLI_ROOT
+        pushd "$CLI_ROOT"
         detect_tag ''
-        if [[ $git_branch != $CLI_BRANCH ]]; then
+        if [[ $(git_branch) != "$CLI_BRANCH" ]]; then
             git fetch --all
-            git checkout $CLI_BRANCH
+            git checkout "$CLI_BRANCH"
         fi
-        git pull --ff-only origin $CLI_BRANCH #Pull update from remote only if there will be no conflict.
+        git pull --ff-only origin "$CLI_BRANCH" #Pull update from remote only if there will be no conflict.
     fi
 fi
 
 echo ""
-echo "${KUBEDB_SCRIPT}hack/deploy/kubedb.sh | bash -s -- --operator-name=mg-operator "$@""
-${KUBEDB_SCRIPT}hack/deploy/kubedb.sh | bash -s -- --operator-name=mg-operator "$@"
+echo "${KUBEDB_SCRIPT}hack/deploy/kubedb.sh | bash -s -- --operator-name=mg-operator" "$@"
+"${KUBEDB_SCRIPT}"hack/deploy/kubedb.sh | bash -s -- --operator-name=mg-operator "$@"
 
-if [ `pwd` = "$CLI_ROOT" ]; then
+if [ "$(pwd)" = "$CLI_ROOT" ]; then
     popd
 fi
 popd
