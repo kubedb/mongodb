@@ -26,7 +26,7 @@ func (f *Invocation) MongoDB() *api.MongoDB {
 			},
 		},
 		Spec: api.MongoDBSpec{
-			Version: jsonTypes.StrYo("3.6"),
+			Version: jsonTypes.StrYo(DBVersion),
 			Storage: core.PersistentVolumeClaimSpec{
 				Resources: core.ResourceRequirements{
 					Requests: core.ResourceList{
