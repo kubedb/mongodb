@@ -9,4 +9,3 @@ docker pull $IMG:$TAG-jessie
 
 docker tag $IMG:$TAG-jessie "$DOCKER_REGISTRY/$IMG:$TAG"
 docker push "$DOCKER_REGISTRY/$IMG:$TAG"
-
