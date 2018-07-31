@@ -814,7 +814,7 @@ var _ = Describe("MongoDB", func() {
 						secret = f.SecretForLocalBackend()
 						mongodb.Spec.BackupSchedule = &api.BackupScheduleSpec{
 							CronExpression: "@every 20s",
-							SnapshotStorageSpec: api.SnapshotStorageSpec{
+							Backend: api.Backend{
 								StorageSecretName: secret.Name,
 								Local: &api.LocalSpec{
 									MountPath: "/repo",
@@ -834,7 +834,7 @@ var _ = Describe("MongoDB", func() {
 						secret = f.SecretForGCSBackend()
 						mongodb.Spec.BackupSchedule = &api.BackupScheduleSpec{
 							CronExpression: "@every 20s",
-							SnapshotStorageSpec: api.SnapshotStorageSpec{
+							Backend: api.Backend{
 								StorageSecretName: secret.Name,
 								GCS: &api.GCSSpec{
 									Bucket: os.Getenv(GCS_BUCKET_NAME),
@@ -862,7 +862,7 @@ var _ = Describe("MongoDB", func() {
 					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
 						in.Spec.BackupSchedule = &api.BackupScheduleSpec{
 							CronExpression: "@every 20s",
-							SnapshotStorageSpec: api.SnapshotStorageSpec{
+							Backend: api.Backend{
 								StorageSecretName: secret.Name,
 								Local: &api.LocalSpec{
 									MountPath: "/repo",
@@ -909,7 +909,7 @@ var _ = Describe("MongoDB", func() {
 					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
 						in.Spec.BackupSchedule = &api.BackupScheduleSpec{
 							CronExpression: "@every 20s",
-							SnapshotStorageSpec: api.SnapshotStorageSpec{
+							Backend: api.Backend{
 								StorageSecretName: secret.Name,
 								Local: &api.LocalSpec{
 									MountPath: "/repo",
