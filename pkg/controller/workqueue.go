@@ -50,7 +50,6 @@ func (c *Controller) runMongoDB(key string) error {
 		mongodb := obj.(*api.MongoDB).DeepCopy()
 		if mongodb.DeletionTimestamp != nil {
 			if core_util.HasFinalizer(mongodb.ObjectMeta, api.GenericKey) {
-				util.AssignTypeKind(mongodb)
 				if err := c.pause(mongodb); err != nil {
 					log.Errorln(err)
 					return err
@@ -69,7 +68,6 @@ func (c *Controller) runMongoDB(key string) error {
 			if err != nil {
 				return err
 			}
-			util.AssignTypeKind(mongodb)
 			if err := c.create(mongodb); err != nil {
 				log.Errorln(err)
 				c.pushFailureEvent(mongodb, err.Error())

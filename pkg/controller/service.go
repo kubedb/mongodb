@@ -79,9 +79,9 @@ func (c *Controller) createService(mongodb *api.MongoDB) (kutil.VerbType, error)
 
 	_, ok, err := core_util.CreateOrPatchService(c.Client, meta, func(in *core.Service) *core.Service {
 		in.ObjectMeta = core_util.EnsureOwnerReference(in.ObjectMeta, ref)
-		in.Labels = mongodb.OffshootLabels()
+		in.Labels = mongodb.OffshootSelectors()
 		in.Spec.Ports = upsertServicePort(in, mongodb)
-		in.Spec.Selector = mongodb.OffshootLabels()
+		in.Spec.Selector = mongodb.OffshootSelectors()
 		return in
 	})
 	return ok, err
