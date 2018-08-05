@@ -79,9 +79,23 @@ func (c *Controller) createService(mongodb *api.MongoDB) (kutil.VerbType, error)
 
 	_, ok, err := core_util.CreateOrPatchService(c.Client, meta, func(in *core.Service) *core.Service {
 		in.ObjectMeta = core_util.EnsureOwnerReference(in.ObjectMeta, ref)
-		in.Labels = mongodb.OffshootSelectors()
-		in.Spec.Ports = upsertServicePort(in, mongodb)
+		in.Labels = mongodb.OffshootLabels()
+		in.Annotations = mongodb.Spec.ServiceTemplate.Annotations
+
 		in.Spec.Selector = mongodb.OffshootSelectors()
+		in.Spec.Ports = upsertServicePort(in, mongodb)
+
+		if mongodb.Spec.ServiceTemplate.Spec.ClusterIP != "" {
+			in.Spec.ClusterIP = mongodb.Spec.ServiceTemplate.Spec.ClusterIP
+		}
+		if mongodb.Spec.ServiceTemplate.Spec.Type != "" {
+			in.Spec.Type = mongodb.Spec.ServiceTemplate.Spec.Type
+		}
+		in.Spec.ExternalIPs = mongodb.Spec.ServiceTemplate.Spec.ExternalIPs
+		in.Spec.LoadBalancerIP = mongodb.Spec.ServiceTemplate.Spec.LoadBalancerIP
+		in.Spec.LoadBalancerSourceRanges = mongodb.Spec.ServiceTemplate.Spec.LoadBalancerSourceRanges
+		in.Spec.ExternalTrafficPolicy = mongodb.Spec.ServiceTemplate.Spec.ExternalTrafficPolicy
+		in.Spec.HealthCheckNodePort = mongodb.Spec.ServiceTemplate.Spec.HealthCheckNodePort
 		return in
 	})
 	return ok, err
