@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 
+	"github.com/appscode/go/log"
 	"github.com/appscode/kutil"
 	core_util "github.com/appscode/kutil/core/v1"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
@@ -18,7 +19,7 @@ import (
 
 func (c *Controller) ensureService(mongodb *api.MongoDB) (kutil.VerbType, error) {
 	// Check if service name exists
-	if err := c.checkService(mongodb); err != nil {
+	if err := c.checkService(mongodb, mongodb.ServiceName()); err != nil {
 		return kutil.VerbUnchanged, err
 	}
 
@@ -49,9 +50,8 @@ func (c *Controller) ensureService(mongodb *api.MongoDB) (kutil.VerbType, error)
 	return vt, nil
 }
 
-func (c *Controller) checkService(mongodb *api.MongoDB) error {
-	name := mongodb.OffshootName()
-	service, err := c.Client.CoreV1().Services(mongodb.Namespace).Get(name, metav1.GetOptions{})
+func (c *Controller) checkService(mongodb *api.MongoDB, serviceName string) error {
+	service, err := c.Client.CoreV1().Services(mongodb.Namespace).Get(serviceName, metav1.GetOptions{})
 	if err != nil {
 		if kerr.IsNotFound(err) {
 			return nil
@@ -59,8 +59,9 @@ func (c *Controller) checkService(mongodb *api.MongoDB) error {
 		return err
 	}
 
-	if service.Spec.Selector[api.LabelDatabaseName] != name {
-		return fmt.Errorf(`intended service "%v" already exists`, name)
+	if service.Labels[api.LabelDatabaseKind] != api.ResourceKindMongoDB ||
+		service.Labels[api.LabelDatabaseName] != mongodb.Name {
+		return fmt.Errorf(`intended service "%v" already exists`, serviceName)
 	}
 
 	return nil
@@ -83,7 +84,14 @@ func (c *Controller) createService(mongodb *api.MongoDB) (kutil.VerbType, error)
 		in.Annotations = mongodb.Spec.ServiceTemplate.Annotations
 
 		in.Spec.Selector = mongodb.OffshootSelectors()
-		in.Spec.Ports = upsertServicePort(in, mongodb)
+		in.Spec.Ports = core_util.MergeServicePorts(in.Spec.Ports, []core.ServicePort{
+			{
+				Name:       "db",
+				Protocol:   core.ProtocolTCP,
+				Port:       27017,
+				TargetPort: intstr.FromString("db"),
+			},
+		})
 
 		if mongodb.Spec.ServiceTemplate.Spec.ClusterIP != "" {
 			in.Spec.ClusterIP = mongodb.Spec.ServiceTemplate.Spec.ClusterIP
@@ -103,22 +111,69 @@ func (c *Controller) createService(mongodb *api.MongoDB) (kutil.VerbType, error)
 	return ok, err
 }
 
-func upsertServicePort(service *core.Service, mongodb *api.MongoDB) []core.ServicePort {
-	desiredPorts := []core.ServicePort{
-		{
-			Name:       "db",
-			Protocol:   core.ProtocolTCP,
-			Port:       27017,
-			TargetPort: intstr.FromString("db"),
-		},
+func (c *Controller) ensureStatsService(mongodb *api.MongoDB) (kutil.VerbType, error) {
+	// return if monitoring is not prometheus
+	if mongodb.GetMonitoringVendor() != mona.VendorPrometheus {
+		log.Warningln("mongodb.spec.monitor.agent is not coreos-operator or builtin.")
+		return kutil.VerbUnchanged, nil
 	}
-	if mongodb.GetMonitoringVendor() == mona.VendorPrometheus {
-		desiredPorts = append(desiredPorts, core.ServicePort{
-			Name:       api.PrometheusExporterPortName,
-			Protocol:   core.ProtocolTCP,
-			Port:       mongodb.Spec.Monitor.Prometheus.Port,
-			TargetPort: intstr.FromString(api.PrometheusExporterPortName),
+
+	// Check if statsService name exists
+	if err := c.checkService(mongodb, mongodb.StatsService().ServiceName()); err != nil {
+		return kutil.VerbUnchanged, err
+	}
+
+	// create statsService
+	vt, err := c.createStatsService(mongodb)
+	if err != nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
+			c.recorder.Eventf(
+				ref,
+				core.EventTypeWarning,
+				eventer.EventReasonFailedToCreate,
+				"Failed to create StatsService. Reason: %v",
+				err,
+			)
+		}
+		return kutil.VerbUnchanged, err
+	} else if vt != kutil.VerbUnchanged {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
+			c.recorder.Eventf(
+				ref,
+				core.EventTypeNormal,
+				eventer.EventReasonSuccessful,
+				"Successfully %s StatsService",
+				vt,
+			)
+		}
+	}
+	return vt, nil
+}
+
+func (c *Controller) createStatsService(mongodb *api.MongoDB) (kutil.VerbType, error) {
+	meta := metav1.ObjectMeta{
+		Name:      mongodb.StatsService().ServiceName(),
+		Namespace: mongodb.Namespace,
+	}
+
+	ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb)
+	if rerr != nil {
+		return kutil.VerbUnchanged, rerr
+	}
+
+	_, ok, err := core_util.CreateOrPatchService(c.Client, meta, func(in *core.Service) *core.Service {
+		in.ObjectMeta = core_util.EnsureOwnerReference(in.ObjectMeta, ref)
+		in.Labels = mongodb.OffshootLabels()
+		in.Spec.Selector = mongodb.OffshootSelectors()
+		in.Spec.Ports = core_util.MergeServicePorts(in.Spec.Ports, []core.ServicePort{
+			{
+				Name:       api.PrometheusExporterPortName,
+				Protocol:   core.ProtocolTCP,
+				Port:       mongodb.Spec.Monitor.Prometheus.Port,
+				TargetPort: intstr.FromString(api.PrometheusExporterPortName),
+			},
 		})
-	}
-	return core_util.MergeServicePorts(service.Spec.Ports, desiredPorts)
+		return in
+	})
+	return ok, err
 }

@@ -67,7 +67,8 @@ func (c *Controller) checkStatefulSet(mongodb *api.MongoDB) error {
 		return err
 	}
 
-	if statefulSet.Labels[api.LabelDatabaseKind] != api.ResourceKindMongoDB {
+	if statefulSet.Labels[api.LabelDatabaseKind] != api.ResourceKindMongoDB ||
+		statefulSet.Labels[api.LabelDatabaseName] != mongodb.Name {
 		return fmt.Errorf(`intended statefulSet "%v" already exists`, mongodb.OffshootName())
 	}
 

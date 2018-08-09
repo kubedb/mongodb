@@ -1,8 +1,8 @@
 #!/bin/bash
-set -xeou pipefail
+set -eou pipefail
 
 GOPATH=$(go env GOPATH)
-REPO_ROOT=$GOPATH/src/github.com/kubedb/mongodb
+REPO_ROOT=${GOPATH}/src/github.com/kubedb/mongodb
 
 export DB_UPDATE=1
 export TOOLS_UPDATE=1
@@ -49,20 +49,33 @@ while test $# -gt 0; do
   esac
 done
 
+dbversions=(
+  3.4
+  3.6
+)
+
+echo ""
+env | sort | grep -e DOCKER_REGISTRY -e APPSCODE_ENV || true
+echo ""
+
 if [ "$DB_UPDATE" -eq 1 ]; then
-  $REPO_ROOT/hack/docker/mongo/3.4/make.sh
-  $REPO_ROOT/hack/docker/mongo/3.6/make.sh
+  cowsay -f tux "Processing database images" || true
+  for db in "${dbversions[@]}"; do
+    ${REPO_ROOT}/hack/docker/mongo/${db}/make.sh build
+    ${REPO_ROOT}/hack/docker/mongo/${db}/make.sh push
+  done
 fi
 
 if [ "$TOOLS_UPDATE" -eq 1 ]; then
-  $REPO_ROOT/hack/docker/mongo-tools/3.4/make.sh build
-  $REPO_ROOT/hack/docker/mongo-tools/3.4/make.sh push
-
-  $REPO_ROOT/hack/docker/mongo-tools/3.6/make.sh build
-  $REPO_ROOT/hack/docker/mongo-tools/3.6/make.sh push
+  cowsay -f tux "Processing database-tools images" || true
+  for db in "${dbversions[@]}"; do
+    ${REPO_ROOT}/hack/docker/mongo-tools/${db}/make.sh build
+    ${REPO_ROOT}/hack/docker/mongo-tools/${db}/make.sh push
+  done
 fi
 
 if [ "$OPERATOR_UPDATE" -eq 1 ]; then
-  $REPO_ROOT/hack/docker/mg-operator/make.sh build
-  $REPO_ROOT/hack/docker/mg-operator/make.sh push
+  cowsay -f tux "Processing Operator images" || true
+  ${REPO_ROOT}/hack/docker/mg-operator/make.sh build
+  ${REPO_ROOT}/hack/docker/mg-operator/make.sh push
 fi

@@ -162,6 +162,21 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 	// Ensure Schedule backup
 	c.ensureBackupScheduler(mongodb)
 
+	// ensure StatsService for desired monitoring
+	if _, err := c.ensureStatsService(mongodb); err != nil {
+		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
+			c.recorder.Eventf(
+				ref,
+				core.EventTypeWarning,
+				eventer.EventReasonFailedToCreate,
+				"Failed to manage monitoring system. Reason: %v",
+				err,
+			)
+		}
+		log.Errorln(err)
+		return nil
+	}
+
 	if err := c.manageMonitor(mongodb); err != nil {
 		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
 			c.recorder.Eventf(
