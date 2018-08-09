@@ -85,6 +85,11 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 		return nil, kutil.VerbUnchanged, rerr
 	}
 
+	mongodbVersion, err := c.ExtClient.MongoDBVersions().Get(string(mongodb.Spec.Version), metav1.GetOptions{})
+	if err != nil {
+		return nil, kutil.VerbUnchanged, err
+	}
+
 	return app_util.CreateOrPatchStatefulSet(c.Client, statefulSetMeta, func(in *apps.StatefulSet) *apps.StatefulSet {
 		in.Labels = mongodb.OffshootLabels()
 		in.Annotations = mongodb.Spec.PodTemplate.Controller.Annotations
@@ -102,7 +107,7 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 			in.Spec.Template.Spec.Containers,
 			core.Container{
 				Name:  api.ResourceSingularMongoDB,
-				Image: c.docker.GetImageWithTag(mongodb),
+				Image: mongodbVersion.Spec.DB.Image,
 				Ports: []core.ContainerPort{
 					{
 						Name:          "db",
@@ -124,7 +129,7 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 					fmt.Sprintf("--address=:%d", mongodb.Spec.Monitor.Prometheus.Port),
 					fmt.Sprintf("--enable-analytics=%v", c.EnableAnalytics),
 				}, c.LoggerOptions.ToFlags()...),
-				Image: c.docker.GetOperatorImageWithTag(mongodb),
+				Image: mongodbVersion.Spec.Exporter.Image,
 				Ports: []core.ContainerPort{
 					{
 						Name:          api.PrometheusExporterPortName,

@@ -38,7 +38,13 @@ func TestMongoDBValidator_Admit(t *testing.T) {
 			validator := MongoDBValidator{}
 
 			validator.initialized = true
-			validator.extClient = extFake.NewSimpleClientset()
+			validator.extClient = extFake.NewSimpleClientset(
+				&api.MongoDBVersion{
+					ObjectMeta: metaV1.ObjectMeta{
+						Name: "3.4",
+					},
+				},
+			)
 			validator.client = fake.NewSimpleClientset(
 				&core.Secret{
 					ObjectMeta: metaV1.ObjectMeta{

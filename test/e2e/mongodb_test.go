@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
+	store "kmodules.xyz/objectstore-api/api/v1"
 )
 
 const (
@@ -26,24 +27,30 @@ const (
 
 var _ = Describe("MongoDB", func() {
 	var (
-		err         error
-		f           *framework.Invocation
-		mongodb     *api.MongoDB
-		snapshot    *api.Snapshot
-		secret      *core.Secret
-		skipMessage string
-		dbName      string
+		err            error
+		f              *framework.Invocation
+		mongodb        *api.MongoDB
+		mongodbVersion *api.MongoDBVersion
+		snapshot       *api.Snapshot
+		secret         *core.Secret
+		skipMessage    string
+		dbName         string
 	)
 
 	BeforeEach(func() {
 		f = root.Invoke()
 		mongodb = f.MongoDB()
+		mongodbVersion = f.MongoDBVersion()
 		snapshot = f.Snapshot()
 		skipMessage = ""
 		dbName = "kubedb"
 	})
 
 	var createAndWaitForRunning = func() {
+		By("Create MongoDBVersion: " + mongodbVersion.Name)
+		err = f.CreateMongoDBVersion(mongodbVersion)
+		Expect(err).NotTo(HaveOccurred())
+
 		By("Create MongoDB: " + mongodb.Name)
 		err = f.CreateMongoDB(mongodb)
 		Expect(err).NotTo(HaveOccurred())
@@ -73,6 +80,8 @@ var _ = Describe("MongoDB", func() {
 
 		By("Wait for mongodb resources to be wipedOut")
 		f.EventuallyWipedOut(mongodb.ObjectMeta).Should(Succeed())
+
+		// Todo: DeleteMongoDB Version on aftereach (pending on Previous PR)
 	}
 
 	Describe("Test", func() {
@@ -200,7 +209,7 @@ var _ = Describe("MongoDB", func() {
 					skipDataCheck = true
 					secret = f.SecretForLocalBackend()
 					snapshot.Spec.StorageSecretName = secret.Name
-					snapshot.Spec.Local = &api.LocalSpec{
+					snapshot.Spec.Local = &store.LocalSpec{
 						MountPath: "/repo",
 						VolumeSource: core.VolumeSource{
 							EmptyDir: &core.EmptyDirVolumeSource{},
@@ -215,7 +224,7 @@ var _ = Describe("MongoDB", func() {
 				BeforeEach(func() {
 					secret = f.SecretForS3Backend()
 					snapshot.Spec.StorageSecretName = secret.Name
-					snapshot.Spec.S3 = &api.S3Spec{
+					snapshot.Spec.S3 = &store.S3Spec{
 						Bucket: os.Getenv(S3_BUCKET_NAME),
 					}
 				})
@@ -227,7 +236,7 @@ var _ = Describe("MongoDB", func() {
 				BeforeEach(func() {
 					secret = f.SecretForGCSBackend()
 					snapshot.Spec.StorageSecretName = secret.Name
-					snapshot.Spec.GCS = &api.GCSSpec{
+					snapshot.Spec.GCS = &store.GCSSpec{
 						Bucket: os.Getenv(GCS_BUCKET_NAME),
 					}
 				})
@@ -293,7 +302,7 @@ var _ = Describe("MongoDB", func() {
 						snapshot := f.Snapshot()
 						snapshot.Spec.DatabaseName = mongodb.Name
 						snapshot.Spec.StorageSecretName = secret.Name
-						snapshot.Spec.GCS = &api.GCSSpec{
+						snapshot.Spec.GCS = &store.GCSSpec{
 							Bucket: os.Getenv(GCS_BUCKET_NAME),
 						}
 
@@ -347,7 +356,7 @@ var _ = Describe("MongoDB", func() {
 				BeforeEach(func() {
 					secret = f.SecretForAzureBackend()
 					snapshot.Spec.StorageSecretName = secret.Name
-					snapshot.Spec.Azure = &api.AzureSpec{
+					snapshot.Spec.Azure = &store.AzureSpec{
 						Container: os.Getenv(AZURE_CONTAINER_NAME),
 					}
 				})
@@ -359,7 +368,7 @@ var _ = Describe("MongoDB", func() {
 				BeforeEach(func() {
 					secret = f.SecretForSwiftBackend()
 					snapshot.Spec.StorageSecretName = secret.Name
-					snapshot.Spec.Swift = &api.SwiftSpec{
+					snapshot.Spec.Swift = &store.SwiftSpec{
 						Container: os.Getenv(SWIFT_CONTAINER_NAME),
 					}
 				})
@@ -404,7 +413,7 @@ var _ = Describe("MongoDB", func() {
 				BeforeEach(func() {
 					secret = f.SecretForGCSBackend()
 					snapshot.Spec.StorageSecretName = secret.Name
-					snapshot.Spec.GCS = &api.GCSSpec{
+					snapshot.Spec.GCS = &store.GCSSpec{
 						Bucket: os.Getenv(GCS_BUCKET_NAME),
 					}
 					snapshot.Spec.DatabaseName = mongodb.Name
@@ -630,7 +639,7 @@ var _ = Describe("MongoDB", func() {
 					usedInitSnapshot = true
 					secret = f.SecretForGCSBackend()
 					snapshot.Spec.StorageSecretName = secret.Name
-					snapshot.Spec.GCS = &api.GCSSpec{
+					snapshot.Spec.GCS = &store.GCSSpec{
 						Bucket: os.Getenv(GCS_BUCKET_NAME),
 					}
 					snapshot.Spec.DatabaseName = mongodb.Name
@@ -814,9 +823,9 @@ var _ = Describe("MongoDB", func() {
 						secret = f.SecretForLocalBackend()
 						mongodb.Spec.BackupSchedule = &api.BackupScheduleSpec{
 							CronExpression: "@every 20s",
-							Backend: api.Backend{
+							Backend: store.Backend{
 								StorageSecretName: secret.Name,
-								Local: &api.LocalSpec{
+								Local: &store.LocalSpec{
 									MountPath: "/repo",
 									VolumeSource: core.VolumeSource{
 										EmptyDir: &core.EmptyDirVolumeSource{},
@@ -834,9 +843,9 @@ var _ = Describe("MongoDB", func() {
 						secret = f.SecretForGCSBackend()
 						mongodb.Spec.BackupSchedule = &api.BackupScheduleSpec{
 							CronExpression: "@every 20s",
-							Backend: api.Backend{
+							Backend: store.Backend{
 								StorageSecretName: secret.Name,
-								GCS: &api.GCSSpec{
+								GCS: &store.GCSSpec{
 									Bucket: os.Getenv(GCS_BUCKET_NAME),
 								},
 							},
@@ -862,9 +871,9 @@ var _ = Describe("MongoDB", func() {
 					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
 						in.Spec.BackupSchedule = &api.BackupScheduleSpec{
 							CronExpression: "@every 20s",
-							Backend: api.Backend{
+							Backend: store.Backend{
 								StorageSecretName: secret.Name,
-								Local: &api.LocalSpec{
+								Local: &store.LocalSpec{
 									MountPath: "/repo",
 									VolumeSource: core.VolumeSource{
 										EmptyDir: &core.EmptyDirVolumeSource{},
@@ -909,9 +918,9 @@ var _ = Describe("MongoDB", func() {
 					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
 						in.Spec.BackupSchedule = &api.BackupScheduleSpec{
 							CronExpression: "@every 20s",
-							Backend: api.Backend{
+							Backend: store.Backend{
 								StorageSecretName: secret.Name,
-								Local: &api.LocalSpec{
+								Local: &store.LocalSpec{
 									MountPath: "/repo",
 									VolumeSource: core.VolumeSource{
 										EmptyDir: &core.EmptyDirVolumeSource{},
@@ -989,7 +998,7 @@ var _ = Describe("MongoDB", func() {
 
 				It("should initialize database specified by env", func() {
 					dbName = "envDB"
-					mongodb.Spec.Env = []core.EnvVar{
+					mongodb.Spec.PodTemplate.Spec.Env = []core.EnvVar{
 						{
 							Name:  MONGO_INITDB_DATABASE,
 							Value: dbName,
@@ -1013,7 +1022,7 @@ var _ = Describe("MongoDB", func() {
 				It("should reject to create MongoDB crd", func() {
 
 					By("Create MongoDB with " + MONGO_INITDB_ROOT_USERNAME + " env var")
-					mongodb.Spec.Env = []core.EnvVar{
+					mongodb.Spec.PodTemplate.Spec.Env = []core.EnvVar{
 						{
 							Name:  MONGO_INITDB_ROOT_USERNAME,
 							Value: "mg-user",
@@ -1023,7 +1032,7 @@ var _ = Describe("MongoDB", func() {
 					Expect(err).To(HaveOccurred())
 
 					By("Create MongoDB with " + MONGO_INITDB_ROOT_PASSWORD + " env var")
-					mongodb.Spec.Env = []core.EnvVar{
+					mongodb.Spec.PodTemplate.Spec.Env = []core.EnvVar{
 						{
 							Name:  MONGO_INITDB_ROOT_PASSWORD,
 							Value: "not@secret",
@@ -1051,7 +1060,7 @@ var _ = Describe("MongoDB", func() {
 
 				It("should initialize database specified by env", func() {
 					dbName = "envDB"
-					mongodb.Spec.Env = []core.EnvVar{
+					mongodb.Spec.PodTemplate.Spec.Env = []core.EnvVar{
 						{
 							Name:  MONGO_INITDB_DATABASE,
 							Value: dbName,
@@ -1065,7 +1074,7 @@ var _ = Describe("MongoDB", func() {
 					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName).Should(BeTrue())
 
 					_, _, err = util.PatchMongoDB(f.ExtClient(), mongodb, func(in *api.MongoDB) *api.MongoDB {
-						in.Spec.Env = []core.EnvVar{
+						in.Spec.PodTemplate.Spec.Env = []core.EnvVar{
 							{
 								Name:  MONGO_INITDB_DATABASE,
 								Value: "patched-db",
