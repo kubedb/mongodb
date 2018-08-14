@@ -152,7 +152,7 @@ func (c *Controller) ensureStatsService(mongodb *api.MongoDB) (kutil.VerbType, e
 			ref,
 			core.EventTypeWarning,
 			eventer.EventReasonFailedToCreate,
-			"Failed to create Stats Service. Reason: %v",
+			"Failed to reconcile stats service. Reason: %v",
 			err,
 		)
 		return kutil.VerbUnchanged, err
@@ -161,7 +161,7 @@ func (c *Controller) ensureStatsService(mongodb *api.MongoDB) (kutil.VerbType, e
 			ref,
 			core.EventTypeNormal,
 			eventer.EventReasonSuccessful,
-			"Successfully %s Stats Service",
+			"Successfully %s stats service",
 			vt,
 		)
 	}
