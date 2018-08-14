@@ -114,7 +114,7 @@ func (c *Controller) createService(mongodb *api.MongoDB) (kutil.VerbType, error)
 func (c *Controller) ensureStatsService(mongodb *api.MongoDB) (kutil.VerbType, error) {
 	// return if monitoring is not prometheus
 	if mongodb.GetMonitoringVendor() != mona.VendorPrometheus {
-		log.Warningln("mongodb.spec.monitor.agent is not coreos-operator or builtin.")
+		log.Warningln("spec.monitor.agent is not coreos-operator or builtin.")
 		return kutil.VerbUnchanged, nil
 	}
 
@@ -123,45 +123,17 @@ func (c *Controller) ensureStatsService(mongodb *api.MongoDB) (kutil.VerbType, e
 		return kutil.VerbUnchanged, err
 	}
 
-	// create statsService
-	vt, err := c.createStatsService(mongodb)
-	if err != nil {
-		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
-			c.recorder.Eventf(
-				ref,
-				core.EventTypeWarning,
-				eventer.EventReasonFailedToCreate,
-				"Failed to create StatsService. Reason: %v",
-				err,
-			)
-		}
-		return kutil.VerbUnchanged, err
-	} else if vt != kutil.VerbUnchanged {
-		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
-			c.recorder.Eventf(
-				ref,
-				core.EventTypeNormal,
-				eventer.EventReasonSuccessful,
-				"Successfully %s StatsService",
-				vt,
-			)
-		}
-	}
-	return vt, nil
-}
-
-func (c *Controller) createStatsService(mongodb *api.MongoDB) (kutil.VerbType, error) {
-	meta := metav1.ObjectMeta{
-		Name:      mongodb.StatsService().ServiceName(),
-		Namespace: mongodb.Namespace,
-	}
-
 	ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb)
 	if rerr != nil {
 		return kutil.VerbUnchanged, rerr
 	}
 
-	_, ok, err := core_util.CreateOrPatchService(c.Client, meta, func(in *core.Service) *core.Service {
+	// create/patch statsService
+	meta := metav1.ObjectMeta{
+		Name:      mongodb.StatsService().ServiceName(),
+		Namespace: mongodb.Namespace,
+	}
+	_, vt, err := core_util.CreateOrPatchService(c.Client, meta, func(in *core.Service) *core.Service {
 		in.ObjectMeta = core_util.EnsureOwnerReference(in.ObjectMeta, ref)
 		in.Labels = mongodb.OffshootLabels()
 		in.Spec.Selector = mongodb.OffshootSelectors()
@@ -175,5 +147,23 @@ func (c *Controller) createStatsService(mongodb *api.MongoDB) (kutil.VerbType, e
 		})
 		return in
 	})
-	return ok, err
+	if err != nil {
+		c.recorder.Eventf(
+			ref,
+			core.EventTypeWarning,
+			eventer.EventReasonFailedToCreate,
+			"Failed to create Stats Service. Reason: %v",
+			err,
+		)
+		return kutil.VerbUnchanged, err
+	} else if vt != kutil.VerbUnchanged {
+		c.recorder.Eventf(
+			ref,
+			core.EventTypeNormal,
+			eventer.EventReasonSuccessful,
+			"Successfully %s Stats Service",
+			vt,
+		)
+	}
+	return vt, nil
 }
