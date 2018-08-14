@@ -118,7 +118,7 @@ func (c *Controller) ensureStatsService(mongodb *api.MongoDB) (kutil.VerbType, e
 		return kutil.VerbUnchanged, nil
 	}
 
-	// Check if statsService name exists
+	// Check if stats Service name exists
 	if err := c.checkService(mongodb, mongodb.StatsService().ServiceName()); err != nil {
 		return kutil.VerbUnchanged, err
 	}
@@ -128,7 +128,7 @@ func (c *Controller) ensureStatsService(mongodb *api.MongoDB) (kutil.VerbType, e
 		return kutil.VerbUnchanged, rerr
 	}
 
-	// create/patch statsService
+	// create/patch stats Service
 	meta := metav1.ObjectMeta{
 		Name:      mongodb.StatsService().ServiceName(),
 		Namespace: mongodb.Namespace,
