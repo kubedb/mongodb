@@ -62,7 +62,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 			}
 			return err
 		}
-		*mongodb = *mg
+		mongodb.Status = mg.Status
 	}
 
 	// create Governing Service
@@ -156,7 +156,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 		}
 		return err
 	}
-	*mongodb = *mg
+	mongodb.Status = mg.Status
 
 	// Ensure Schedule backup
 	c.ensureBackupScheduler(mongodb)
@@ -230,7 +230,7 @@ func (c *Controller) initialize(mongodb *api.MongoDB) error {
 		}
 		return err
 	}
-	*mongodb = *mg
+	mongodb.Status = mg.Status
 
 	snapshotSource := mongodb.Spec.Init.SnapshotSource
 	// Event for notification that kubernetes objects are creating

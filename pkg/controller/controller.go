@@ -167,5 +167,5 @@ func (c *Controller) pushFailureEvent(mongodb *api.MongoDB, reason string) {
 			)
 		}
 	}
-	*mongodb = *mg
+	mongodb.Status = mg.Status
 }

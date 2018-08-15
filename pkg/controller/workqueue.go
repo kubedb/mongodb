@@ -24,7 +24,7 @@ func (c *Controller) initWatcher() {
 func mongodbEqual(old, new *api.MongoDB) bool {
 	if api.EnableStatusSubresource {
 		// At this moment, metadata.Generation is incremented only by `spec`.
-		// ref: https://github.com/kubernetes/kubernetes/pull/55168
+		// issue tracked: https://github.com/kubernetes/kubernetes/issues/67428
 		// So look for changes in metadata.labels as well.
 		if new.Generation <= new.Status.ObservedGeneration && meta_util.Equal(old.Labels, new.Labels) {
 			return true
