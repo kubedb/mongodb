@@ -23,21 +23,24 @@ func (c *Controller) initWatcher() {
 
 func mongodbEqual(old, new *api.MongoDB) bool {
 	if api.EnableStatusSubresource {
-		if new.Generation <= new.Status.ObservedGeneration {
+		// At this moment, metadata.Generation is incremented only by `spec`.
+		// ref: https://github.com/kubernetes/kubernetes/pull/55168
+		// So look for changes in metadata.labels as well.
+		if new.Generation <= new.Status.ObservedGeneration && meta_util.Equal(old.Labels, new.Labels) {
 			return true
 		}
 		if glog.V(log.LevelDebug) {
 			diff := meta_util.Diff(old, new)
-			glog.InfoDepth(1, "meta.Generation [%d] is higher than status.observedGeneration [%d] in MongoDB %s/%s with Diff: %s\n",
+			glog.Infof("meta.Generation [%d] is higher than status.observedGeneration [%d] in MongoDB %s/%s with Diff: %s",
 				new.Generation, new.Status.ObservedGeneration, new.Namespace, new.Name, diff)
 		}
 		return false
 	}
 
-	if !meta_util.Equal(old.Spec, new.Spec) || !meta_util.Equal(old.Annotations, new.Annotations) || !meta_util.Equal(old.Labels, new.Labels) {
+	if !meta_util.Equal(old.Spec, new.Spec) || !meta_util.Equal(old.Labels, new.Labels) {
 		if glog.V(log.LevelDebug) {
 			diff := meta_util.Diff(old, new)
-			glog.InfoDepth(1, "MongoDB %s/%s has changed. Diff: %s", new.Namespace, new.Name, diff)
+			glog.Infof("MongoDB %s/%s has changed. Diff: %s", new.Namespace, new.Name, diff)
 		}
 		return false
 	}
@@ -53,7 +56,7 @@ func (c *Controller) runMongoDB(key string) error {
 	}
 
 	if !exists {
-		log.Debugf("MongoDB %s does not exist anymore\n", key)
+		log.Debugf("MongoDB %s does not exist anymore", key)
 	} else {
 		// Note that you also have to check the uid if you have a local controlled resource, which
 		// is dependent on the actual instance, to detect that a MongoDB was recreated with the same name

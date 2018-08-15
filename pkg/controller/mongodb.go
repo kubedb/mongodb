@@ -46,10 +46,8 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 		return err
 	}
 
-	if mongodb.Status.CreationTime == nil {
+	if mongodb.Status.Phase == "" {
 		mg, err := util.UpdateMongoDBStatus(c.ExtClient, mongodb, func(in *api.MongoDBStatus) *api.MongoDBStatus {
-			t := metav1.Now()
-			in.CreationTime = &t
 			in.Phase = api.DatabasePhaseCreating
 			return in
 		}, api.EnableStatusSubresource)
@@ -64,7 +62,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 			}
 			return err
 		}
-		mongodb.Status = mg.Status
+		*mongodb = *mg
 	}
 
 	// create Governing Service
@@ -142,7 +140,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 		return nil
 	}
 
-	ms, err := util.UpdateMongoDBStatus(c.ExtClient, mongodb, func(in *api.MongoDBStatus) *api.MongoDBStatus {
+	mg, err := util.UpdateMongoDBStatus(c.ExtClient, mongodb, func(in *api.MongoDBStatus) *api.MongoDBStatus {
 		in.Phase = api.DatabasePhaseRunning
 		in.ObservedGeneration = mongodb.Generation
 		return in
@@ -158,7 +156,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 		}
 		return err
 	}
-	mongodb.Status = ms.Status
+	*mongodb = *mg
 
 	// Ensure Schedule backup
 	c.ensureBackupScheduler(mongodb)
@@ -232,7 +230,7 @@ func (c *Controller) initialize(mongodb *api.MongoDB) error {
 		}
 		return err
 	}
-	mongodb.Status = mg.Status
+	*mongodb = *mg
 
 	snapshotSource := mongodb.Spec.Init.SnapshotSource
 	// Event for notification that kubernetes objects are creating

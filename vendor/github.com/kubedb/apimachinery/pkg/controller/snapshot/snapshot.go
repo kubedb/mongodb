@@ -34,7 +34,7 @@ func (c *Controller) create(snapshot *api.Snapshot) error {
 			}
 			return err
 		}
-		snapshot.Status = snap.Status
+		*snapshot = *snap
 	}
 
 	if snapshot.Status.Phase == api.SnapshotPhaseFailed || snapshot.Status.Phase == api.SnapshotPhaseSucceeded {

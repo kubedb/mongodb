@@ -15,7 +15,7 @@ func (c *Controller) create(ddb *api.DormantDatabase) error {
 		return nil
 	}
 
-	_, err := util.UpdateDormantDatabaseStatus(c.ExtClient, ddb, func(in *api.DormantDatabaseStatus) *api.DormantDatabaseStatus {
+	drmn, err := util.UpdateDormantDatabaseStatus(c.ExtClient, ddb, func(in *api.DormantDatabaseStatus) *api.DormantDatabaseStatus {
 		in.Phase = api.DormantDatabasePhasePausing
 		return in
 	}, api.EnableStatusSubresource)
@@ -23,6 +23,7 @@ func (c *Controller) create(ddb *api.DormantDatabase) error {
 		c.recorder.Eventf(ddb, core.EventTypeWarning, eventer.EventReasonFailedToUpdate, err.Error())
 		return err
 	}
+	*ddb = *drmn
 
 	c.recorder.Event(ddb, core.EventTypeNormal, eventer.EventReasonPausing, "Pausing Database")
 
