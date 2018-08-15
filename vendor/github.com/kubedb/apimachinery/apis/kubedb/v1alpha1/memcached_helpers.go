@@ -8,34 +8,34 @@ import (
 	mona "kmodules.xyz/monitoring-agent-api/api/v1"
 )
 
-func (r Memcached) OffshootName() string {
-	return r.Name
+func (m Memcached) OffshootName() string {
+	return m.Name
 }
 
-func (r Memcached) OffshootSelectors() map[string]string {
+func (m Memcached) OffshootSelectors() map[string]string {
 	return map[string]string{
 		LabelDatabaseKind: ResourceKindMemcached,
-		LabelDatabaseName: r.Name,
+		LabelDatabaseName: m.Name,
 	}
 }
 
-func (r Memcached) OffshootLabels() map[string]string {
-	return filterTags(r.OffshootSelectors(), r.Labels)
+func (m Memcached) OffshootLabels() map[string]string {
+	return filterTags(m.OffshootSelectors(), m.Labels)
 }
 
-func (r Memcached) ResourceShortCode() string {
+func (m Memcached) ResourceShortCode() string {
 	return ResourceCodeMemcached
 }
 
-func (r Memcached) ResourceKind() string {
+func (m Memcached) ResourceKind() string {
 	return ResourceKindMemcached
 }
 
-func (r Memcached) ResourceSingular() string {
+func (m Memcached) ResourceSingular() string {
 	return ResourceSingularMemcached
 }
 
-func (r Memcached) ResourcePlural() string {
+func (m Memcached) ResourcePlural() string {
 	return ResourcePluralMemcached
 }
 
@@ -85,6 +85,7 @@ func (m Memcached) CustomResourceDefinition() *apiextensions.CustomResourceDefin
 		Singular:      ResourceSingularMemcached,
 		Kind:          ResourceKindMemcached,
 		ShortNames:    []string{ResourceCodeMemcached},
+		Categories:    []string{"datastore", "kubedb", "appscode"},
 		ResourceScope: string(apiextensions.NamespaceScoped),
 		Versions: []apiextensions.CustomResourceDefinitionVersion{
 			{
@@ -118,4 +119,41 @@ func (m Memcached) CustomResourceDefinition() *apiextensions.CustomResourceDefin
 			},
 		},
 	}, setNameSchema)
+}
+
+func (m *Memcached) Migrate() {
+	if m == nil {
+		return
+	}
+	m.Spec.Migrate()
+}
+
+func (m *MemcachedSpec) Migrate() {
+	if m == nil {
+		return
+	}
+	if len(m.NodeSelector) > 0 {
+		m.PodTemplate.Spec.NodeSelector = m.NodeSelector
+		m.NodeSelector = nil
+	}
+	if m.Resources != nil {
+		m.PodTemplate.Spec.Resources = *m.Resources
+		m.Resources = nil
+	}
+	if m.Affinity != nil {
+		m.PodTemplate.Spec.Affinity = m.Affinity
+		m.Affinity = nil
+	}
+	if len(m.SchedulerName) > 0 {
+		m.PodTemplate.Spec.SchedulerName = m.SchedulerName
+		m.SchedulerName = ""
+	}
+	if len(m.Tolerations) > 0 {
+		m.PodTemplate.Spec.Tolerations = m.Tolerations
+		m.Tolerations = nil
+	}
+	if len(m.ImagePullSecrets) > 0 {
+		m.PodTemplate.Spec.ImagePullSecrets = m.ImagePullSecrets
+		m.ImagePullSecrets = nil
+	}
 }

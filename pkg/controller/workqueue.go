@@ -5,6 +5,7 @@ import (
 	core_util "github.com/appscode/kutil/core/v1"
 	meta_util "github.com/appscode/kutil/meta"
 	"github.com/appscode/kutil/tools/queue"
+	"github.com/golang/glog"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 )
@@ -21,14 +22,23 @@ func (c *Controller) initWatcher() {
 }
 
 func mongodbEqual(old, new *api.MongoDB) bool {
-	if !meta_util.Equal(old.Spec, new.Spec) {
-		diff := meta_util.Diff(old.Spec, new.Spec)
-		log.Infof("MongoDB %s/%s has changed. Diff: %s", new.Namespace, new.Name, diff)
+	if api.EnableStatusSubresource {
+		if new.Generation <= new.Status.ObservedGeneration {
+			return true
+		}
+		if glog.V(log.LevelDebug) {
+			diff := meta_util.Diff(old, new)
+			glog.InfoDepth(1, "meta.Generation [%d] is higher than status.observedGeneration [%d] in MongoDB %s/%s with Diff: %s\n",
+				new.Generation, new.Status.ObservedGeneration, new.Namespace, new.Name, diff)
+		}
 		return false
 	}
-	if !meta_util.Equal(old.Annotations, new.Annotations) {
-		diff := meta_util.Diff(old.Annotations, new.Annotations)
-		log.Infof("Annotations in MongoDB %s/%s has changed. Diff: %s\n", new.Namespace, new.Name, diff)
+
+	if !meta_util.Equal(old.Spec, new.Spec) || !meta_util.Equal(old.Annotations, new.Annotations) || !meta_util.Equal(old.Labels, new.Labels) {
+		if glog.V(log.LevelDebug) {
+			diff := meta_util.Diff(old, new)
+			glog.InfoDepth(1, "MongoDB %s/%s has changed. Diff: %s", new.Namespace, new.Name, diff)
+		}
 		return false
 	}
 	return true

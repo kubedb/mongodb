@@ -144,6 +144,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 
 	ms, err := util.UpdateMongoDBStatus(c.ExtClient, mongodb, func(in *api.MongoDBStatus) *api.MongoDBStatus {
 		in.Phase = api.DatabasePhaseRunning
+		in.ObservedGeneration = mongodb.Generation
 		return in
 	}, api.EnableStatusSubresource)
 	if err != nil {

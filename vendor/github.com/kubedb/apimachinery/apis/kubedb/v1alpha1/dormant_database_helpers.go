@@ -32,6 +32,7 @@ func (d DormantDatabase) CustomResourceDefinition() *apiextensions.CustomResourc
 		Singular:      ResourceSingularDormantDatabase,
 		Kind:          ResourceKindDormantDatabase,
 		ShortNames:    []string{ResourceCodeDormantDatabase},
+		Categories:    []string{"datastore", "kubedb", "appscode"},
 		ResourceScope: string(apiextensions.NamespaceScoped),
 		Versions: []apiextensions.CustomResourceDefinitionVersion{
 			{
@@ -60,4 +61,17 @@ func (d DormantDatabase) CustomResourceDefinition() *apiextensions.CustomResourc
 			},
 		},
 	}, setNameSchema)
+}
+
+func (d *DormantDatabase) Migrate() {
+	if d == nil {
+		return
+	}
+	d.Spec.Origin.Spec.Elasticsearch.Migrate()
+	d.Spec.Origin.Spec.Postgres.Migrate()
+	d.Spec.Origin.Spec.MySQL.Migrate()
+	d.Spec.Origin.Spec.MongoDB.Migrate()
+	d.Spec.Origin.Spec.Redis.Migrate()
+	d.Spec.Origin.Spec.Memcached.Migrate()
+	d.Spec.Origin.Spec.Etcd.Migrate()
 }

@@ -85,6 +85,7 @@ func (r Redis) CustomResourceDefinition() *apiextensions.CustomResourceDefinitio
 		Singular:      ResourceSingularRedis,
 		Kind:          ResourceKindRedis,
 		ShortNames:    []string{ResourceCodeRedis},
+		Categories:    []string{"datastore", "kubedb", "appscode"},
 		ResourceScope: string(apiextensions.NamespaceScoped),
 		Versions: []apiextensions.CustomResourceDefinitionVersion{
 			{
@@ -118,4 +119,41 @@ func (r Redis) CustomResourceDefinition() *apiextensions.CustomResourceDefinitio
 			},
 		},
 	}, setNameSchema)
+}
+
+func (r *Redis) Migrate() {
+	if r == nil {
+		return
+	}
+	r.Spec.Migrate()
+}
+
+func (r *RedisSpec) Migrate() {
+	if r == nil {
+		return
+	}
+	if len(r.NodeSelector) > 0 {
+		r.PodTemplate.Spec.NodeSelector = r.NodeSelector
+		r.NodeSelector = nil
+	}
+	if r.Resources != nil {
+		r.PodTemplate.Spec.Resources = *r.Resources
+		r.Resources = nil
+	}
+	if r.Affinity != nil {
+		r.PodTemplate.Spec.Affinity = r.Affinity
+		r.Affinity = nil
+	}
+	if len(r.SchedulerName) > 0 {
+		r.PodTemplate.Spec.SchedulerName = r.SchedulerName
+		r.SchedulerName = ""
+	}
+	if len(r.Tolerations) > 0 {
+		r.PodTemplate.Spec.Tolerations = r.Tolerations
+		r.Tolerations = nil
+	}
+	if len(r.ImagePullSecrets) > 0 {
+		r.PodTemplate.Spec.ImagePullSecrets = r.ImagePullSecrets
+		r.ImagePullSecrets = nil
+	}
 }

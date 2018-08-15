@@ -1,5 +1,5 @@
-hash: 91beb75d8d77a87aad77694c9a65d2d9f88d130ab7e2e78b01b24925e9d2030c
-updated: 2018-08-09T12:05:21.775424019+06:00
+hash: 48992f10cf08164f2fb73b750b7748094bfa7210523a8832897d1ba385aaf28c
+updated: 2018-08-15T12:07:45.560825286+06:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -33,7 +33,7 @@ imports:
   - admission/v1beta1
   - registry/admissionreview/v1beta1
 - name: github.com/appscode/kutil
-  version: b50ebf9375ccfa41b08350da68618fee6bc6de4b
+  version: 266e2ad77d953e86893aa1abba587d3f29bbdc92
   subpackages:
   - apiextensions/v1beta1
   - apps/v1
@@ -283,7 +283,7 @@ imports:
   - openstack/utils
   - pagination
 - name: github.com/graymeta/stow
-  version: 749bd5039731d827684b5d49a59b01d4c5316b65
+  version: afce6d90444a3ba63c6d6671498c6cdc79375369
   repo: https://github.com/appscode/stow.git
   vcs: git
   subpackages:
@@ -311,7 +311,7 @@ imports:
 - name: github.com/json-iterator/go
   version: ab8a2e0c74be9d3be70b3184d9acc634935ded82
 - name: github.com/kubedb/apimachinery
-  version: 9da6ea9c53a67f213ebea267ef990e80b6d421fe
+  version: 1465d23e2ad7eafe5b605c61056441f7bae1cdfb
   subpackages:
   - apis/kubedb
   - apis/kubedb/v1alpha1
@@ -516,7 +516,7 @@ imports:
   subpackages:
   - rate
 - name: google.golang.org/api
-  version: d089d6ac97131b2ee652f2fe736865338659a668
+  version: 0e8d13b5c025da6a7cf249bb854e5869921dd459
   subpackages:
   - gensupport
   - googleapi
@@ -962,7 +962,7 @@ imports:
   - agents/prometheusbuiltin
   - api/v1
 - name: kmodules.xyz/objectstore-api
-  version: 5437829d6e1c97de1c3effe5f2dc6cbca2e0bfd4
+  version: 94d68f0dfad22b23d98d8461344ebabc1f8a4a7c
   repo: https://github.com/kmodules/objectstore-api.git
   vcs: git
   subpackages:

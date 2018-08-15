@@ -91,6 +91,7 @@ func (p Postgres) CustomResourceDefinition() *apiextensions.CustomResourceDefini
 		Singular:      ResourceSingularPostgres,
 		Kind:          ResourceKindPostgres,
 		ShortNames:    []string{ResourceCodePostgres},
+		Categories:    []string{"datastore", "kubedb", "appscode"},
 		ResourceScope: string(apiextensions.NamespaceScoped),
 		Versions: []apiextensions.CustomResourceDefinitionVersion{
 			{
@@ -124,4 +125,42 @@ func (p Postgres) CustomResourceDefinition() *apiextensions.CustomResourceDefini
 			},
 		},
 	}, setNameSchema)
+}
+
+func (p *Postgres) Migrate() {
+	if p == nil {
+		return
+	}
+	p.Spec.Migrate()
+}
+
+func (p *PostgresSpec) Migrate() {
+	if p == nil {
+		return
+	}
+	p.BackupSchedule.Migrate()
+	if len(p.NodeSelector) > 0 {
+		p.PodTemplate.Spec.NodeSelector = p.NodeSelector
+		p.NodeSelector = nil
+	}
+	if p.Resources != nil {
+		p.PodTemplate.Spec.Resources = *p.Resources
+		p.Resources = nil
+	}
+	if p.Affinity != nil {
+		p.PodTemplate.Spec.Affinity = p.Affinity
+		p.Affinity = nil
+	}
+	if len(p.SchedulerName) > 0 {
+		p.PodTemplate.Spec.SchedulerName = p.SchedulerName
+		p.SchedulerName = ""
+	}
+	if len(p.Tolerations) > 0 {
+		p.PodTemplate.Spec.Tolerations = p.Tolerations
+		p.Tolerations = nil
+	}
+	if len(p.ImagePullSecrets) > 0 {
+		p.PodTemplate.Spec.ImagePullSecrets = p.ImagePullSecrets
+		p.ImagePullSecrets = nil
+	}
 }

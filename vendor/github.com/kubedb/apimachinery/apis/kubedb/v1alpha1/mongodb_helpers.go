@@ -85,6 +85,7 @@ func (p MongoDB) CustomResourceDefinition() *apiextensions.CustomResourceDefinit
 		Singular:      ResourceSingularMongoDB,
 		Kind:          ResourceKindMongoDB,
 		ShortNames:    []string{ResourceCodeMongoDB},
+		Categories:    []string{"datastore", "kubedb", "appscode"},
 		ResourceScope: string(apiextensions.NamespaceScoped),
 		Versions: []apiextensions.CustomResourceDefinitionVersion{
 			{
@@ -118,4 +119,42 @@ func (p MongoDB) CustomResourceDefinition() *apiextensions.CustomResourceDefinit
 			},
 		},
 	}, setNameSchema)
+}
+
+func (m *MongoDB) Migrate() {
+	if m == nil {
+		return
+	}
+	m.Spec.Migrate()
+}
+
+func (m *MongoDBSpec) Migrate() {
+	if m == nil {
+		return
+	}
+	m.BackupSchedule.Migrate()
+	if len(m.NodeSelector) > 0 {
+		m.PodTemplate.Spec.NodeSelector = m.NodeSelector
+		m.NodeSelector = nil
+	}
+	if m.Resources != nil {
+		m.PodTemplate.Spec.Resources = *m.Resources
+		m.Resources = nil
+	}
+	if m.Affinity != nil {
+		m.PodTemplate.Spec.Affinity = m.Affinity
+		m.Affinity = nil
+	}
+	if len(m.SchedulerName) > 0 {
+		m.PodTemplate.Spec.SchedulerName = m.SchedulerName
+		m.SchedulerName = ""
+	}
+	if len(m.Tolerations) > 0 {
+		m.PodTemplate.Spec.Tolerations = m.Tolerations
+		m.Tolerations = nil
+	}
+	if len(m.ImagePullSecrets) > 0 {
+		m.PodTemplate.Spec.ImagePullSecrets = m.ImagePullSecrets
+		m.ImagePullSecrets = nil
+	}
 }

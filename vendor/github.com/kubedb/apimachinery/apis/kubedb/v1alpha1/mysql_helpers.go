@@ -69,7 +69,7 @@ func (m mySQLStatsService) Scheme() string {
 	return ""
 }
 
-func (m MySQL) StatsAccessor() mona.StatsAccessor {
+func (m MySQL) StatsService() mona.StatsAccessor {
 	return &mySQLStatsService{&m}
 }
 
@@ -87,6 +87,7 @@ func (m MySQL) CustomResourceDefinition() *apiextensions.CustomResourceDefinitio
 		Singular:      ResourceSingularMySQL,
 		Kind:          ResourceKindMySQL,
 		ShortNames:    []string{ResourceCodeMySQL},
+		Categories:    []string{"datastore", "kubedb", "appscode"},
 		ResourceScope: string(apiextensions.NamespaceScoped),
 		Versions: []apiextensions.CustomResourceDefinitionVersion{
 			{
@@ -120,4 +121,42 @@ func (m MySQL) CustomResourceDefinition() *apiextensions.CustomResourceDefinitio
 			},
 		},
 	}, setNameSchema)
+}
+
+func (m *MySQL) Migrate() {
+	if m == nil {
+		return
+	}
+	m.Spec.Migrate()
+}
+
+func (m *MySQLSpec) Migrate() {
+	if m == nil {
+		return
+	}
+	m.BackupSchedule.Migrate()
+	if len(m.NodeSelector) > 0 {
+		m.PodTemplate.Spec.NodeSelector = m.NodeSelector
+		m.NodeSelector = nil
+	}
+	if m.Resources != nil {
+		m.PodTemplate.Spec.Resources = *m.Resources
+		m.Resources = nil
+	}
+	if m.Affinity != nil {
+		m.PodTemplate.Spec.Affinity = m.Affinity
+		m.Affinity = nil
+	}
+	if len(m.SchedulerName) > 0 {
+		m.PodTemplate.Spec.SchedulerName = m.SchedulerName
+		m.SchedulerName = ""
+	}
+	if len(m.Tolerations) > 0 {
+		m.PodTemplate.Spec.Tolerations = m.Tolerations
+		m.Tolerations = nil
+	}
+	if len(m.ImagePullSecrets) > 0 {
+		m.PodTemplate.Spec.ImagePullSecrets = m.ImagePullSecrets
+		m.ImagePullSecrets = nil
+	}
 }

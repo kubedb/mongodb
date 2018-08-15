@@ -405,7 +405,7 @@ var _ = Describe("MongoDB", func() {
 
 			})
 
-			Context("With Snapshot", func() {
+			FContext("With Snapshot", func() {
 				AfterEach(func() {
 					f.DeleteSecret(secret.ObjectMeta)
 				})

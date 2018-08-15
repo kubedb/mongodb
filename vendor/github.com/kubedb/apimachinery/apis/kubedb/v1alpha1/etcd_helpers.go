@@ -85,6 +85,7 @@ func (e Etcd) CustomResourceDefinition() *apiextensions.CustomResourceDefinition
 		Singular:      ResourceSingularEtcd,
 		Kind:          ResourceKindEtcd,
 		ShortNames:    []string{ResourceCodeEtcd},
+		Categories:    []string{"datastore", "kubedb", "appscode"},
 		ResourceScope: string(apiextensions.NamespaceScoped),
 		Versions: []apiextensions.CustomResourceDefinitionVersion{
 			{
@@ -118,4 +119,17 @@ func (e Etcd) CustomResourceDefinition() *apiextensions.CustomResourceDefinition
 			},
 		},
 	}, setNameSchema)
+}
+
+func (e *Etcd) Migrate() {
+	if e == nil {
+		return
+	}
+	e.Spec.Migrate()
+}
+
+func (e *EtcdSpec) Migrate() {
+	if e == nil {
+		return
+	}
 }

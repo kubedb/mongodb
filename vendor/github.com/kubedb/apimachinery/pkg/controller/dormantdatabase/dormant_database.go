@@ -11,25 +11,6 @@ import (
 )
 
 func (c *Controller) create(ddb *api.DormantDatabase) error {
-	if ddb.Status.CreationTime == nil {
-		_, err := util.UpdateDormantDatabaseStatus(c.ExtClient, ddb, func(in *api.DormantDatabaseStatus) *api.DormantDatabaseStatus {
-			t := metav1.Now()
-			in.CreationTime = &t
-			return in
-		}, api.EnableStatusSubresource)
-		if err != nil {
-			if ref, rerr := reference.GetReference(clientsetscheme.Scheme, ddb); rerr == nil {
-				c.recorder.Eventf(
-					ref,
-					core.EventTypeWarning,
-					eventer.EventReasonFailedToUpdate,
-					err.Error(),
-				)
-			}
-			return err
-		}
-	}
-
 	if ddb.Status.Phase == api.DormantDatabasePhasePaused {
 		return nil
 	}
@@ -72,6 +53,7 @@ func (c *Controller) create(ddb *api.DormantDatabase) error {
 		t := metav1.Now()
 		in.PausingTime = &t
 		in.Phase = api.DormantDatabasePhasePaused
+		in.ObservedGeneration = ddb.Generation
 		return in
 	}, api.EnableStatusSubresource)
 	if err != nil {

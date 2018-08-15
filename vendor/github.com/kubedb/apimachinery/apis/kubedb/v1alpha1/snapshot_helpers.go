@@ -56,6 +56,7 @@ func (s Snapshot) CustomResourceDefinition() *apiextensions.CustomResourceDefini
 		Singular:      ResourceSingularSnapshot,
 		Kind:          ResourceKindSnapshot,
 		ShortNames:    []string{ResourceCodeSnapshot},
+		Categories:    []string{"datastore", "kubedb", "appscode"},
 		ResourceScope: string(apiextensions.NamespaceScoped),
 		Versions: []apiextensions.CustomResourceDefinitionVersion{
 			{
@@ -89,4 +90,14 @@ func (s Snapshot) CustomResourceDefinition() *apiextensions.CustomResourceDefini
 			},
 		},
 	}, setNameSchema)
+}
+
+func (s *Snapshot) Migrate() {
+	if s == nil {
+		return
+	}
+	if s.Spec.Resources != nil {
+		s.Spec.PodTemplate.Spec.Resources = *s.Spec.Resources
+		s.Spec.Resources = nil
+	}
 }

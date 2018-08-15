@@ -92,6 +92,7 @@ func (e Elasticsearch) CustomResourceDefinition() *apiextensions.CustomResourceD
 		Singular:      ResourceSingularElasticsearch,
 		Kind:          ResourceKindElasticsearch,
 		ShortNames:    []string{ResourceCodeElasticsearch},
+		Categories:    []string{"datastore", "kubedb", "appscode"},
 		ResourceScope: string(apiextensions.NamespaceScoped),
 		Versions: []apiextensions.CustomResourceDefinitionVersion{
 			{
@@ -125,6 +126,44 @@ func (e Elasticsearch) CustomResourceDefinition() *apiextensions.CustomResourceD
 			},
 		},
 	}, setNameSchema)
+}
+
+func (e *Elasticsearch) Migrate() {
+	if e == nil {
+		return
+	}
+	e.Spec.Migrate()
+}
+
+func (e *ElasticsearchSpec) Migrate() {
+	if e == nil {
+		return
+	}
+	e.BackupSchedule.Migrate()
+	if len(e.NodeSelector) > 0 {
+		e.PodTemplate.Spec.NodeSelector = e.NodeSelector
+		e.NodeSelector = nil
+	}
+	if e.Resources != nil {
+		e.PodTemplate.Spec.Resources = *e.Resources
+		e.Resources = nil
+	}
+	if e.Affinity != nil {
+		e.PodTemplate.Spec.Affinity = e.Affinity
+		e.Affinity = nil
+	}
+	if len(e.SchedulerName) > 0 {
+		e.PodTemplate.Spec.SchedulerName = e.SchedulerName
+		e.SchedulerName = ""
+	}
+	if len(e.Tolerations) > 0 {
+		e.PodTemplate.Spec.Tolerations = e.Tolerations
+		e.Tolerations = nil
+	}
+	if len(e.ImagePullSecrets) > 0 {
+		e.PodTemplate.Spec.ImagePullSecrets = e.ImagePullSecrets
+		e.ImagePullSecrets = nil
+	}
 }
 
 const (
