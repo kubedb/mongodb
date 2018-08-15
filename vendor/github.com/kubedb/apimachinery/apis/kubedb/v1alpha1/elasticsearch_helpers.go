@@ -179,7 +179,7 @@ func (e Elasticsearch) SearchGuardDisabled() bool {
 	return v
 }
 
-func (e *Elasticsearch) Equal(other *Elasticsearch) bool {
+func (e *Elasticsearch) AlreadyObserved(other *Elasticsearch) bool {
 	if e == nil {
 		return other == nil
 	}

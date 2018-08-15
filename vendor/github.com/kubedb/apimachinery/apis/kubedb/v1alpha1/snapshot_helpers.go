@@ -106,7 +106,7 @@ func (s *Snapshot) Migrate() {
 	}
 }
 
-func (s *Snapshot) Equal(other *Snapshot) bool {
+func (s *Snapshot) AlreadyObserved(other *Snapshot) bool {
 	if s == nil {
 		return other == nil
 	}

@@ -138,7 +138,7 @@ func (e *EtcdSpec) Migrate() {
 	}
 }
 
-func (e *Etcd) Equal(other *Etcd) bool {
+func (e *Etcd) AlreadyObserved(other *Etcd) bool {
 	if e == nil {
 		return other == nil
 	}

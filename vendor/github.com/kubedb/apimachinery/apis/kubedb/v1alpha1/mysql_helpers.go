@@ -165,7 +165,7 @@ func (m *MySQLSpec) Migrate() {
 	}
 }
 
-func (m *MySQL) Equal(other *MySQL) bool {
+func (m *MySQL) AlreadyObserved(other *MySQL) bool {
 	if m == nil {
 		return other == nil
 	}

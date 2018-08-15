@@ -12,10 +12,7 @@ func (c *Controller) addEventHandler(selector labels.Selector) {
 	c.DrmnInformer.AddEventHandler(queue.NewFilteredHandler(queue.NewEventHandler(c.DrmnQueue.GetQueue(), func(old interface{}, new interface{}) bool {
 		oldObj := old.(*api.DormantDatabase)
 		newObj := new.(*api.DormantDatabase)
-		if !newObj.Equal(oldObj) {
-			return true
-		}
-		return false
+		return !newObj.AlreadyObserved(oldObj)
 	}), selector))
 	c.ddbLister = c.KubedbInformerFactory.Kubedb().V1alpha1().DormantDatabases().Lister()
 }

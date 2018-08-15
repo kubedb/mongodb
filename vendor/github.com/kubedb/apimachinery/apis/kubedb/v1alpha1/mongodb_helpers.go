@@ -163,7 +163,7 @@ func (m *MongoDBSpec) Migrate() {
 	}
 }
 
-func (m *MongoDB) Equal(other *MongoDB) bool {
+func (m *MongoDB) AlreadyObserved(other *MongoDB) bool {
 	if m == nil {
 		return other == nil
 	}

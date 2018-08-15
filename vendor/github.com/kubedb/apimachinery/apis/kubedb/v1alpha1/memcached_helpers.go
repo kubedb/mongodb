@@ -162,7 +162,7 @@ func (m *MemcachedSpec) Migrate() {
 	}
 }
 
-func (m *Memcached) Equal(other *Memcached) bool {
+func (m *Memcached) AlreadyObserved(other *Memcached) bool {
 	if m == nil {
 		return other == nil
 	}

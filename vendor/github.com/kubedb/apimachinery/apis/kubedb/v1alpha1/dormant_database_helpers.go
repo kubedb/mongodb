@@ -81,7 +81,7 @@ func (d *DormantDatabase) Migrate() {
 	d.Spec.Origin.Spec.Etcd.Migrate()
 }
 
-func (d *DormantDatabase) Equal(other *DormantDatabase) bool {
+func (d *DormantDatabase) AlreadyObserved(other *DormantDatabase) bool {
 	if d == nil {
 		return other == nil
 	}

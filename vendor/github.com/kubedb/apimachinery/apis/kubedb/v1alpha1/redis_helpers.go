@@ -162,7 +162,7 @@ func (r *RedisSpec) Migrate() {
 	}
 }
 
-func (r *Redis) Equal(other *Redis) bool {
+func (r *Redis) AlreadyObserved(other *Redis) bool {
 	if EnableStatusSubresource {
 		// At this moment, metadata.Generation is incremented only by `spec`.
 		// issue tracked: https://github.com/kubernetes/kubernetes/issues/67428

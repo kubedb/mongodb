@@ -15,7 +15,7 @@ func (c *Controller) initWatcher() {
 	c.mgInformer.AddEventHandler(queue.NewEventHandler(c.mgQueue.GetQueue(), func(old interface{}, new interface{}) bool {
 		oldObj := old.(*api.MongoDB)
 		newObj := new.(*api.MongoDB)
-		return newObj.DeletionTimestamp != nil || !newObj.Equal(oldObj)
+		return newObj.DeletionTimestamp != nil || !newObj.AlreadyObserved(oldObj)
 	}))
 }
 

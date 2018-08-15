@@ -169,7 +169,7 @@ func (p *PostgresSpec) Migrate() {
 	}
 }
 
-func (p *Postgres) Equal(other *Postgres) bool {
+func (p *Postgres) AlreadyObserved(other *Postgres) bool {
 	if p == nil {
 		return other == nil
 	}
