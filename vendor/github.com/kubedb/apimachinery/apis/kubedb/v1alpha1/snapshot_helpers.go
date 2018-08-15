@@ -120,7 +120,7 @@ func (s *Snapshot) AlreadyObserved(other *Snapshot) bool {
 	var match bool
 
 	if EnableStatusSubresource {
-		match = s.Status.ObservedGeneration == s.Generation
+		match = s.Status.ObservedGeneration >= s.Generation
 	} else {
 		match = meta_util.Equal(s.Spec, other.Spec)
 	}

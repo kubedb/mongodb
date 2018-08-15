@@ -152,7 +152,7 @@ func (e *Etcd) AlreadyObserved(other *Etcd) bool {
 	var match bool
 
 	if EnableStatusSubresource {
-		match = e.Status.ObservedGeneration == e.Generation
+		match = e.Status.ObservedGeneration >= e.Generation
 	} else {
 		match = meta_util.Equal(e.Spec, other.Spec)
 	}

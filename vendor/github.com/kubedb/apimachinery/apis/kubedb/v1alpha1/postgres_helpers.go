@@ -183,7 +183,7 @@ func (p *Postgres) AlreadyObserved(other *Postgres) bool {
 	var match bool
 
 	if EnableStatusSubresource {
-		match = p.Status.ObservedGeneration == p.Generation
+		match = p.Status.ObservedGeneration >= p.Generation
 	} else {
 		match = meta_util.Equal(p.Spec, other.Spec)
 	}

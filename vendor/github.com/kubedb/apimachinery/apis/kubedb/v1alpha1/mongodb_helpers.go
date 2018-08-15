@@ -177,7 +177,7 @@ func (m *MongoDB) AlreadyObserved(other *MongoDB) bool {
 	var match bool
 
 	if EnableStatusSubresource {
-		match = m.Status.ObservedGeneration == m.Generation
+		match = m.Status.ObservedGeneration >= m.Generation
 	} else {
 		match = meta_util.Equal(m.Spec, other.Spec)
 	}

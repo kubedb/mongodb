@@ -95,7 +95,7 @@ func (d *DormantDatabase) AlreadyObserved(other *DormantDatabase) bool {
 	var match bool
 
 	if EnableStatusSubresource {
-		match = d.Status.ObservedGeneration == d.Generation
+		match = d.Status.ObservedGeneration >= d.Generation
 	} else {
 		match = meta_util.Equal(d.Spec, other.Spec)
 	}

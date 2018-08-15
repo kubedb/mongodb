@@ -163,27 +163,33 @@ func (r *RedisSpec) Migrate() {
 }
 
 func (r *Redis) AlreadyObserved(other *Redis) bool {
-	if EnableStatusSubresource {
-		// At this moment, metadata.Generation is incremented only by `spec`.
-		// issue tracked: https://github.com/kubernetes/kubernetes/issues/67428
-		// So look for changes in metadata.labels as well.
-		if r.Generation <= r.Status.ObservedGeneration && reflect.DeepEqual(other.Labels, r.Labels) {
-			return true
-		}
-		if glog.V(log.LevelDebug) {
-			diff := meta_util.Diff(other, r)
-			glog.InfoDepth(1, "meta.Generation [%d] is higher than status.observedGeneration [%d] in Redis %s/%s with Diff: %s",
-				r.Generation, r.Status.ObservedGeneration, r.Namespace, r.Name, diff)
-		}
+	if r == nil {
+		return other == nil
+	}
+	if other == nil { // && d != nil
 		return false
+	}
+	if r == other {
+		return true
 	}
 
-	if !meta_util.Equal(other.Spec, r.Spec) || !reflect.DeepEqual(other.Labels, r.Labels) {
-		if glog.V(log.LevelDebug) {
-			diff := meta_util.Diff(other, r)
-			glog.InfoDepth(1, "Redis %s/%s has changed. Diff: %s", r.Namespace, r.Name, diff)
-		}
-		return false
+	var match bool
+
+	if EnableStatusSubresource {
+		match = r.Status.ObservedGeneration >= r.Generation
+	} else {
+		match = meta_util.Equal(r.Spec, other.Spec)
 	}
-	return true
+	if match {
+		match = reflect.DeepEqual(r.Labels, other.Labels)
+	}
+	if match {
+		match = reflect.DeepEqual(r.Annotations, other.Annotations)
+	}
+
+	if !match && bool(glog.V(log.LevelDebug)) {
+		diff := meta_util.Diff(other, r)
+		glog.V(log.LevelDebug).Infof("%s %s/%s has changed. Diff: %s", meta_util.GetKind(r), r.Namespace, r.Name, diff)
+	}
+	return match
 }

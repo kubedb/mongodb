@@ -193,7 +193,7 @@ func (e *Elasticsearch) AlreadyObserved(other *Elasticsearch) bool {
 	var match bool
 
 	if EnableStatusSubresource {
-		match = e.Status.ObservedGeneration == e.Generation
+		match = e.Status.ObservedGeneration >= e.Generation
 	} else {
 		match = meta_util.Equal(e.Spec, other.Spec)
 	}
