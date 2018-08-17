@@ -126,11 +126,14 @@ func (a *MongoDBValidator) Admit(req *admission.AdmissionRequest) *admission.Adm
 // It is not method of Interface, because it is referenced from controller package too.
 func ValidateMongoDB(client kubernetes.Interface, extClient kubedbv1alpha1.KubedbV1alpha1Interface, mongodb *api.MongoDB) error {
 	if mongodb.Spec.Version == "" {
-		return fmt.Errorf(`object 'Version' is missing in '%v'`, mongodb.Spec)
+		return errors.New(`'spec.version' is missing`)
 	}
-
 	if _, err := extClient.MongoDBVersions().Get(string(mongodb.Spec.Version), metav1.GetOptions{}); err != nil {
 		return err
+	}
+
+	if mongodb.Spec.StorageType == "" {
+		return fmt.Errorf(`'spec.storageType' is missing`)
 	}
 
 	if mongodb.Spec.Replicas == nil || *mongodb.Spec.Replicas != 1 {
