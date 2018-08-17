@@ -27,7 +27,7 @@ func (f *Invocation) MongoDB() *api.MongoDB {
 		},
 		Spec: api.MongoDBSpec{
 			Version: jsonTypes.StrYo(DBVersion),
-			Storage: core.PersistentVolumeClaimSpec{
+			Storage: &core.PersistentVolumeClaimSpec{
 				Resources: core.ResourceRequirements{
 					Requests: core.ResourceList{
 						core.ResourceStorage: resource.MustParse("1Gi"),

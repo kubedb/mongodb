@@ -36,7 +36,7 @@ func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapsh
 	}
 
 	// Get PersistentVolume object for Backup Util pod.
-	persistentVolume, err := c.getVolumeForSnapshot(mongodb.Spec.Storage, jobName, mongodb.Namespace)
+	persistentVolume, err := c.getVolumeForSnapshot(mongodb.Spec.StorageType, mongodb.Spec.Storage, jobName, mongodb.Namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +179,7 @@ func (c *Controller) getSnapshotterJob(snapshot *api.Snapshot) (*batch.Job, erro
 	}
 
 	// Get PersistentVolume object for Backup Util pod.
-	persistentVolume, err := c.getVolumeForSnapshot(mongodb.Spec.Storage, jobName, snapshot.Namespace)
+	persistentVolume, err := c.getVolumeForSnapshot(mongodb.Spec.StorageType, mongodb.Spec.Storage, jobName, snapshot.Namespace)
 	if err != nil {
 		return nil, err
 	}

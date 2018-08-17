@@ -141,7 +141,7 @@ func ValidateMongoDB(client kubernetes.Interface, extClient kubedbv1alpha1.Kubed
 		return err
 	}
 
-	if err := amv.ValidateStorage(client, mongodb.Spec.Storage); err != nil {
+	if err := amv.ValidateStorage(client, mongodb.Spec.StorageType, mongodb.Spec.Storage); err != nil {
 		return err
 	}
 
