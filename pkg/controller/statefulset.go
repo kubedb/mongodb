@@ -8,6 +8,7 @@ import (
 	"github.com/appscode/kutil"
 	app_util "github.com/appscode/kutil/apps/v1"
 	core_util "github.com/appscode/kutil/core/v1"
+	meta_util "github.com/appscode/kutil/meta"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/apimachinery/pkg/eventer"
 	apps "k8s.io/api/apps/v1"
@@ -107,17 +108,18 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 		in.Spec.Template.Spec.Containers = core_util.UpsertContainer(
 			in.Spec.Template.Spec.Containers,
 			core.Container{
-				Name:  api.ResourceSingularMongoDB,
-				Image: mongodbVersion.Spec.DB.Image,
+				Name:            api.ResourceSingularMongoDB,
+				Image:           mongodbVersion.Spec.DB.Image,
+				ImagePullPolicy: core.PullIfNotPresent,
+				Args: meta_util.UpsertArgumentList([]string{
+					"--auth",
+				}, mongodb.Spec.PodTemplate.Spec.Args),
 				Ports: []core.ContainerPort{
 					{
 						Name:          "db",
 						ContainerPort: 27017,
 						Protocol:      core.ProtocolTCP,
 					},
-				},
-				Args: []string{
-					"--auth",
 				},
 				Resources: mongodb.Spec.PodTemplate.Spec.Resources,
 			},
