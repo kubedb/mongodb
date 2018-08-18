@@ -264,10 +264,11 @@ func (c *Controller) upsertInstallInitContainer(statefulSet *apps.StatefulSet, m
 		Command:         []string{"sh"},
 		Args: []string{
 			"-c",
-			`set -e
-			set -x
+			`set -xe
 			if [ -f "/configdb-readonly/mongod.conf" ]; then
   				cp /configdb-readonly/mongod.conf /data/configdb/mongod.conf
+			else
+				touch /data/configdb/mongod.conf
 			fi
 			
 			if [ -f "/keydir-readonly/key.txt" ]; then

@@ -3,23 +3,22 @@ package controller
 import (
 	"github.com/appscode/go/types"
 	core_util "github.com/appscode/kutil/core/v1"
+	meta_util "github.com/appscode/kutil/meta"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 func upsertRSArgs(statefulSet *apps.StatefulSet, mongodb *api.MongoDB) *apps.StatefulSet {
 	for i, container := range statefulSet.Spec.Template.Spec.Containers {
 		if container.Name == api.ResourceSingularMongoDB {
-			args := sets.NewString(statefulSet.Spec.Template.Spec.Containers[i].Args...)
-			args.Insert(
-				"--replSet="+mongodb.Spec.ReplicaSet.Name,
-				"--bind_ip=0.0.0.0",
-				"--keyFile="+configDirectoryPath+"/"+KeyForKeyFile,
-			)
-			statefulSet.Spec.Template.Spec.Containers[i].Args = args.List()
-
+			statefulSet.Spec.Template.Spec.Containers[i].Args = meta_util.UpsertArgumentList(
+				statefulSet.Spec.Template.Spec.Containers[i].Args,
+				[]string{
+					"--replSet=" + mongodb.Spec.ReplicaSet.Name,
+					"--bind_ip=0.0.0.0",
+					"--keyFile=" + configDirectoryPath + "/" + KeyForKeyFile,
+				})
 			statefulSet.Spec.Template.Spec.Containers[i].Command = []string{
 				"mongod",
 			}

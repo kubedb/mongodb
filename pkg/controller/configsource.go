@@ -1,8 +1,11 @@
 package controller
 
 import (
+	"path/filepath"
+
 	"github.com/appscode/go/types"
 	core_util "github.com/appscode/kutil/core/v1"
+	meta_util "github.com/appscode/kutil/meta"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 	"github.com/kubedb/apimachinery/pkg/eventer"
@@ -10,7 +13,6 @@ import (
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/sets"
 	clientsetscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/reference"
 )
@@ -27,32 +29,30 @@ var (
 func (c *Controller) upsertConfigSourceVolume(statefulSet *apps.StatefulSet, mongodb *api.MongoDB) *apps.StatefulSet {
 	for i, container := range statefulSet.Spec.Template.Spec.Containers {
 		if container.Name == api.ResourceSingularMongoDB {
-			args := sets.NewString(statefulSet.Spec.Template.Spec.Containers[i].Args...)
-			args.Insert("--config=" + configDirectoryPath + "/mongod.conf")
-			statefulSet.Spec.Template.Spec.Containers[i].Args = args.List()
+			statefulSet.Spec.Template.Spec.Containers[i].Args = meta_util.UpsertArgumentList(
+				statefulSet.Spec.Template.Spec.Containers[i].Args,
+				[]string{"--config=" + filepath.Join(configDirectoryPath, "mongod.conf")},
+			)
 		}
 	}
 
 	for i, container := range statefulSet.Spec.Template.Spec.InitContainers {
 		if container.Name == InitInstallContainerName {
-
-			volumeMounts := []core.VolumeMount{
-				{
+			statefulSet.Spec.Template.Spec.InitContainers[i].VolumeMounts = core_util.UpsertVolumeMount(
+				statefulSet.Spec.Template.Spec.InitContainers[i].VolumeMounts,
+				core.VolumeMount{
 					Name:      initialConfigDirectoryName,
 					MountPath: initialConfigDirectoryPath,
-				},
-			}
-			statefulSet.Spec.Template.Spec.InitContainers[i].VolumeMounts = core_util.UpsertVolumeMount(
-				statefulSet.Spec.Template.Spec.InitContainers[i].VolumeMounts, volumeMounts...)
+				})
 		}
 	}
 
-	volumes := core.Volume{
-
-		Name:         initialConfigDirectoryName,
-		VolumeSource: *mongodb.Spec.ConfigSource,
-	}
-	statefulSet.Spec.Template.Spec.Volumes = core_util.UpsertVolume(statefulSet.Spec.Template.Spec.Volumes, volumes)
+	statefulSet.Spec.Template.Spec.Volumes = core_util.UpsertVolume(
+		statefulSet.Spec.Template.Spec.Volumes,
+		core.Volume{
+			Name:         initialConfigDirectoryName,
+			VolumeSource: *mongodb.Spec.ConfigSource,
+		})
 
 	return statefulSet
 }
