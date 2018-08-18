@@ -15,6 +15,10 @@ const (
 	DigitalOceanCloudEnv = "digitalocean"
 )
 
+// If cloudProvider is digitalocean, check for remaining API request amount.
+// ref: https://developers.digitalocean.com/documentation/v2/#rate-limit.
+// Todo: remove from e2e-test.
+// Issue tracked in https://github.com/kubedb/project/issues/241
 func (f *Framework) GetDORateLimitRemaining() (int, error) {
 	secret, err := f.kubeClient.CoreV1().Secrets("kube-system").Get("digitalocean", metav1.GetOptions{})
 	if err != nil {
@@ -38,8 +42,6 @@ func (f *Framework) GetDORateLimitRemaining() (int, error) {
 	return limitRemain, err
 }
 
-// If cloudProvider is digitalocean, check for remaining API request amount.
-// ref: https://developers.digitalocean.com/documentation/v2/#rate-limit
 func (f *Framework) WaitUntilDigitalOceanReady() {
 	if f.CloudProvider == DigitalOceanCloudEnv {
 		By("Checking available DigitalOcean API rate limit remaining")

@@ -100,7 +100,6 @@ func (c *Controller) upsertRSInitContainer(statefulSet *apps.StatefulSet, mongod
 	statefulSet.Spec.Template.Spec.InitContainers = core_util.UpsertContainer(initContainers, bootstrapContainer)
 
 	rsVolume := core.Volume{
-
 		Name: initialKeyDirectoryName,
 		VolumeSource: core.VolumeSource{
 			Secret: &core.SecretVolumeSource{

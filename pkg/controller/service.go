@@ -19,7 +19,7 @@ import (
 
 const (
 	MongoDbPort                   = "27017"
-	mongoDBGoverningServiceSuffix = "-gvr-svc"
+	mongoDBGoverningServiceSuffix = "-gvr"
 )
 
 func (c *Controller) ensureService(mongodb *api.MongoDB) (kutil.VerbType, error) {
@@ -185,6 +185,11 @@ func (c *Controller) createMongoDBGoverningService(mongodb *api.MongoDB) (string
 			Name:      mongodb.ServiceName() + mongoDBGoverningServiceSuffix,
 			Namespace: mongodb.Namespace,
 			Labels:    mongodb.OffshootLabels(),
+			// 'tolerate-unready-endpoints' annotation is deprecated.
+			// ref: https://github.com/kubernetes/kubernetes/pull/63742
+			Annotations: map[string]string{
+				"service.alpha.kubernetes.io/tolerate-unready-endpoints": "true",
+			},
 		},
 		Spec: core.ServiceSpec{
 			Type:                     core.ServiceTypeClusterIP,
