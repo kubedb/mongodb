@@ -41,7 +41,7 @@ func (f *Framework) EventuallyDormantDatabase(meta metav1.ObjectMeta) GomegaAsyn
 			}
 			return true
 		},
-		time.Minute*10,
+		time.Minute*5,
 		time.Second*5,
 	)
 }
@@ -58,7 +58,7 @@ func (f *Framework) EventuallyDormantDatabaseStatus(meta metav1.ObjectMeta) Gome
 			}
 			return drmn.Status.Phase
 		},
-		time.Minute*10,
+		time.Minute*5,
 		time.Second*5,
 	)
 }
@@ -113,7 +113,7 @@ func (f *Framework) EventuallyWipedOut(meta metav1.ObjectMeta) GomegaAsyncAssert
 
 			return nil
 		},
-		time.Minute*10,
+		time.Minute*5,
 		time.Second*5,
 	)
 }

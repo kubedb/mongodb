@@ -1,5 +1,5 @@
 #!/bin/bash
-set -xeou pipefail
+set -eou pipefail
 
 GOPATH=$(go env GOPATH)
 REPO_ROOT=$GOPATH/src/github.com/kubedb/mongodb

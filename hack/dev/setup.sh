@@ -4,8 +4,6 @@ set -eou pipefail
 GOPATH=$(go env GOPATH)
 REPO_ROOT="$GOPATH/src/github.com/kubedb/mongodb"
 
-pushd $REPO_ROOT
-
 # https://stackoverflow.com/a/677212/244009
 if [[ ! -z "$(command -v onessl)" ]]; then
   export ONESSL=onessl
@@ -70,4 +68,3 @@ cat $REPO_ROOT/hack/dev/validating-webhook.yaml | $ONESSL envsubst | kubectl app
 cat $REPO_ROOT/hack/dev/mutating-webhook.yaml | $ONESSL envsubst | kubectl apply -f -
 cat $REPO_ROOT/hack/dev/apiregistration.yaml | $ONESSL envsubst | kubectl apply -f -
 rm -f ./onessl
-popd

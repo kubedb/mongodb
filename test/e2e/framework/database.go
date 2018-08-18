@@ -11,18 +11,23 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Todo: use official go-mongodb driver. https://github.com/mongodb/mongo-go-driver
+// Currently in Alpha Release.
+//
+// Connect to each replica set instances to check data.
+// Currently `Secondary Nodes` not supported in used drivers.
+
 type KubedbTable struct {
 	bongo.DocumentBase `bson:",inline"`
 	FirstName          string
 	LastName           string
 }
 
-func (f *Framework) GetMongoDBClient(meta metav1.ObjectMeta, dbName string) (*bongo.Connection, error) {
+func (f *Framework) GetMongoDBClient(meta metav1.ObjectMeta, clientPodName string, dbName string) (*bongo.Connection, error) {
 	mongodb, err := f.GetMongoDB(meta)
 	if err != nil {
 		return nil, err
 	}
-	clientPodName := fmt.Sprintf("%v-0", mongodb.Name)
 	tunnel := portforward.NewTunnel(
 		f.kubeClient.CoreV1().RESTClient(),
 		f.restConfig,
@@ -41,21 +46,58 @@ func (f *Framework) GetMongoDBClient(meta metav1.ObjectMeta, dbName string) (*bo
 		ConnectionString: fmt.Sprintf("mongodb://%s:%s@127.0.0.1:%v", user, pass, tunnel.Local),
 		Database:         dbName,
 	}
-
 	return bongo.Connect(config)
+}
 
+func (f *Framework) GetPrimaryInstance(meta metav1.ObjectMeta, dbName string) (string, error) {
+	mongodb, err := f.GetMongoDB(meta)
+	if err != nil {
+		return "", err
+	}
+
+	if mongodb.Spec.ReplicaSet == nil {
+		return fmt.Sprintf("%v-0", mongodb.Name), nil
+	}
+
+	// For MongoDB ReplicaSet, Find out the primary instance.
+	// Current driver only connects to a primary instance.
+	// So, try to connect to each instance, and once it is connected to onc,
+	// that is our desired primary component!
+	//
+	// TODO: Extract information `IsMaster: true` from the component's status.
+	// Keep track of official go-mongodb driver and introduce that once it is stable.
+
+	for i := int32(0); i < *mongodb.Spec.Replicas; i++ {
+		clientPodName := fmt.Sprintf("%v-%d", mongodb.Name, i)
+		en, err := f.GetMongoDBClient(meta, clientPodName, dbName)
+		if err == nil {
+			en.Session.Close()
+			return clientPodName, nil
+		}
+		fmt.Println("GetMongoDB Client error", err)
+	}
+	return "", err
 }
 
 func (f *Framework) EventuallyInsertDocument(meta metav1.ObjectMeta, dbName string) GomegaAsyncAssertion {
 	return Eventually(
 		func() bool {
-			en, err := f.GetMongoDBClient(meta, dbName)
+			podName, err := f.GetPrimaryInstance(meta, dbName)
 			if err != nil {
+				fmt.Println("GetPrimaryInstance error", err)
 				return false
 			}
+
+			en, err := f.GetMongoDBClient(meta, podName, dbName)
+			if err != nil {
+				fmt.Println("GetMongoDB Client error", err)
+				return false
+			}
+
 			defer en.Session.Close()
 
 			if err := en.Session.Ping(); err != nil {
+				fmt.Println("Ping error", err)
 				return false
 			}
 
@@ -70,31 +112,41 @@ func (f *Framework) EventuallyInsertDocument(meta metav1.ObjectMeta, dbName stri
 			}
 			return true
 		},
-		time.Minute*15,
-		time.Second*10,
+		time.Minute*5,
+		time.Second*5,
 	)
 }
 
 func (f *Framework) EventuallyDocumentExists(meta metav1.ObjectMeta, dbName string) GomegaAsyncAssertion {
 	return Eventually(
 		func() bool {
-			en, err := f.GetMongoDBClient(meta, dbName)
+			podName, err := f.GetPrimaryInstance(meta, dbName)
 			if err != nil {
+				fmt.Println("GetPrimaryInstance error", err)
+				return false
+			}
+
+			en, err := f.GetMongoDBClient(meta, podName, dbName)
+			if err != nil {
+				fmt.Println("GetMongoDB Client error", err)
 				return false
 			}
 			defer en.Session.Close()
 
 			if err := en.Session.Ping(); err != nil {
+				fmt.Println("Ping error", err)
 				return false
 			}
 			person := &KubedbTable{}
 
-			if err := en.Collection("people").FindOne(bson.M{"firstname": "kubernetes"}, person); err == nil {
+			if er := en.Collection("people").FindOne(bson.M{"firstname": "kubernetes"}, person); er == nil {
 				return true
+			} else {
+				fmt.Println("checking error", er)
 			}
 			return false
 		},
-		time.Minute*15,
-		time.Second*10,
+		time.Minute*5,
+		time.Second*5,
 	)
 }

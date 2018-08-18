@@ -16,13 +16,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (f *Invocation) MongoDB() *api.MongoDB {
+func (i *Invocation) MongoDBStandalone() *api.MongoDB {
 	return &api.MongoDB{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      rand.WithUniqSuffix("mongodb"),
-			Namespace: f.namespace,
+			Namespace: i.namespace,
 			Labels: map[string]string{
-				"app": f.app,
+				"app": i.app,
 			},
 		},
 		Spec: api.MongoDBSpec{
@@ -33,14 +33,42 @@ func (f *Invocation) MongoDB() *api.MongoDB {
 						core.ResourceStorage: resource.MustParse("1Gi"),
 					},
 				},
-				StorageClassName: types.StringP(f.StorageClass),
+				StorageClassName: types.StringP(i.StorageClass),
 			},
 		},
 	}
 }
 
-func (f *Framework) CreateMongoDB(obj *api.MongoDB) error {
-	_, err := f.extClient.MongoDBs(obj.Namespace).Create(obj)
+func (i *Invocation) MongoDBRS() *api.MongoDB {
+	dbName := rand.WithUniqSuffix("mongodb-rs")
+	return &api.MongoDB{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      dbName,
+			Namespace: i.namespace,
+			Labels: map[string]string{
+				"app": i.app,
+			},
+		},
+		Spec: api.MongoDBSpec{
+			Version:  jsonTypes.StrYo(DBVersion),
+			Replicas: types.Int32P(2),
+			ReplicaSet: &api.MongoDBReplicaSet{
+				Name: dbName,
+			},
+			Storage: &core.PersistentVolumeClaimSpec{
+				Resources: core.ResourceRequirements{
+					Requests: core.ResourceList{
+						core.ResourceStorage: resource.MustParse("1Gi"),
+					},
+				},
+				StorageClassName: types.StringP(i.StorageClass),
+			},
+		},
+	}
+}
+
+func (i *Invocation) CreateMongoDB(obj *api.MongoDB) error {
+	_, err := i.extClient.MongoDBs(obj.Namespace).Create(obj)
 	return err
 }
 

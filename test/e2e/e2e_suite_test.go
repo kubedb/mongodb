@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"flag"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -25,8 +26,14 @@ import (
 	ka "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset"
 )
 
+// To Run E2E tests:
+// - For selfhosted Operator: ./hack/make.py test e2e --selfhosted-operator=true (--storageclass=standard) (--ginkgo.flakeAttempts=2)
+// - For non selfhosted Operator: ./hack/make.py test e2e (--docker-registry=kubedb) (--storageclass=standard) (--ginkgo.flakeAttempts=2)
+// () => Optional
+
 var (
-	storageClass string
+	storageClass  string
+	cloudProvider string
 
 	prometheusCrdGroup = pcm.Group
 	prometheusCrdKinds = pcm.DefaultCrdKinds
@@ -36,8 +43,9 @@ func init() {
 	scheme.AddToScheme(clientSetScheme.Scheme)
 
 	flag.StringVar(&storageClass, "storageclass", "standard", "Kubernetes StorageClass name")
-	flag.StringVar(&framework.DockerRegistry, "docker-registry", "kubedb", "User provided docker repository")
-	flag.StringVar(&framework.DBVersion, "mg-version", "3.6", "MongoDB version")
+	flag.StringVar(&cloudProvider, "cloud-provider", "", "Kubernetes StorageClass name")
+	flag.StringVar(&framework.DockerRegistry, "docker-registry", "kubedbci", "User provided docker repository")
+	flag.StringVar(&framework.DBVersion, "db-version", "3.6", "MongoDB version")
 	flag.StringVar(&framework.ExporterTag, "exporter-tag", "canary", "Tag of kubedb/operator used as exporter")
 	flag.BoolVar(&framework.SelfHostedOperator, "selfhosted-operator", false, "Enable this for provided controller")
 }
@@ -66,6 +74,9 @@ var _ = BeforeSuite(func() {
 	userHome := homedir.HomeDir()
 
 	// Kubernetes config
+	if cloudProvider == "" {
+		cloudProvider = os.Getenv(framework.CloudProviderEnvKey)
+	}
 	kubeconfigPath := filepath.Join(userHome, ".kube/config")
 	By("Using kubeconfig from " + kubeconfigPath)
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
@@ -82,7 +93,7 @@ var _ = BeforeSuite(func() {
 		log.Fatalln(err)
 	}
 	// Framework
-	root = framework.New(config, kubeClient, extClient, kaClient, storageClass)
+	root = framework.New(config, kubeClient, extClient, kaClient, storageClass, cloudProvider)
 
 	By("Using namespace " + root.Namespace())
 
@@ -112,6 +123,8 @@ var _ = AfterSuite(func() {
 	root.CleanDormantDatabase()
 	By("Delete left over Snapshot objects")
 	root.CleanSnapshot()
+	By("Delete left over workloads if exists any")
+	root.CleanWorkloadLeftOvers()
 	By("Delete Namespace")
 	err := root.DeleteNamespace()
 	Expect(err).NotTo(HaveOccurred())

@@ -66,8 +66,8 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 	}
 
 	// create Governing Service
-	governingService := c.GoverningService
-	if err := c.CreateGoverningService(governingService, mongodb.Namespace); err != nil {
+	governingService, err := c.createMongoDBGoverningService(mongodb)
+	if err != nil {
 		if ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb); rerr == nil {
 			c.recorder.Eventf(
 				ref,
@@ -80,6 +80,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 		}
 		return err
 	}
+	c.GoverningService = governingService
 
 	// ensure database Service
 	vt1, err := c.ensureService(mongodb)
@@ -89,6 +90,12 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 
 	if err := c.ensureDatabaseSecret(mongodb); err != nil {
 		return err
+	}
+
+	if mongodb.Spec.ReplicaSet != nil && mongodb.Spec.ConfigSource == nil {
+		if err := c.ensureConfigMap(mongodb); err != nil {
+			return err
+		}
 	}
 
 	// ensure database StatefulSet
