@@ -132,7 +132,8 @@ if mongo "${ssl_args[@]}" --eval "rs.status()" | grep "no replset config has bee
     mongo admin "${ssl_args[@]}" --eval "db.createUser({user: '$admin_user', pwd: '$admin_password', roles: [{role: 'root', db: 'admin'}]})"
   fi
 
-  # Initialize Part for KubeDB. ref: https://github.com/docker-library/mongo/blob/a499e81e743b05a5237e2fd700c0284b17d3d416/3.4/docker-entrypoint.sh#L302
+  # Initialize Part for KubeDB. 
+  # ref: https://github.com/docker-library/mongo/blob/a499e81e743b05a5237e2fd700c0284b17d3d416/3.4/docker-entrypoint.sh#L302
   # Start
   export MONGO_INITDB_DATABASE="${MONGO_INITDB_DATABASE:-test}"
 
