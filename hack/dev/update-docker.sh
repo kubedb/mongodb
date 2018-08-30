@@ -93,7 +93,8 @@ fi
 if [ "$EXPORTER_UPDATE" -eq 1 ]; then
   cowsay -f tux "Processing database-exporter images" || true
   for exporter in "${exporters[@]}"; do
-    ${REPO_ROOT}/hack/docker/mmongodb-exporter/${exporter}/make.sh
+    ${REPO_ROOT}/hack/docker/mongodb_exporter/${exporter}/make.sh build
+    ${REPO_ROOT}/hack/docker/mongodb_exporter/${exporter}/make.sh push
   done
 fi
 

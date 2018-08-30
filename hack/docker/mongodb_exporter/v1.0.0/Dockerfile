@@ -10,7 +10,7 @@ RUN git clone https://github.com/dcu/mongodb_exporter.git /go/src/github.com/dcu
     && git checkout master \
     && make release
 
-FROM       alpine:3.4
+FROM       alpine
 EXPOSE     9001
 
 RUN apk add --update ca-certificates
