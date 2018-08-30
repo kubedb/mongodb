@@ -1,5 +1,5 @@
-hash: 23f3de391ead1ae92f37702b5d3d67557c1230011c4dcf2700354dce94a0f596
-updated: 2018-08-30T12:21:09.345012404+06:00
+hash: 7c185f453f81b755b3d1d33429923bce4d28a1eeddccb133a47c602ab1c0b1c0
+updated: 2018-08-30T15:23:09.482936125+06:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -320,7 +320,7 @@ imports:
 - name: github.com/json-iterator/go
   version: 1624edc4454b8682399def8740d46db5e4362ba4
 - name: github.com/kubedb/apimachinery
-  version: b42939759a52b9e0f4969d6fa82dc23873414356
+  version: 2b731a8c0ebd43ffb97cda88d285805066064505
   subpackages:
   - apis/kubedb
   - apis/kubedb/v1alpha1
@@ -687,7 +687,9 @@ imports:
   - third_party/forked/golang/netutil
   - third_party/forked/golang/reflect
 - name: k8s.io/apiserver
-  version: 01459b68eb5fee2dcf5ca0e29df8bcac89ead47b
+  version: 413d6c435277570ff1866384c518002dcf3bf8e1
+  repo: https://github.com/pharmer/apiserver.git
+  vcs: git
   subpackages:
   - pkg/admission
   - pkg/admission/configuration
