@@ -120,6 +120,8 @@ if [ "$APPSCODE_ENV" = "dev" ]; then
 fi
 
 echo ""
+env | sort | grep -e KUBEDB* -e APPSCODE*
+echo ""
 
 if [ "$SELF_HOSTED" -eq 1 ]; then
   echo "${KUBEDB_SCRIPT}hack/deploy/kubedb.sh | bash -s -- --operator-name=mg-operator $ARGS"
