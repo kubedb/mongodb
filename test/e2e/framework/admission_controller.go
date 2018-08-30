@@ -60,8 +60,8 @@ func (f *Framework) RunOperatorAndServer(kubeconfigPath string, stopCh <-chan st
 	defer GinkgoRecover()
 
 	sh := shell.NewSession()
-	args := []interface{}{"--namespace", f.Namespace()}
-	SetupServer := filepath.Join("..", "..", "hack", "dev", "setup.sh")
+	args := []interface{}{"--minikube"}
+	SetupServer := filepath.Join("..", "..", "hack", "deploy", "setup.sh")
 
 	By("Creating API server and webhook stuffs")
 	cmd := sh.Command(SetupServer, args...)

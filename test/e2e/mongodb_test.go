@@ -506,7 +506,7 @@ var _ = Describe("MongoDB", func() {
 					garbageMongoDB.Items = append(garbageMongoDB.Items, *oldMongoDB)
 
 					By("Create mongodb from snapshot")
-					mongodb = f.MongoDBStandalone()
+					mongodb = anotherMongoDB
 					mongodb.Spec.Init = &api.InitSpec{
 						SnapshotSource: &api.SnapshotSourceSpec{
 							Namespace: snapshot.Namespace,
