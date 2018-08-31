@@ -124,6 +124,7 @@ jobs:
     params:
       state: pending
       commit: mongodb
+      description: "concourse-ci"
   - task: test-e2e
     privileged: true
     file: mongodb/hack/concourse/task.yml
@@ -137,11 +138,13 @@ jobs:
       params:
         state: success
         commit: mongodb
+        description: "concourse-ci"
     on_failure:
       put: repo-status
       params:
         state: failure
         commit: mongodb
+        description: "concourse-ci"
     ensure:
       put: concourse-locks
       params:
