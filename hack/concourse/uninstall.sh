@@ -15,4 +15,4 @@ source "hack/libbuild/common/lib.sh"
 detect_tag ''
 
 # delete docker image on exit
-./hack/libbuil/docker.py del_tag $DOCKER_REGISTRY mg-operator $TAG
+./hack/libbuild/docker.py del_tag $DOCKER_REGISTRY mg-operator $TAG
