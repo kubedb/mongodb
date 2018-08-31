@@ -1,4 +1,4 @@
-FROM alpine
+FROM alpine:3.4
 
 COPY mongodb_exporter /bin/mongodb_exporter
 
