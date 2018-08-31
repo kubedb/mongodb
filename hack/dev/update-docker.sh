@@ -67,6 +67,7 @@ dbversions=(
 )
 
 exporters=(
+  latest
   v1.0.0
 )
 

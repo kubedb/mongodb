@@ -1,5 +1,5 @@
 hash: 7c185f453f81b755b3d1d33429923bce4d28a1eeddccb133a47c602ab1c0b1c0
-updated: 2018-08-30T15:23:09.482936125+06:00
+updated: 2018-08-31T12:20:21.836552548+06:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -25,6 +25,8 @@ imports:
   - strings
   - types
   - version
+- name: github.com/appscode/go-version
+  version: 0dcf3ac121c7c30e035b41ba9f652d1ce5994242
 - name: github.com/appscode/jsonpatch
   version: 1359b374de83fa14fd58ab10aa8ea4935f84d249
 - name: github.com/appscode/kubernetes-webhook-util
@@ -38,6 +40,7 @@ imports:
   - apiextensions/v1beta1
   - apps/v1
   - core/v1
+  - discovery
   - meta
   - tools/analytics
   - tools/portforward
@@ -240,7 +243,7 @@ imports:
   - proto
   - sortkeys
 - name: github.com/golang/glog
-  version: 44145f04b68cf362d9c4df2182967c2275eaefed
+  version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
 - name: github.com/golang/groupcache
   version: 02826c3e79038b59d737d3b1c0a1d937f71a4433
   subpackages:
@@ -525,7 +528,7 @@ imports:
   subpackages:
   - rate
 - name: google.golang.org/api
-  version: 087779f1d2c96357d4c45bd04c4d10d7b5f22736
+  version: b810576d88a056b90ef18a0b5328544c9c074c68
   subpackages:
   - gensupport
   - googleapi
@@ -573,7 +576,7 @@ imports:
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/mgo.v2
-  version: 9856a29383ce1c59f308dd1cf0363a79b5bef6b5
+  version: 3f83fa5005286a7fe593b055f0d7771a7dce4655
   subpackages:
   - bson
   - internal/json

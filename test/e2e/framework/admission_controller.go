@@ -7,13 +7,21 @@ import (
 	"path/filepath"
 	"time"
 
+	discovery_util "github.com/appscode/kutil/discovery"
+	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
+
 	"github.com/appscode/go/log"
+	restclient "k8s.io/client-go/rest"
+
+	"strings"
+
 	shell "github.com/codeskyblue/go-sh"
 	"github.com/kubedb/mongodb/pkg/cmds/server"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/discovery"
 	kApi "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 )
 
@@ -56,8 +64,18 @@ func (f *Framework) EventuallyAPIServiceReady() GomegaAsyncAssertion {
 	)
 }
 
-func (f *Framework) RunOperatorAndServer(kubeconfigPath string, stopCh <-chan struct{}) {
+func (f *Framework) RunOperatorAndServer(config *restclient.Config, kubeconfigPath string, stopCh <-chan struct{}) {
 	defer GinkgoRecover()
+
+	// Check and set EnableStatusSubresource=true for >=kubernetes v1.11
+	// Todo: remove this part and set EnableStatusSubresource=true automatically when subresources is must in kubedb.
+	discClient, err := discovery.NewDiscoveryClientForConfig(config)
+	Expect(err).NotTo(HaveOccurred())
+	serverVersion, err := discovery_util.GetBaseVersion(discClient)
+	Expect(err).NotTo(HaveOccurred())
+	if strings.Compare(serverVersion, "1.11") >= 0 {
+		api.EnableStatusSubresource = true
+	}
 
 	sh := shell.NewSession()
 	args := []interface{}{"--minikube"}
@@ -65,7 +83,7 @@ func (f *Framework) RunOperatorAndServer(kubeconfigPath string, stopCh <-chan st
 
 	By("Creating API server and webhook stuffs")
 	cmd := sh.Command(SetupServer, args...)
-	err := cmd.Run()
+	err = cmd.Run()
 	Expect(err).ShouldNot(HaveOccurred())
 
 	By("Starting Server and Operator")

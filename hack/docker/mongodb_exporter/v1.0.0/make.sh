@@ -13,9 +13,16 @@ TAG=v1.0.0
 
 build() {
   pushd "$REPO_ROOT/hack/docker/mongodb_exporter/$TAG"
+
+  # Download mongodb_exporter. github repo: https://github.com/dcu/mongodb_exporter
+  # Prometheus Exporters link: https://prometheus.io/docs/instrumenting/exporters/
+  wget -O mongodb_exporter https://github.com/dcu/mongodb_exporter/releases/download/$TAG/mongodb_exporter-linux-amd64
+  chmod +x mongodb_exporter
+
   local cmd="docker build -t $DOCKER_REGISTRY/$IMG:$TAG ."
   echo $cmd; $cmd
 
+  rm mongodb_exporter
   popd
 }
 
