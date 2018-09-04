@@ -142,6 +142,10 @@ func ValidateMongoDB(client kubernetes.Interface, extClient kubedbv1alpha1.Kubed
 		return fmt.Errorf(`'spec.storageType' is missing`)
 	}
 
+	if mongodb.Spec.TerminationPolicy == "" {
+		return fmt.Errorf(`'spec.terminationPolicy' is missing`)
+	}
+
 	if mongodb.Spec.Replicas == nil || *mongodb.Spec.Replicas < 1 {
 		return fmt.Errorf(`spec.replicas "%v" invalid. Must be greater than zero`, mongodb.Spec.Replicas)
 	}

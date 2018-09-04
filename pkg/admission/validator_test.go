@@ -264,6 +264,7 @@ func sampleMongoDB() api.MongoDB {
 					},
 				},
 			},
+			TerminationPolicy: api.TerminationPolicyPause,
 		},
 	}
 }

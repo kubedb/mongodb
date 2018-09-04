@@ -105,6 +105,10 @@ func setDefaultValues(client kubernetes.Interface, extClient cs.Interface, mongo
 		mongodb.Spec.StorageType = api.StorageTypeDurable
 	}
 
+	if mongodb.Spec.TerminationPolicy == "" {
+		mongodb.Spec.TerminationPolicy = api.TerminationPolicyPause
+	}
+
 	if mongodb.Spec.Replicas == nil {
 		mongodb.Spec.Replicas = types.Int32P(1)
 	}
