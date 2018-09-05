@@ -138,14 +138,6 @@ func ValidateMongoDB(client kubernetes.Interface, extClient kubedbv1alpha1.Kubed
 		return err
 	}
 
-	if mongodb.Spec.StorageType == "" {
-		return fmt.Errorf(`'spec.storageType' is missing`)
-	}
-
-	if mongodb.Spec.TerminationPolicy == "" {
-		return fmt.Errorf(`'spec.terminationPolicy' is missing`)
-	}
-
 	if mongodb.Spec.Replicas == nil || *mongodb.Spec.Replicas < 1 {
 		return fmt.Errorf(`spec.replicas "%v" invalid. Must be greater than zero`, mongodb.Spec.Replicas)
 	}
@@ -158,6 +150,9 @@ func ValidateMongoDB(client kubernetes.Interface, extClient kubedbv1alpha1.Kubed
 		return err
 	}
 
+	if mongodb.Spec.StorageType == "" {
+		return fmt.Errorf(`'spec.storageType' is missing`)
+	}
 	if err := amv.ValidateStorage(client, mongodb.Spec.StorageType, mongodb.Spec.Storage); err != nil {
 		return err
 	}
@@ -174,6 +169,14 @@ func ValidateMongoDB(client kubernetes.Interface, extClient kubedbv1alpha1.Kubed
 		if err := amv.ValidateBackupSchedule(client, backupScheduleSpec, mongodb.Namespace); err != nil {
 			return err
 		}
+	}
+
+	if mongodb.Spec.UpdateStrategy.Type == "" {
+		return fmt.Errorf(`'spec.updateStrategy.type' is missing`)
+	}
+
+	if mongodb.Spec.TerminationPolicy == "" {
+		return fmt.Errorf(`'spec.terminationPolicy' is missing`)
 	}
 
 	monitorSpec := mongodb.Spec.Monitor

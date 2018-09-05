@@ -3,7 +3,7 @@ package admission
 import (
 	"net/http"
 	"testing"
-
+	apps "k8s.io/api/apps/v1"
 	"github.com/appscode/go/types"
 	"github.com/appscode/kutil/meta"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
@@ -263,6 +263,9 @@ func sampleMongoDB() api.MongoDB {
 						},
 					},
 				},
+			},
+			UpdateStrategy: apps.StatefulSetUpdateStrategy{
+				Type: apps.RollingUpdateStatefulSetStrategyType,
 			},
 			TerminationPolicy: api.TerminationPolicyPause,
 		},

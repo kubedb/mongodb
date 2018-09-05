@@ -197,7 +197,7 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 		in.Spec.Template.Spec.Priority = mongodb.Spec.PodTemplate.Spec.Priority
 		in.Spec.Template.Spec.SecurityContext = mongodb.Spec.PodTemplate.Spec.SecurityContext
 
-		in.Spec.UpdateStrategy.Type = apps.RollingUpdateStatefulSetStrategyType
+		in.Spec.UpdateStrategy = mongodb.Spec.UpdateStrategy
 		return in
 	})
 }
