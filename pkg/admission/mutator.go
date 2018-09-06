@@ -3,7 +3,7 @@ package admission
 import (
 	"fmt"
 	"sync"
-	apps "k8s.io/api/apps/v1"
+
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
 	hookapi "github.com/appscode/kubernetes-webhook-util/admission/v1beta1"
@@ -104,28 +104,15 @@ func setDefaultValues(client kubernetes.Interface, extClient cs.Interface, mongo
 	if mongodb.Spec.Replicas == nil {
 		mongodb.Spec.Replicas = types.Int32P(1)
 	}
+	mongodb.SetDefaults()
 
 	if err := setDefaultsFromDormantDB(extClient, mongodb); err != nil {
 		return nil, err
 	}
 
-	if mongodb.Spec.StorageType == "" {
-		mongodb.Spec.StorageType = api.StorageTypeDurable
-	}
-
-	if mongodb.Spec.UpdateStrategy.Type == "" {
-		mongodb.Spec.UpdateStrategy.Type = apps.RollingUpdateStatefulSetStrategyType
-	}
-
-	if mongodb.Spec.TerminationPolicy == "" {
-		mongodb.Spec.TerminationPolicy = api.TerminationPolicyPause
-	}
-
 	// If monitoring spec is given without port,
 	// set default Listening port
 	setMonitoringPort(mongodb)
-
-	mongodb.Migrate()
 
 	return mongodb, nil
 }
@@ -148,18 +135,7 @@ func setDefaultsFromDormantDB(extClient cs.Interface, mongodb *api.MongoDB) erro
 
 	// Check Origin Spec
 	ddbOriginSpec := dormantDb.Spec.Origin.Spec.MongoDB
-
-	if mongodb.Spec.StorageType == "" {
-		mongodb.Spec.StorageType = ddbOriginSpec.StorageType
-	}
-
-	if mongodb.Spec.UpdateStrategy.Type == "" {
-		mongodb.Spec.UpdateStrategy = ddbOriginSpec.UpdateStrategy
-	}
-
-	if mongodb.Spec.TerminationPolicy == "" {
-		mongodb.Spec.TerminationPolicy = ddbOriginSpec.TerminationPolicy
-	}
+	ddbOriginSpec.SetDefaults()
 
 	// If DatabaseSecret of new object is not given,
 	// Take dormantDatabaseSecretName

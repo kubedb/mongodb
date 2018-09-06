@@ -209,6 +209,7 @@ func matchWithDormantDatabase(extClient kubedbv1alpha1.KubedbV1alpha1Interface, 
 
 	// Check Origin Spec
 	drmnOriginSpec := dormantDb.Spec.Origin.Spec.MongoDB
+	drmnOriginSpec.SetDefaults()
 	originalSpec := mongodb.Spec
 
 	// Skip checking doNotPause
