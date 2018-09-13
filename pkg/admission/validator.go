@@ -215,6 +215,12 @@ func matchWithDormantDatabase(extClient kubedbv1alpha1.KubedbV1alpha1Interface, 
 	// Skip checking doNotPause
 	drmnOriginSpec.DoNotPause = originalSpec.DoNotPause
 
+	// Skip checking UpdateStrategy
+	drmnOriginSpec.UpdateStrategy = originalSpec.UpdateStrategy
+
+	// Skip checking TerminationPolicy
+	drmnOriginSpec.TerminationPolicy = originalSpec.TerminationPolicy
+
 	// Skip checking Monitoring
 	drmnOriginSpec.Monitor = originalSpec.Monitor
 

@@ -9,13 +9,15 @@ source "$REPO_ROOT/hack/libbuild/common/kubedb_image.sh"
 
 DOCKER_REGISTRY=${DOCKER_REGISTRY:-kubedb}
 IMG=mongo
-TAG=3.4
+SUFFIX=v1
+DB_VERSION=3.4
+TAG="$DB_VERSION-$SUFFIX"
 
 DIST=$REPO_ROOT/dist
 mkdir -p $DIST
 
 build() {
-  pushd "$REPO_ROOT/hack/docker/mongo/$TAG"
+  pushd "$REPO_ROOT/hack/docker/mongo/$DB_VERSION"
 
   # Download Peer-finder
   # ref: peer-finder: https://github.com/kubernetes/contrib/tree/master/peer-finder

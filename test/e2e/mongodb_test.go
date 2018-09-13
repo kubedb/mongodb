@@ -71,6 +71,17 @@ var _ = Describe("MongoDB", func() {
 		if mongodb == nil {
 			Skip("Skipping")
 		}
+
+		By("Check if mongodb " + mongodb.Name + " exists.")
+		_, err := f.GetMongoDB(mongodb.ObjectMeta)
+		if err != nil {
+			if kerr.IsNotFound(err) {
+				// MongoDB was not created. Hence, rest of cleanup is not necessary.
+				return
+			}
+			Expect(err).NotTo(HaveOccurred())
+		}
+
 		By("Delete mongodb")
 		err = f.DeleteMongoDB(mongodb.ObjectMeta)
 		if err != nil {
@@ -97,8 +108,6 @@ var _ = Describe("MongoDB", func() {
 
 		By("Wait for mongodb resources to be wipedOut")
 		f.EventuallyWipedOut(mongodb.ObjectMeta).Should(Succeed())
-
-		// Todo: DeleteMongoDB Version on aftereach (pending on Previous PR)
 	}
 
 	AfterEach(func() {
@@ -144,7 +153,7 @@ var _ = Describe("MongoDB", func() {
 					if skipMessage != "" {
 						Skip(skipMessage)
 					}
-					// Create MySQL
+					// Create MongoDB
 					createAndWaitForRunning()
 
 					By("Insert Document Inside DB")
@@ -1110,6 +1119,203 @@ var _ = Describe("MongoDB", func() {
 						mongodb = f.MongoDBRS()
 					})
 					It("should take Snapshot successfully", shouldeReUseDormantDBcheduler)
+				})
+			})
+		})
+
+		Context("Termination Policy", func() {
+			BeforeEach(func() {
+				skipSnapshotDataChecking = false
+				secret = f.SecretForS3Backend()
+				snapshot.Spec.StorageSecretName = secret.Name
+				snapshot.Spec.S3 = &store.S3Spec{
+					Bucket: os.Getenv(S3_BUCKET_NAME),
+				}
+				snapshot.Spec.DatabaseName = mongodb.Name
+			})
+
+			AfterEach(func() {
+				if snapshot != nil {
+					By("Delete Existing snapshot")
+					err := f.DeleteSnapshot(snapshot.ObjectMeta)
+					if err != nil {
+						if kerr.IsNotFound(err) {
+							// MongoDB was not created. Hence, rest of cleanup is not necessary.
+							return
+						}
+						Expect(err).NotTo(HaveOccurred())
+					}
+				}
+			})
+
+			var shouldRunWithSnapshot = func() {
+				// Create and wait for running MongoDB
+				createAndWaitForRunning()
+
+				By("Insert Document Inside DB")
+				f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName).Should(BeTrue())
+
+				By("Checking Inserted Document")
+				f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName).Should(BeTrue())
+
+				By("Create Secret")
+				f.CreateSecret(secret)
+
+				By("Create Snapshot")
+				f.CreateSnapshot(snapshot)
+
+				By("Check for succeeded snapshot")
+				f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
+
+				if !skipSnapshotDataChecking {
+					By("Check for snapshot data")
+					f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
+				}
+			}
+
+			Context("with TerminationPolicyPause (default)", func() {
+				var shouldRunWithTerminationPause = func() {
+					shouldRunWithSnapshot()
+
+					By("Delete mongodb")
+					err = f.DeleteMongoDB(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					// DormantDatabase.Status= paused, means mongodb object is deleted
+					By("Wait for mongodb to be paused")
+					f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
+
+					By("Check for intact snapshot")
+					_, err := f.GetSnapshot(snapshot.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					if !skipSnapshotDataChecking {
+						By("Check for snapshot data")
+						f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
+					}
+
+					// Create MongoDB object again to resume it
+					By("Create (pause) MongoDB: " + mongodb.Name)
+					err = f.CreateMongoDB(mongodb)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Wait for DormantDatabase to be deleted")
+					f.EventuallyDormantDatabase(mongodb.ObjectMeta).Should(BeFalse())
+
+					By("Wait for Running mongodb")
+					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+
+					mongodb, err = f.GetMongoDB(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Checking Inserted Document")
+					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName).Should(BeTrue())
+
+				}
+
+				It("should create dormantdatabase successfully", shouldRunWithTerminationPause)
+
+				Context("with Replica Set", func() {
+					BeforeEach(func() {
+						mongodb = f.MongoDBRS()
+						snapshot.Spec.DatabaseName = mongodb.Name
+					})
+
+					It("should create dormantdatabase successfully", shouldRunWithTerminationPause)
+				})
+			})
+
+			Context("with TerminationPolicyDelete", func() {
+				BeforeEach(func() {
+					mongodb.Spec.TerminationPolicy = api.TerminationPolicyDelete
+				})
+
+				var shouldRunWithTerminationDelete = func() {
+					shouldRunWithSnapshot()
+
+					By("Delete mongodb")
+					err = f.DeleteMongoDB(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("wait until mongodb is deleted")
+					f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeFalse())
+
+					By("Check for deleted PVCs")
+					f.EventuallyPVCCount(mongodb.ObjectMeta).Should(Equal(0))
+
+					By("Check for intact Secrets")
+					f.EventuallyDBSecretCount(mongodb.ObjectMeta).ShouldNot(Equal(0))
+
+					By("Check for intact snapshot")
+					_, err := f.GetSnapshot(snapshot.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					if !skipSnapshotDataChecking {
+						By("Check for intact snapshot data")
+						f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
+					}
+
+					By("Delete snapshot")
+					err = f.DeleteSnapshot(snapshot.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					if !skipSnapshotDataChecking {
+						By("Check for deleted snapshot data")
+						f.EventuallySnapshotDataFound(snapshot).Should(BeFalse())
+					}
+				}
+
+				It("should run with TerminationPolicyDelete", shouldRunWithTerminationDelete)
+
+				Context("with Replica Set", func() {
+					BeforeEach(func() {
+						mongodb = f.MongoDBRS()
+						mongodb.Spec.TerminationPolicy = api.TerminationPolicyDelete
+						snapshot.Spec.DatabaseName = mongodb.Name
+					})
+					It("should initialize database successfully", shouldRunWithTerminationDelete)
+				})
+			})
+
+			Context("with TerminationPolicyWipeOut", func() {
+				BeforeEach(func() {
+					mongodb.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
+				})
+
+				var shouldRunWithTerminationWipeOut = func() {
+					shouldRunWithSnapshot()
+
+					By("Delete mongodb")
+					err = f.DeleteMongoDB(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("wait until mongodb is deleted")
+					f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeFalse())
+
+					By("Check for deleted PVCs")
+					f.EventuallyPVCCount(mongodb.ObjectMeta).Should(Equal(0))
+
+					By("Check for deleted Secrets")
+					f.EventuallyDBSecretCount(mongodb.ObjectMeta).Should(Equal(0))
+
+					By("Check for deleted Snapshots")
+					f.EventuallySnapshotCount(snapshot.ObjectMeta).Should(Equal(0))
+
+					if !skipSnapshotDataChecking {
+						By("Check for deleted snapshot data")
+						f.EventuallySnapshotDataFound(snapshot).Should(BeFalse())
+					}
+				}
+
+				It("should run with TerminationPolicyDelete", shouldRunWithTerminationWipeOut)
+
+				Context("with Replica Set", func() {
+					BeforeEach(func() {
+						mongodb = f.MongoDBRS()
+						snapshot.Spec.DatabaseName = mongodb.Name
+						mongodb.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
+					})
+					It("should initialize database successfully", shouldRunWithTerminationWipeOut)
 				})
 			})
 		})
