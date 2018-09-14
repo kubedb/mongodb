@@ -23,15 +23,11 @@ type KubedbTable struct {
 	LastName           string
 }
 
-func (f *Framework) GetMongoDBClient(meta metav1.ObjectMeta, clientPodName string, dbName string) (*bongo.Connection, error) {
-	mongodb, err := f.GetMongoDB(meta)
-	if err != nil {
-		return nil, err
-	}
+func (f *Framework) ForwardPort(meta metav1.ObjectMeta, clientPodName string) (*portforward.Tunnel, error) {
 	tunnel := portforward.NewTunnel(
 		f.kubeClient.CoreV1().RESTClient(),
 		f.restConfig,
-		mongodb.Namespace,
+		meta.Namespace,
 		clientPodName,
 		27017,
 	)
@@ -39,6 +35,15 @@ func (f *Framework) GetMongoDBClient(meta metav1.ObjectMeta, clientPodName strin
 	if err := tunnel.ForwardPort(); err != nil {
 		return nil, err
 	}
+	return tunnel, nil
+}
+
+func (f *Framework) GetMongoDBClient(meta metav1.ObjectMeta, tunnel *portforward.Tunnel, dbName string) (*bongo.Connection, error) {
+	mongodb, err := f.GetMongoDB(meta)
+	if err != nil {
+		return nil, err
+	}
+
 	user := "root"
 	pass, err := f.GetMongoDBRootPassword(mongodb)
 
@@ -69,7 +74,13 @@ func (f *Framework) GetPrimaryInstance(meta metav1.ObjectMeta, dbName string) (s
 
 	for i := int32(0); i < *mongodb.Spec.Replicas; i++ {
 		clientPodName := fmt.Sprintf("%v-%d", mongodb.Name, i)
-		en, err := f.GetMongoDBClient(meta, clientPodName, dbName)
+		tunnel, err := f.ForwardPort(meta, clientPodName)
+		if err != nil {
+			return "", err
+		}
+
+		en, err := f.GetMongoDBClient(meta, tunnel, dbName)
+		tunnel.Close()
 		if err == nil {
 			en.Session.Close()
 			return clientPodName, nil
@@ -88,7 +99,14 @@ func (f *Framework) EventuallyInsertDocument(meta metav1.ObjectMeta, dbName stri
 				return false
 			}
 
-			en, err := f.GetMongoDBClient(meta, podName, dbName)
+			tunnel, err := f.ForwardPort(meta, podName)
+			if err != nil {
+				fmt.Println("Failed to forward port. Reason: ", err)
+				return false
+			}
+			defer tunnel.Close()
+
+			en, err := f.GetMongoDBClient(meta, tunnel, dbName)
 			if err != nil {
 				fmt.Println("GetMongoDB Client error", err)
 				return false
@@ -126,7 +144,14 @@ func (f *Framework) EventuallyDocumentExists(meta metav1.ObjectMeta, dbName stri
 				return false
 			}
 
-			en, err := f.GetMongoDBClient(meta, podName, dbName)
+			tunnel, err := f.ForwardPort(meta, podName)
+			if err != nil {
+				fmt.Println("Failed to forward port. Reason: ", err)
+				return false
+			}
+			defer tunnel.Close()
+
+			en, err := f.GetMongoDBClient(meta, tunnel, dbName)
 			if err != nil {
 				fmt.Println("GetMongoDB Client error", err)
 				return false

@@ -266,20 +266,64 @@ var _ = Describe("MongoDB", func() {
 					skipSnapshotDataChecking = true
 					secret = f.SecretForLocalBackend()
 					snapshot.Spec.StorageSecretName = secret.Name
-					snapshot.Spec.Local = &store.LocalSpec{
-						MountPath: "/repo",
-						VolumeSource: core.VolumeSource{
-							EmptyDir: &core.EmptyDirVolumeSource{},
-						},
-					}
 				})
 
-				It("should take Snapshot successfully", shouldTakeSnapshot)
+				Context("With EmptyDir as Snapshot's backend", func() {
+					BeforeEach(func() {
+						snapshot.Spec.Local = &store.LocalSpec{
+							MountPath: "/repo",
+							VolumeSource: core.VolumeSource{
+								EmptyDir: &core.EmptyDirVolumeSource{},
+							},
+						}
+					})
+
+					It("should take Snapshot successfully", shouldTakeSnapshot)
+				})
+
+				Context("With PVC as Snapshot's backend", func() {
+					var snapPVC *core.PersistentVolumeClaim
+
+					BeforeEach(func() {
+						snapPVC = f.GetPersistentVolumeClaim()
+						err := f.CreatePersistentVolumeClaim(snapPVC)
+						Expect(err).NotTo(HaveOccurred())
+
+						snapshot.Spec.Local = &store.LocalSpec{
+							MountPath: "/repo",
+							VolumeSource: core.VolumeSource{
+								PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
+									ClaimName: snapPVC.Name,
+								},
+							},
+						}
+					})
+
+					AfterEach(func() {
+						f.DeletePersistentVolumeClaim(snapPVC.ObjectMeta)
+					})
+
+					It("should delete Snapshot successfully", func() {
+						shouldTakeSnapshot()
+
+						By("Deleting Snapshot")
+						f.DeleteSnapshot(snapshot.ObjectMeta)
+
+						By("Waiting Snapshot to be deleted")
+						f.EventuallySnapshot(snapshot.ObjectMeta).Should(BeFalse())
+					})
+				})
 
 				Context("With Replica Set", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
 						snapshot.Spec.DatabaseName = mongodb.Name
+						snapshot.Spec.Local = &store.LocalSpec{
+							MountPath: "/repo",
+							VolumeSource: core.VolumeSource{
+								EmptyDir: &core.EmptyDirVolumeSource{},
+							},
+						}
 					})
 					It("should take Snapshot successfully", shouldTakeSnapshot)
 				})
