@@ -1240,6 +1240,9 @@ var _ = Describe("MongoDB", func() {
 					By("wait until mongodb is deleted")
 					f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeFalse())
 
+					By("Checking DormantDatabase is not created")
+					f.EventuallyDormantDatabase(mongodb.ObjectMeta).Should(BeFalse())
+
 					By("Check for deleted PVCs")
 					f.EventuallyPVCCount(mongodb.ObjectMeta).Should(Equal(0))
 
@@ -1291,6 +1294,9 @@ var _ = Describe("MongoDB", func() {
 
 					By("wait until mongodb is deleted")
 					f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeFalse())
+
+					By("Checking DormantDatabase is not created")
+					f.EventuallyDormantDatabase(mongodb.ObjectMeta).Should(BeFalse())
 
 					By("Check for deleted PVCs")
 					f.EventuallyPVCCount(mongodb.ObjectMeta).Should(Equal(0))

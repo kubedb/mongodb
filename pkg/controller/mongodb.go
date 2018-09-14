@@ -48,7 +48,8 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 			"DBVersion %v is deprecated. Skipped processing.",
 			mongodbVersion.Name,
 		)
-		log.Errorf("DBVersion %v is deprecated. Skipped processing.", mongodbVersion.Name)
+		log.Errorf("MongoDB %s/%s is using deprecated version %v. Skipped processing.",
+			mongodb.Namespace, mongodb.Name, mongodbVersion.Name)
 		return nil
 	}
 
