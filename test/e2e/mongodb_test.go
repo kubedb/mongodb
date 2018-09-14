@@ -35,6 +35,7 @@ var _ = Describe("MongoDB", func() {
 		mongodbVersion           *api.MongoDBVersion
 		garbageMongoDB           *api.MongoDBList
 		snapshot                 *api.Snapshot
+		snapshotPVC              *core.PersistentVolumeClaim
 		secret                   *core.Secret
 		skipMessage              string
 		skipSnapshotDataChecking bool
@@ -131,6 +132,13 @@ var _ = Describe("MongoDB", func() {
 
 		By("Delete left over workloads if exists any")
 		f.CleanWorkloadLeftOvers()
+
+		if snapshotPVC != nil {
+			err := f.DeletePersistentVolumeClaim(snapshotPVC.ObjectMeta)
+			if err != nil && !kerr.IsNotFound(err) {
+				Expect(err).NotTo(HaveOccurred())
+			}
+		}
 
 		err = f.DeleteMongoDBVersion(mongodbVersion.ObjectMeta)
 		if err != nil && !kerr.IsNotFound(err) {
@@ -282,25 +290,21 @@ var _ = Describe("MongoDB", func() {
 				})
 
 				Context("With PVC as Snapshot's backend", func() {
-					var snapPVC *core.PersistentVolumeClaim
 
 					BeforeEach(func() {
-						snapPVC = f.GetPersistentVolumeClaim()
-						err := f.CreatePersistentVolumeClaim(snapPVC)
+						snapshotPVC = f.GetPersistentVolumeClaim()
+						By("Creating PVC for local backend snapshot")
+						err := f.CreatePersistentVolumeClaim(snapshotPVC)
 						Expect(err).NotTo(HaveOccurred())
 
 						snapshot.Spec.Local = &store.LocalSpec{
 							MountPath: "/repo",
 							VolumeSource: core.VolumeSource{
 								PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-									ClaimName: snapPVC.Name,
+									ClaimName: snapshotPVC.Name,
 								},
 							},
 						}
-					})
-
-					AfterEach(func() {
-						f.DeletePersistentVolumeClaim(snapPVC.ObjectMeta)
 					})
 
 					It("should delete Snapshot successfully", func() {
@@ -550,8 +554,10 @@ var _ = Describe("MongoDB", func() {
 					By("Check for Succeeded snapshot")
 					f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
 
-					By("Check for snapshot data")
-					f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
+					if !skipSnapshotDataChecking {
+						By("Check for snapshot data")
+						f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
+					}
 
 					oldMongoDB, err := f.GetMongoDB(mongodb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
@@ -575,6 +581,33 @@ var _ = Describe("MongoDB", func() {
 				}
 
 				It("should run successfully", shouldInitializeSnapshot)
+
+				Context("with local volume", func() {
+
+					BeforeEach(func() {
+						snapshotPVC = f.GetPersistentVolumeClaim()
+						By("Creating PVC for local backend snapshot")
+						err := f.CreatePersistentVolumeClaim(snapshotPVC)
+						Expect(err).NotTo(HaveOccurred())
+
+						skipSnapshotDataChecking = true
+						secret = f.SecretForLocalBackend()
+						snapshot.Spec.StorageSecretName = secret.Name
+						snapshot.Spec.Backend = store.Backend{
+							Local: &store.LocalSpec{
+								MountPath: "/repo",
+								VolumeSource: core.VolumeSource{
+									PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
+										ClaimName: snapshotPVC.Name,
+									},
+								},
+							},
+						}
+					})
+
+					It("should initialize database successfully", shouldInitializeSnapshot)
+
+				})
 
 				Context("With Replica Set", func() {
 					BeforeEach(func() {
