@@ -42,7 +42,7 @@ build_docker() {
   chmod 755 mg-operator
 
   cat >Dockerfile <<EOL
-FROM alpine
+FROM alpine:3.8
 
 RUN set -x \
   && apk add --update --no-cache ca-certificates
@@ -52,7 +52,7 @@ COPY mg-operator /usr/bin/mg-operator
 USER nobody:nobody
 ENTRYPOINT ["mg-operator"]
 EOL
-  local cmd="docker build -t $DOCKER_REGISTRY/$IMG:$TAG ."
+  local cmd="docker build --pull -t $DOCKER_REGISTRY/$IMG:$TAG ."
   echo $cmd; $cmd
 
   rm mg-operator Dockerfile

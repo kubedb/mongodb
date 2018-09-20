@@ -25,7 +25,7 @@ build() {
   wget -qO peer-finder http://storage.googleapis.com/kubernetes-release/pets/peer-finder
   chmod +x peer-finder
 
-  local cmd="docker build -t $DOCKER_REGISTRY/$IMG:$TAG ."
+  local cmd="docker build --pull -t $DOCKER_REGISTRY/$IMG:$TAG ."
   echo $cmd; $cmd
 
   rm peer-finder

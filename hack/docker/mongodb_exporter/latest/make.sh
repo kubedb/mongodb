@@ -18,7 +18,7 @@ COMMIT_HASH=`git ls-remote https://github.com/${IMG_REGISTRY}/${IMG}.git | grep 
 build() {
   pushd "$REPO_ROOT/hack/docker/mongodb_exporter/$TAG"
 
-  local cmd="docker build -t $DOCKER_REGISTRY/$IMG:$COMMIT_HASH ."
+  local cmd="docker build --pull -t $DOCKER_REGISTRY/$IMG:$COMMIT_HASH ."
   echo $cmd; $cmd
 
   local cmd="docker tag $DOCKER_REGISTRY/$IMG:$COMMIT_HASH $DOCKER_REGISTRY/$IMG:$TAG"
