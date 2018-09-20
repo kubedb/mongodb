@@ -39,6 +39,9 @@ type RedisSpec struct {
 	// Version of Redis to be deployed.
 	Version types.StrYo `json:"version"`
 
+	// Number of instances to deploy for a MySQL database.
+	Replicas *int32 `json:"replicas,omitempty"`
+
 	// Default is "Standalone". If set to "Cluster", ClusterSpec is required and redis servers will
 	// start in cluster mode
 	Mode RedisMode `json:"mode,omitempty"`
