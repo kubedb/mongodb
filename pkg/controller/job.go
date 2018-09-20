@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	core_util "github.com/appscode/kutil/core/v1"
-	meta_util "github.com/appscode/kutil/meta"
 	"github.com/appscode/kutil/tools/analytics"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	batch "k8s.io/api/batch/v1"
@@ -69,7 +68,7 @@ func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapsh
 						{
 							Name:  api.JobTypeRestore,
 							Image: mongodbVersion.Spec.Tools.Image,
-							Args: meta_util.UpsertArgumentList([]string{
+							Args: append([]string{
 								api.JobTypeRestore,
 								fmt.Sprintf(`--host=%s`, mongodb.ServiceName()),
 								fmt.Sprintf(`--user=%s`, mongodbUser),
@@ -79,7 +78,7 @@ func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapsh
 								fmt.Sprintf(`--snapshot=%s`, snapshot.Name),
 								fmt.Sprintf(`--enable-analytics=%v`, c.EnableAnalytics),
 								"--",
-							}, mongodb.Spec.Init.SnapshotSource.Args, "--enable-analytics"),
+							}, mongodb.Spec.Init.SnapshotSource.Args...),
 							Env: []core.EnvVar{
 								{
 									Name:  analytics.Key,
@@ -212,7 +211,7 @@ func (c *Controller) getSnapshotterJob(snapshot *api.Snapshot) (*batch.Job, erro
 						{
 							Name:  api.JobTypeBackup,
 							Image: mongodbVersion.Spec.Tools.Image,
-							Args: meta_util.UpsertArgumentList([]string{
+							Args: append([]string{
 								api.JobTypeBackup,
 								fmt.Sprintf(`--host=%s`, mongodb.ServiceName()),
 								fmt.Sprintf(`--user=%s`, mongodbUser),
@@ -222,7 +221,7 @@ func (c *Controller) getSnapshotterJob(snapshot *api.Snapshot) (*batch.Job, erro
 								fmt.Sprintf(`--snapshot=%s`, snapshot.Name),
 								fmt.Sprintf(`--enable-analytics=%v`, c.EnableAnalytics),
 								"--",
-							}, snapshot.Spec.PodTemplate.Spec.Args, "--enable-analytics"),
+							}, snapshot.Spec.PodTemplate.Spec.Args...),
 							Env: []core.EnvVar{
 								{
 									Name:  analytics.Key,
