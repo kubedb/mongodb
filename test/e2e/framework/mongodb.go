@@ -68,31 +68,31 @@ func (i *Invocation) MongoDBRS() *api.MongoDB {
 }
 
 func (i *Invocation) CreateMongoDB(obj *api.MongoDB) error {
-	_, err := i.extClient.MongoDBs(obj.Namespace).Create(obj)
+	_, err := i.extClient.KubedbV1alpha1().MongoDBs(obj.Namespace).Create(obj)
 	return err
 }
 
 func (f *Framework) GetMongoDB(meta metav1.ObjectMeta) (*api.MongoDB, error) {
-	return f.extClient.MongoDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+	return f.extClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
 }
 
 func (f *Framework) PatchMongoDB(meta metav1.ObjectMeta, transform func(*api.MongoDB) *api.MongoDB) (*api.MongoDB, error) {
-	mongodb, err := f.extClient.MongoDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+	mongodb, err := f.extClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	mongodb, _, err = util.PatchMongoDB(f.extClient, mongodb, transform)
+	mongodb, _, err = util.PatchMongoDB(f.extClient.KubedbV1alpha1(), mongodb, transform)
 	return mongodb, err
 }
 
 func (f *Framework) DeleteMongoDB(meta metav1.ObjectMeta) error {
-	return f.extClient.MongoDBs(meta.Namespace).Delete(meta.Name, deleteInForeground())
+	return f.extClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Delete(meta.Name, deleteInForeground())
 }
 
 func (f *Framework) EventuallyMongoDB(meta metav1.ObjectMeta) GomegaAsyncAssertion {
 	return Eventually(
 		func() bool {
-			_, err := f.extClient.MongoDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+			_, err := f.extClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
 			if err != nil {
 				if kerr.IsNotFound(err) {
 					return false
@@ -109,7 +109,7 @@ func (f *Framework) EventuallyMongoDB(meta metav1.ObjectMeta) GomegaAsyncAsserti
 func (f *Framework) EventuallyMongoDBRunning(meta metav1.ObjectMeta) GomegaAsyncAssertion {
 	return Eventually(
 		func() bool {
-			mongodb, err := f.extClient.MongoDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+			mongodb, err := f.extClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			return mongodb.Status.Phase == api.DatabasePhaseRunning
 		},
@@ -119,12 +119,12 @@ func (f *Framework) EventuallyMongoDBRunning(meta metav1.ObjectMeta) GomegaAsync
 }
 
 func (f *Framework) CleanMongoDB() {
-	mongodbList, err := f.extClient.MongoDBs(f.namespace).List(metav1.ListOptions{})
+	mongodbList, err := f.extClient.KubedbV1alpha1().MongoDBs(f.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return
 	}
 	for _, e := range mongodbList.Items {
-		if _, _, err := util.PatchMongoDB(f.extClient, &e, func(in *api.MongoDB) *api.MongoDB {
+		if _, _, err := util.PatchMongoDB(f.extClient.KubedbV1alpha1(), &e, func(in *api.MongoDB) *api.MongoDB {
 			in.ObjectMeta.Finalizers = nil
 			in.Spec.DoNotPause = false
 			in.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
@@ -133,7 +133,7 @@ func (f *Framework) CleanMongoDB() {
 			fmt.Printf("error Patching MongoDB. error: %v", err)
 		}
 	}
-	if err := f.extClient.MongoDBs(f.namespace).DeleteCollection(deleteInForeground(), metav1.ListOptions{}); err != nil {
+	if err := f.extClient.KubedbV1alpha1().MongoDBs(f.namespace).DeleteCollection(deleteInForeground(), metav1.ListOptions{}); err != nil {
 		fmt.Printf("error in deletion of MongoDB. Error: %v", err)
 	}
 }

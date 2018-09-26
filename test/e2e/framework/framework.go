@@ -3,7 +3,7 @@ package framework
 import (
 	"github.com/appscode/go/crypto/rand"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
-	cs "github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1"
+	cs "github.com/kubedb/apimachinery/client/clientset/versioned"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	ka "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset"
@@ -12,7 +12,7 @@ import (
 type Framework struct {
 	restConfig    *rest.Config
 	kubeClient    kubernetes.Interface
-	extClient     cs.KubedbV1alpha1Interface
+	extClient     cs.Interface
 	kaClient      ka.Interface
 	namespace     string
 	name          string
@@ -23,7 +23,7 @@ type Framework struct {
 func New(
 	restConfig *rest.Config,
 	kubeClient kubernetes.Interface,
-	extClient cs.KubedbV1alpha1Interface,
+	extClient cs.Interface,
 	kaClient ka.Interface,
 	storageClass string,
 	cloudProvider string,
@@ -47,7 +47,7 @@ func (f *Framework) Invoke() *Invocation {
 	}
 }
 
-func (i *Invocation) ExtClient() cs.KubedbV1alpha1Interface {
+func (i *Invocation) ExtClient() cs.Interface {
 	return i.extClient
 }
 

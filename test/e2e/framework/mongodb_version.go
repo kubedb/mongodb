@@ -3,7 +3,7 @@ package framework
 import (
 	"fmt"
 
-	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
+	api "github.com/kubedb/apimachinery/apis/catalog/v1alpha1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -32,7 +32,7 @@ func (i *Invocation) MongoDBVersion() *api.MongoDBVersion {
 }
 
 func (f *Framework) CreateMongoDBVersion(obj *api.MongoDBVersion) error {
-	_, err := f.extClient.MongoDBVersions().Create(obj)
+	_, err := f.extClient.CatalogV1alpha1().MongoDBVersions().Create(obj)
 	if err != nil && !kerr.IsAlreadyExists(err) {
 		return err
 	}
@@ -40,5 +40,5 @@ func (f *Framework) CreateMongoDBVersion(obj *api.MongoDBVersion) error {
 }
 
 func (f *Framework) DeleteMongoDBVersion(meta metav1.ObjectMeta) error {
-	return f.extClient.MongoDBVersions().Delete(meta.Name, &metav1.DeleteOptions{})
+	return f.extClient.CatalogV1alpha1().MongoDBVersions().Delete(meta.Name, &metav1.DeleteOptions{})
 }
