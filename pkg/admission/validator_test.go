@@ -6,7 +6,8 @@ import (
 
 	"github.com/appscode/go/types"
 	"github.com/appscode/kutil/meta"
-	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
+	catalogapi "github.com/kubedb/apimachinery/apis/catalog/v1alpha1"
+	dbapi "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	extFake "github.com/kubedb/apimachinery/client/clientset/versioned/fake"
 	"github.com/kubedb/apimachinery/client/clientset/versioned/scheme"
 	admission "k8s.io/api/admission/v1beta1"
@@ -28,9 +29,9 @@ func init() {
 }
 
 var requestKind = metaV1.GroupVersionKind{
-	Group:   api.SchemeGroupVersion.Group,
-	Version: api.SchemeGroupVersion.Version,
-	Kind:    api.ResourceKindMongoDB,
+	Group:   dbapi.SchemeGroupVersion.Group,
+	Version: dbapi.SchemeGroupVersion.Version,
+	Kind:    dbapi.ResourceKindMongoDB,
 }
 
 func TestMongoDBValidator_Admit(t *testing.T) {
@@ -40,7 +41,7 @@ func TestMongoDBValidator_Admit(t *testing.T) {
 
 			validator.initialized = true
 			validator.extClient = extFake.NewSimpleClientset(
-				&api.MongoDBVersion{
+				&catalogapi.MongoDBVersion{
 					ObjectMeta: metaV1.ObjectMeta{
 						Name: "3.4",
 					},
@@ -60,11 +61,11 @@ func TestMongoDBValidator_Admit(t *testing.T) {
 				},
 			)
 
-			objJS, err := meta.MarshalToJson(&c.object, api.SchemeGroupVersion)
+			objJS, err := meta.MarshalToJson(&c.object, dbapi.SchemeGroupVersion)
 			if err != nil {
 				panic(err)
 			}
-			oldObjJS, err := meta.MarshalToJson(&c.oldObject, api.SchemeGroupVersion)
+			oldObjJS, err := meta.MarshalToJson(&c.oldObject, dbapi.SchemeGroupVersion)
 			if err != nil {
 				panic(err)
 			}
@@ -112,8 +113,8 @@ var cases = []struct {
 	objectName string
 	namespace  string
 	operation  admission.Operation
-	object     api.MongoDB
-	oldObject  api.MongoDB
+	object     dbapi.MongoDB
+	oldObject  dbapi.MongoDB
 	heatUp     bool
 	result     bool
 }{
@@ -123,7 +124,7 @@ var cases = []struct {
 		"default",
 		admission.Create,
 		sampleMongoDB(),
-		api.MongoDB{},
+		dbapi.MongoDB{},
 		false,
 		true,
 	},
@@ -133,7 +134,7 @@ var cases = []struct {
 		"default",
 		admission.Create,
 		getAwkwardMongoDB(),
-		api.MongoDB{},
+		dbapi.MongoDB{},
 		false,
 		false,
 	},
@@ -203,7 +204,7 @@ var cases = []struct {
 		"default",
 		admission.Delete,
 		sampleMongoDB(),
-		api.MongoDB{},
+		dbapi.MongoDB{},
 		true,
 		false,
 	},
@@ -213,7 +214,7 @@ var cases = []struct {
 		"default",
 		admission.Delete,
 		editSpecDoNotPause(sampleMongoDB()),
-		api.MongoDB{},
+		dbapi.MongoDB{},
 		true,
 		true,
 	},
@@ -222,31 +223,31 @@ var cases = []struct {
 		"foo",
 		"default",
 		admission.Delete,
-		api.MongoDB{},
-		api.MongoDB{},
+		dbapi.MongoDB{},
+		dbapi.MongoDB{},
 		false,
 		true,
 	},
 }
 
-func sampleMongoDB() api.MongoDB {
-	return api.MongoDB{
+func sampleMongoDB() dbapi.MongoDB {
+	return dbapi.MongoDB{
 		TypeMeta: metaV1.TypeMeta{
-			Kind:       api.ResourceKindMongoDB,
-			APIVersion: api.SchemeGroupVersion.String(),
+			Kind:       dbapi.ResourceKindMongoDB,
+			APIVersion: dbapi.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metaV1.ObjectMeta{
 			Name:      "foo",
 			Namespace: "default",
 			Labels: map[string]string{
-				api.LabelDatabaseKind: api.ResourceKindMongoDB,
+				dbapi.LabelDatabaseKind: dbapi.ResourceKindMongoDB,
 			},
 		},
-		Spec: api.MongoDBSpec{
+		Spec: dbapi.MongoDBSpec{
 			Version:     "3.4",
 			Replicas:    types.Int32P(1),
 			DoNotPause:  true,
-			StorageType: api.StorageTypeDurable,
+			StorageType: dbapi.StorageTypeDurable,
 			Storage: &core.PersistentVolumeClaimSpec{
 				StorageClassName: types.StringP("standard"),
 				Resources: core.ResourceRequirements{
@@ -255,8 +256,8 @@ func sampleMongoDB() api.MongoDB {
 					},
 				},
 			},
-			Init: &api.InitSpec{
-				ScriptSource: &api.ScriptSourceSpec{
+			Init: &dbapi.InitSpec{
+				ScriptSource: &dbapi.ScriptSourceSpec{
 					VolumeSource: core.VolumeSource{
 						GitRepo: &core.GitRepoVolumeSource{
 							Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
@@ -268,39 +269,39 @@ func sampleMongoDB() api.MongoDB {
 			UpdateStrategy: apps.StatefulSetUpdateStrategy{
 				Type: apps.RollingUpdateStatefulSetStrategyType,
 			},
-			TerminationPolicy: api.TerminationPolicyPause,
+			TerminationPolicy: dbapi.TerminationPolicyPause,
 		},
 	}
 }
 
-func getAwkwardMongoDB() api.MongoDB {
+func getAwkwardMongoDB() dbapi.MongoDB {
 	mongodb := sampleMongoDB()
 	mongodb.Spec.Version = "3.0"
 	return mongodb
 }
 
-func editExistingSecret(old api.MongoDB) api.MongoDB {
+func editExistingSecret(old dbapi.MongoDB) dbapi.MongoDB {
 	old.Spec.DatabaseSecret = &core.SecretVolumeSource{
 		SecretName: "foo-auth",
 	}
 	return old
 }
 
-func editNonExistingSecret(old api.MongoDB) api.MongoDB {
+func editNonExistingSecret(old dbapi.MongoDB) dbapi.MongoDB {
 	old.Spec.DatabaseSecret = &core.SecretVolumeSource{
 		SecretName: "foo-auth-fused",
 	}
 	return old
 }
 
-func editStatus(old api.MongoDB) api.MongoDB {
-	old.Status = api.MongoDBStatus{
-		Phase: api.DatabasePhaseCreating,
+func editStatus(old dbapi.MongoDB) dbapi.MongoDB {
+	old.Status = dbapi.MongoDBStatus{
+		Phase: dbapi.DatabasePhaseCreating,
 	}
 	return old
 }
 
-func editSpecMonitor(old api.MongoDB) api.MongoDB {
+func editSpecMonitor(old dbapi.MongoDB) dbapi.MongoDB {
 	old.Spec.Monitor = &mona.AgentSpec{
 		Agent: mona.AgentPrometheusBuiltin,
 		Prometheus: &mona.PrometheusSpec{
@@ -311,14 +312,14 @@ func editSpecMonitor(old api.MongoDB) api.MongoDB {
 }
 
 // should be failed because more fields required for COreOS Monitoring
-func editSpecInvalidMonitor(old api.MongoDB) api.MongoDB {
+func editSpecInvalidMonitor(old dbapi.MongoDB) dbapi.MongoDB {
 	old.Spec.Monitor = &mona.AgentSpec{
 		Agent: mona.AgentCoreOSPrometheus,
 	}
 	return old
 }
 
-func editSpecDoNotPause(old api.MongoDB) api.MongoDB {
+func editSpecDoNotPause(old dbapi.MongoDB) dbapi.MongoDB {
 	old.Spec.DoNotPause = false
 	return old
 }
