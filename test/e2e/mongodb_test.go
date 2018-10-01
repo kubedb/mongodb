@@ -6,8 +6,8 @@ import (
 
 	"github.com/appscode/go/types"
 	meta_util "github.com/appscode/kutil/meta"
-	catalogapi "github.com/kubedb/apimachinery/apis/catalog/v1alpha1"
-	dbapi "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
+	catalog "github.com/kubedb/apimachinery/apis/catalog/v1alpha1"
+	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 	"github.com/kubedb/mongodb/test/e2e/framework"
 	"github.com/kubedb/mongodb/test/e2e/matcher"
@@ -32,10 +32,10 @@ var _ = Describe("MongoDB", func() {
 	var (
 		err                      error
 		f                        *framework.Invocation
-		mongodb                  *dbapi.MongoDB
-		mongodbVersion           *catalogapi.MongoDBVersion
-		garbageMongoDB           *dbapi.MongoDBList
-		snapshot                 *dbapi.Snapshot
+		mongodb                  *api.MongoDB
+		mongodbVersion           *catalog.MongoDBVersion
+		garbageMongoDB           *api.MongoDBList
+		snapshot                 *api.Snapshot
 		snapshotPVC              *core.PersistentVolumeClaim
 		secret                   *core.Secret
 		skipMessage              string
@@ -46,7 +46,7 @@ var _ = Describe("MongoDB", func() {
 	BeforeEach(func() {
 		f = root.Invoke()
 		mongodb = f.MongoDBStandalone()
-		garbageMongoDB = new(dbapi.MongoDBList)
+		garbageMongoDB = new(api.MongoDBList)
 		mongodbVersion = f.MongoDBVersion()
 		snapshot = f.Snapshot()
 		secret = new(core.Secret)
@@ -98,7 +98,7 @@ var _ = Describe("MongoDB", func() {
 		f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
 
 		By("Set DormantDatabase Spec.WipeOut to true")
-		_, err = f.PatchDormantDatabase(mongodb.ObjectMeta, func(in *dbapi.DormantDatabase) *dbapi.DormantDatabase {
+		_, err = f.PatchDormantDatabase(mongodb.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
 			in.Spec.WipeOut = true
 			return in
 		})
@@ -226,7 +226,7 @@ var _ = Describe("MongoDB", func() {
 				f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
 
 				By("Update mongodb to set DoNotPause=false")
-				f.PatchMongoDB(mongodb.ObjectMeta, func(in *dbapi.MongoDB) *dbapi.MongoDB {
+				f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
 					in.Spec.DoNotPause = false
 					return in
 				})
@@ -262,7 +262,7 @@ var _ = Describe("MongoDB", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				By("Check for Succeeded snapshot")
-				f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(dbapi.SnapshotPhaseSucceeded))
+				f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
 
 				if !skipSnapshotDataChecking {
 					By("Check for snapshot data")
@@ -368,8 +368,8 @@ var _ = Describe("MongoDB", func() {
 
 				Context("Delete One Snapshot keeping others", func() {
 					BeforeEach(func() {
-						mongodb.Spec.Init = &dbapi.InitSpec{
-							ScriptSource: &dbapi.ScriptSourceSpec{
+						mongodb.Spec.Init = &api.InitSpec{
+							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
 										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
@@ -393,7 +393,7 @@ var _ = Describe("MongoDB", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						By("Check for Succeeded snapshot")
-						f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(dbapi.SnapshotPhaseSucceeded))
+						f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
 
 						if !skipSnapshotDataChecking {
 							By("Check for snapshot data")
@@ -415,7 +415,7 @@ var _ = Describe("MongoDB", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						By("Check for Succeeded snapshot")
-						f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(dbapi.SnapshotPhaseSucceeded))
+						f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
 
 						if !skipSnapshotDataChecking {
 							By("Check for snapshot data")
@@ -475,8 +475,8 @@ var _ = Describe("MongoDB", func() {
 		Context("Initialize", func() {
 			Context("With Script", func() {
 				BeforeEach(func() {
-					mongodb.Spec.Init = &dbapi.InitSpec{
-						ScriptSource: &dbapi.ScriptSourceSpec{
+					mongodb.Spec.Init = &api.InitSpec{
+						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
 									Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
@@ -499,8 +499,8 @@ var _ = Describe("MongoDB", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
 						mongodb.Spec.Replicas = types.Int32P(3)
-						mongodb.Spec.Init = &dbapi.InitSpec{
-							ScriptSource: &dbapi.ScriptSourceSpec{
+						mongodb.Spec.Init = &api.InitSpec{
+							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
 										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
@@ -523,7 +523,7 @@ var _ = Describe("MongoDB", func() {
 
 			Context("With Snapshot", func() {
 
-				var anotherMongoDB *dbapi.MongoDB
+				var anotherMongoDB *api.MongoDB
 
 				BeforeEach(func() {
 					anotherMongoDB = f.MongoDBStandalone()
@@ -553,7 +553,7 @@ var _ = Describe("MongoDB", func() {
 					f.CreateSnapshot(snapshot)
 
 					By("Check for Succeeded snapshot")
-					f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(dbapi.SnapshotPhaseSucceeded))
+					f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
 
 					if !skipSnapshotDataChecking {
 						By("Check for snapshot data")
@@ -567,8 +567,8 @@ var _ = Describe("MongoDB", func() {
 
 					By("Create mongodb from snapshot")
 					mongodb = anotherMongoDB
-					mongodb.Spec.Init = &dbapi.InitSpec{
-						SnapshotSource: &dbapi.SnapshotSourceSpec{
+					mongodb.Spec.Init = &api.InitSpec{
+						SnapshotSource: &api.SnapshotSourceSpec{
 							Namespace: snapshot.Namespace,
 							Name:      snapshot.Name,
 						},
@@ -729,8 +729,8 @@ var _ = Describe("MongoDB", func() {
 			Context("with init Script", func() {
 				BeforeEach(func() {
 					usedInitScript = true
-					mongodb.Spec.Init = &dbapi.InitSpec{
-						ScriptSource: &dbapi.ScriptSourceSpec{
+					mongodb.Spec.Init = &api.InitSpec{
+						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
 									Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
@@ -775,7 +775,7 @@ var _ = Describe("MongoDB", func() {
 					*mongodb = *mg
 					if usedInitScript {
 						Expect(mongodb.Spec.Init).ShouldNot(BeNil())
-						_, err := meta_util.GetString(mongodb.Annotations, dbapi.AnnotationInitialized)
+						_, err := meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized)
 						Expect(err).To(HaveOccurred())
 					}
 				}
@@ -785,8 +785,8 @@ var _ = Describe("MongoDB", func() {
 				Context("With Replica Set", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
-						mongodb.Spec.Init = &dbapi.InitSpec{
-							ScriptSource: &dbapi.ScriptSourceSpec{
+						mongodb.Spec.Init = &api.InitSpec{
+							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
 										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
@@ -803,7 +803,7 @@ var _ = Describe("MongoDB", func() {
 
 			Context("With Snapshot Init", func() {
 
-				var anotherMongoDB *dbapi.MongoDB
+				var anotherMongoDB *api.MongoDB
 
 				BeforeEach(func() {
 					anotherMongoDB = f.MongoDBStandalone()
@@ -832,7 +832,7 @@ var _ = Describe("MongoDB", func() {
 					f.CreateSnapshot(snapshot)
 
 					By("Check for Succeeded snapshot")
-					f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(dbapi.SnapshotPhaseSucceeded))
+					f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
 
 					By("Check for snapshot data")
 					f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
@@ -844,8 +844,8 @@ var _ = Describe("MongoDB", func() {
 
 					By("Create mongodb from snapshot")
 					mongodb = anotherMongoDB
-					mongodb.Spec.Init = &dbapi.InitSpec{
-						SnapshotSource: &dbapi.SnapshotSourceSpec{
+					mongodb.Spec.Init = &api.InitSpec{
+						SnapshotSource: &api.SnapshotSourceSpec{
 							Namespace: snapshot.Namespace,
 							Name:      snapshot.Name,
 						},
@@ -882,7 +882,7 @@ var _ = Describe("MongoDB", func() {
 					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName).Should(BeTrue())
 
 					if usedInitSnapshot {
-						_, err = meta_util.GetString(mongodb.Annotations, dbapi.AnnotationInitialized)
+						_, err = meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized)
 						Expect(err).NotTo(HaveOccurred())
 					}
 				}
@@ -902,8 +902,8 @@ var _ = Describe("MongoDB", func() {
 			Context("Multiple times with init script", func() {
 				BeforeEach(func() {
 					usedInitScript = true
-					mongodb.Spec.Init = &dbapi.InitSpec{
-						ScriptSource: &dbapi.ScriptSourceSpec{
+					mongodb.Spec.Init = &api.InitSpec{
+						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
 									Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
@@ -949,7 +949,7 @@ var _ = Describe("MongoDB", func() {
 
 						if usedInitScript {
 							Expect(mongodb.Spec.Init).ShouldNot(BeNil())
-							_, err := meta_util.GetString(mongodb.Annotations, dbapi.AnnotationInitialized)
+							_, err := meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized)
 							Expect(err).To(HaveOccurred())
 						}
 					}
@@ -960,8 +960,8 @@ var _ = Describe("MongoDB", func() {
 				Context("With Replica Set", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
-						mongodb.Spec.Init = &dbapi.InitSpec{
-							ScriptSource: &dbapi.ScriptSourceSpec{
+						mongodb.Spec.Init = &api.InitSpec{
+							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
 										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
@@ -992,7 +992,7 @@ var _ = Describe("MongoDB", func() {
 					f.EventuallySnapshotCount(mongodb.ObjectMeta).Should(matcher.MoreThan(3))
 
 					By("Remove Backup Scheduler from MongoDB")
-					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *dbapi.MongoDB) *dbapi.MongoDB {
+					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
 						in.Spec.BackupSchedule = nil
 						return in
 					})
@@ -1005,7 +1005,7 @@ var _ = Describe("MongoDB", func() {
 				Context("with local", func() {
 					BeforeEach(func() {
 						secret = f.SecretForLocalBackend()
-						mongodb.Spec.BackupSchedule = &dbapi.BackupScheduleSpec{
+						mongodb.Spec.BackupSchedule = &api.BackupScheduleSpec{
 							CronExpression: "@every 20s",
 							Backend: store.Backend{
 								StorageSecretName: secret.Name,
@@ -1025,7 +1025,7 @@ var _ = Describe("MongoDB", func() {
 				Context("with GCS", func() {
 					BeforeEach(func() {
 						secret = f.SecretForGCSBackend()
-						mongodb.Spec.BackupSchedule = &dbapi.BackupScheduleSpec{
+						mongodb.Spec.BackupSchedule = &api.BackupScheduleSpec{
 							CronExpression: "@every 20s",
 							Backend: store.Backend{
 								StorageSecretName: secret.Name,
@@ -1041,7 +1041,7 @@ var _ = Describe("MongoDB", func() {
 					Context("With Replica Set", func() {
 						BeforeEach(func() {
 							mongodb = f.MongoDBRS()
-							mongodb.Spec.BackupSchedule = &dbapi.BackupScheduleSpec{
+							mongodb.Spec.BackupSchedule = &api.BackupScheduleSpec{
 								CronExpression: "@every 20s",
 								Backend: store.Backend{
 									StorageSecretName: secret.Name,
@@ -1072,8 +1072,8 @@ var _ = Describe("MongoDB", func() {
 					f.CreateSecret(secret)
 
 					By("Update mongodb")
-					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *dbapi.MongoDB) *dbapi.MongoDB {
-						in.Spec.BackupSchedule = &dbapi.BackupScheduleSpec{
+					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
+						in.Spec.BackupSchedule = &api.BackupScheduleSpec{
 							CronExpression: "@every 20s",
 							Backend: store.Backend{
 								StorageSecretName: secret.Name,
@@ -1094,7 +1094,7 @@ var _ = Describe("MongoDB", func() {
 					f.EventuallySnapshotCount(mongodb.ObjectMeta).Should(matcher.MoreThan(3))
 
 					By("Remove Backup Scheduler from MongoDB")
-					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *dbapi.MongoDB) *dbapi.MongoDB {
+					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
 						in.Spec.BackupSchedule = nil
 						return in
 					})
@@ -1129,8 +1129,8 @@ var _ = Describe("MongoDB", func() {
 					f.CreateSecret(secret)
 
 					By("Update mongodb")
-					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *dbapi.MongoDB) *dbapi.MongoDB {
-						in.Spec.BackupSchedule = &dbapi.BackupScheduleSpec{
+					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
+						in.Spec.BackupSchedule = &api.BackupScheduleSpec{
 							CronExpression: "@every 20s",
 							Backend: store.Backend{
 								StorageSecretName: secret.Name,
@@ -1180,7 +1180,7 @@ var _ = Describe("MongoDB", func() {
 					f.EventuallySnapshotCount(mongodb.ObjectMeta).Should(matcher.MoreThan(5))
 
 					By("Remove Backup Scheduler from MongoDB")
-					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *dbapi.MongoDB) *dbapi.MongoDB {
+					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
 						in.Spec.BackupSchedule = nil
 						return in
 					})
@@ -1243,7 +1243,7 @@ var _ = Describe("MongoDB", func() {
 				f.CreateSnapshot(snapshot)
 
 				By("Check for succeeded snapshot")
-				f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(dbapi.SnapshotPhaseSucceeded))
+				f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
 
 				if !skipSnapshotDataChecking {
 					By("Check for snapshot data")
@@ -1305,7 +1305,7 @@ var _ = Describe("MongoDB", func() {
 
 			Context("with TerminationPolicyDelete", func() {
 				BeforeEach(func() {
-					mongodb.Spec.TerminationPolicy = dbapi.TerminationPolicyDelete
+					mongodb.Spec.TerminationPolicy = api.TerminationPolicyDelete
 				})
 
 				var shouldRunWithTerminationDelete = func() {
@@ -1351,7 +1351,7 @@ var _ = Describe("MongoDB", func() {
 				Context("with Replica Set", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
-						mongodb.Spec.TerminationPolicy = dbapi.TerminationPolicyDelete
+						mongodb.Spec.TerminationPolicy = api.TerminationPolicyDelete
 						snapshot.Spec.DatabaseName = mongodb.Name
 					})
 					It("should initialize database successfully", shouldRunWithTerminationDelete)
@@ -1360,7 +1360,7 @@ var _ = Describe("MongoDB", func() {
 
 			Context("with TerminationPolicyWipeOut", func() {
 				BeforeEach(func() {
-					mongodb.Spec.TerminationPolicy = dbapi.TerminationPolicyWipeOut
+					mongodb.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
 				})
 
 				var shouldRunWithTerminationWipeOut = func() {
@@ -1397,7 +1397,7 @@ var _ = Describe("MongoDB", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
 						snapshot.Spec.DatabaseName = mongodb.Name
-						mongodb.Spec.TerminationPolicy = dbapi.TerminationPolicyWipeOut
+						mongodb.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
 					})
 					It("should initialize database successfully", shouldRunWithTerminationWipeOut)
 				})
@@ -1408,8 +1408,8 @@ var _ = Describe("MongoDB", func() {
 
 			Context("With allowed Envs", func() {
 				BeforeEach(func() {
-					mongodb.Spec.Init = &dbapi.InitSpec{
-						ScriptSource: &dbapi.ScriptSourceSpec{
+					mongodb.Spec.Init = &api.InitSpec{
+						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
 									Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
@@ -1441,8 +1441,8 @@ var _ = Describe("MongoDB", func() {
 				Context("With Replica Set", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
-						mongodb.Spec.Init = &dbapi.InitSpec{
-							ScriptSource: &dbapi.ScriptSourceSpec{
+						mongodb.Spec.Init = &api.InitSpec{
+							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
 										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
@@ -1494,8 +1494,8 @@ var _ = Describe("MongoDB", func() {
 
 			Context("Update Envs", func() {
 				BeforeEach(func() {
-					mongodb.Spec.Init = &dbapi.InitSpec{
-						ScriptSource: &dbapi.ScriptSourceSpec{
+					mongodb.Spec.Init = &api.InitSpec{
+						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
 									Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
@@ -1522,7 +1522,7 @@ var _ = Describe("MongoDB", func() {
 					By("Checking Inserted Document")
 					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName).Should(BeTrue())
 
-					_, _, err = util.PatchMongoDB(f.ExtClient().KubedbV1alpha1(), mongodb, func(in *dbapi.MongoDB) *dbapi.MongoDB {
+					_, _, err = util.PatchMongoDB(f.ExtClient().KubedbV1alpha1(), mongodb, func(in *api.MongoDB) *api.MongoDB {
 						in.Spec.PodTemplate.Spec.Env = []core.EnvVar{
 							{
 								Name:  MONGO_INITDB_DATABASE,
@@ -1540,8 +1540,8 @@ var _ = Describe("MongoDB", func() {
 				Context("With Replica Set", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
-						mongodb.Spec.Init = &dbapi.InitSpec{
-							ScriptSource: &dbapi.ScriptSourceSpec{
+						mongodb.Spec.Init = &api.InitSpec{
+							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
 										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
