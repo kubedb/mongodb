@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 
+	"github.com/appscode/kutil/tools/clientcmd"
 	"github.com/kubedb/mongodb/pkg/controller"
 	"github.com/kubedb/mongodb/pkg/server"
 	"github.com/spf13/pflag"
@@ -60,7 +61,7 @@ func (o MongoDBServerOptions) Config() (*server.MongoDBServerConfig, error) {
 	if err := o.RecommendedOptions.ApplyTo(serverConfig, server.Scheme); err != nil {
 		return nil, err
 	}
-	serverConfig.EnableMetrics = true
+	clientcmd.Fix(serverConfig.ClientConfig)
 
 	controllerConfig := controller.NewOperatorConfig(serverConfig.ClientConfig)
 	if err := o.ExtraOptions.ApplyTo(controllerConfig); err != nil {
