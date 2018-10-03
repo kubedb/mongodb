@@ -188,17 +188,17 @@ var cases = []struct {
 		false,
 		false,
 	},
-	{"Edit Spec.DoNotPause",
+	{"Edit Spec.TerminationPolicy",
 		requestKind,
 		"foo",
 		"default",
 		admission.Update,
-		editSpecDoNotPause(sampleMongoDB()),
+		pauseDatabase(sampleMongoDB()),
 		sampleMongoDB(),
 		false,
 		true,
 	},
-	{"Delete Mongodb when Spec.DoNotPause=true",
+	{"Delete Mongodb when Spec.TerminationPolicy=DoNotTerminate",
 		requestKind,
 		"foo",
 		"default",
@@ -208,12 +208,12 @@ var cases = []struct {
 		true,
 		false,
 	},
-	{"Delete Mongodb when Spec.DoNotPause=false",
+	{"Delete Mongodb when Spec.TerminationPolicy=Pause",
 		requestKind,
 		"foo",
 		"default",
 		admission.Delete,
-		editSpecDoNotPause(sampleMongoDB()),
+		pauseDatabase(sampleMongoDB()),
 		api.MongoDB{},
 		true,
 		true,
@@ -246,7 +246,6 @@ func sampleMongoDB() api.MongoDB {
 		Spec: api.MongoDBSpec{
 			Version:     "3.4",
 			Replicas:    types.Int32P(1),
-			DoNotPause:  true,
 			StorageType: api.StorageTypeDurable,
 			Storage: &core.PersistentVolumeClaimSpec{
 				StorageClassName: types.StringP("standard"),
@@ -269,7 +268,7 @@ func sampleMongoDB() api.MongoDB {
 			UpdateStrategy: apps.StatefulSetUpdateStrategy{
 				Type: apps.RollingUpdateStatefulSetStrategyType,
 			},
-			TerminationPolicy: api.TerminationPolicyPause,
+			TerminationPolicy: api.TerminationPolicyDoNotTerminate,
 		},
 	}
 }
@@ -319,7 +318,7 @@ func editSpecInvalidMonitor(old api.MongoDB) api.MongoDB {
 	return old
 }
 
-func editSpecDoNotPause(old api.MongoDB) api.MongoDB {
-	old.Spec.DoNotPause = false
+func pauseDatabase(old api.MongoDB) api.MongoDB {
+	old.Spec.TerminationPolicy = api.TerminationPolicyPause
 	return old
 }

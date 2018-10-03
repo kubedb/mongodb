@@ -206,12 +206,12 @@ var _ = Describe("MongoDB", func() {
 			})
 		})
 
-		Context("DoNotPause", func() {
+		Context("DoNotTerminate", func() {
 			BeforeEach(func() {
-				mongodb.Spec.DoNotPause = true
+				mongodb.Spec.TerminationPolicy = api.TerminationPolicyDoNotTerminate
 			})
 
-			var shouldWorkDoNotPause = func() {
+			var shouldWorkDoNotTerminate = func() {
 				// Create and wait for running MongoDB
 				createAndWaitForRunning()
 
@@ -225,20 +225,20 @@ var _ = Describe("MongoDB", func() {
 				By("Check for Running mongodb")
 				f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
 
-				By("Update mongodb to set DoNotPause=false")
+				By("Update mongodb to set spec.terminationPolicy = Pause")
 				f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
-					in.Spec.DoNotPause = false
+					in.Spec.TerminationPolicy = api.TerminationPolicyPause
 					return in
 				})
 			}
-			It("should work successfully", shouldWorkDoNotPause)
+			It("should work successfully", shouldWorkDoNotTerminate)
 
 			Context("With Replica Set", func() {
 				BeforeEach(func() {
 					mongodb = f.MongoDBRS()
-					mongodb.Spec.DoNotPause = true
+					mongodb.Spec.TerminationPolicy = api.TerminationPolicyDoNotTerminate
 				})
-				It("should run successfully", shouldWorkDoNotPause)
+				It("should run successfully", shouldWorkDoNotTerminate)
 			})
 
 		})

@@ -126,7 +126,6 @@ func (f *Framework) CleanMongoDB() {
 	for _, e := range mongodbList.Items {
 		if _, _, err := util.PatchMongoDB(f.extClient.KubedbV1alpha1(), &e, func(in *api.MongoDB) *api.MongoDB {
 			in.ObjectMeta.Finalizers = nil
-			in.Spec.DoNotPause = false
 			in.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
 			return in
 		}); err != nil {
