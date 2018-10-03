@@ -15,6 +15,7 @@ import (
 	clientsetscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/reference"
 	mona "kmodules.xyz/monitoring-agent-api/api/v1"
+	ofst "kmodules.xyz/offshoot-api/api/v1"
 )
 
 const (
@@ -87,14 +88,17 @@ func (c *Controller) createService(mongodb *api.MongoDB) (kutil.VerbType, error)
 		in.Annotations = mongodb.Spec.ServiceTemplate.Annotations
 
 		in.Spec.Selector = mongodb.OffshootSelectors()
-		in.Spec.Ports = core_util.MergeServicePorts(in.Spec.Ports, []core.ServicePort{
-			{
-				Name:       "db",
-				Protocol:   core.ProtocolTCP,
-				Port:       27017,
-				TargetPort: intstr.FromString("db"),
-			},
-		})
+		in.Spec.Ports = ofst.MergeServicePorts(
+			core_util.MergeServicePorts(in.Spec.Ports, []core.ServicePort{
+				{
+					Name:       "db",
+					Protocol:   core.ProtocolTCP,
+					Port:       27017,
+					TargetPort: intstr.FromString("db"),
+				},
+			}),
+			mongodb.Spec.ServiceTemplate.Spec.Ports,
+		)
 
 		if mongodb.Spec.ServiceTemplate.Spec.ClusterIP != "" {
 			in.Spec.ClusterIP = mongodb.Spec.ServiceTemplate.Spec.ClusterIP
