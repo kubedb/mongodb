@@ -71,7 +71,6 @@ func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapsh
 							Args: append([]string{
 								api.JobTypeRestore,
 								fmt.Sprintf(`--host=%s`, mongodb.ServiceName()),
-								fmt.Sprintf(`--user=%s`, mongodbUser),
 								fmt.Sprintf(`--data-dir=%s`, snapshotDumpDir),
 								fmt.Sprintf(`--bucket=%s`, bucket),
 								fmt.Sprintf(`--folder=%s`, folderName),
@@ -92,6 +91,17 @@ func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapsh
 												Name: mongodb.Spec.DatabaseSecret.SecretName,
 											},
 											Key: KeyMongoDBPassword,
+										},
+									},
+								},
+								{
+									Name: "DB_USER",
+									ValueFrom: &core.EnvVarSource{
+										SecretKeyRef: &core.SecretKeySelector{
+											LocalObjectReference: core.LocalObjectReference{
+												Name: mongodb.Spec.DatabaseSecret.SecretName,
+											},
+											Key: KeyMongoDBUser,
 										},
 									},
 								},
@@ -217,7 +227,6 @@ func (c *Controller) getSnapshotterJob(snapshot *api.Snapshot) (*batch.Job, erro
 							Args: append([]string{
 								api.JobTypeBackup,
 								fmt.Sprintf(`--host=%s`, mongodb.ServiceName()),
-								fmt.Sprintf(`--user=%s`, mongodbUser),
 								fmt.Sprintf(`--data-dir=%s`, snapshotDumpDir),
 								fmt.Sprintf(`--bucket=%s`, bucket),
 								fmt.Sprintf(`--folder=%s`, folderName),
@@ -238,6 +247,17 @@ func (c *Controller) getSnapshotterJob(snapshot *api.Snapshot) (*batch.Job, erro
 												Name: mongodb.Spec.DatabaseSecret.SecretName,
 											},
 											Key: KeyMongoDBPassword,
+										},
+									},
+								},
+								{
+									Name: "DB_USER",
+									ValueFrom: &core.EnvVarSource{
+										SecretKeyRef: &core.SecretKeySelector{
+											LocalObjectReference: core.LocalObjectReference{
+												Name: mongodb.Spec.DatabaseSecret.SecretName,
+											},
+											Key: KeyMongoDBUser,
 										},
 									},
 								},
