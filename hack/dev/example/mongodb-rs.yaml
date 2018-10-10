@@ -1,15 +1,15 @@
 apiVersion: kubedb.com/v1alpha1
 kind: MongoDB
 metadata:
-  name: mgo-rs2
+  name: mgo-rs
   namespace: demo
 spec:
-  version: "3.4"
-  replicas: 3
+  version: "3.6-v1"
+  replicas: 5
   replicaSet:
     name: rs0
   storage:
-    storageClassName: "standard"
+    storageClassName: "rook-ceph-block"
     accessModes:
     - ReadWriteOnce
     resources:
