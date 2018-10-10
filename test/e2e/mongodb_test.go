@@ -610,7 +610,7 @@ var _ = Describe("MongoDB", func() {
 
 				})
 
-				FContext("With Replica Set", func() {
+				Context("With Replica Set", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
 						snapshot.Spec.DatabaseName = mongodb.Name
@@ -889,7 +889,7 @@ var _ = Describe("MongoDB", func() {
 
 				It("should resume successfully", shouldResumeWithSnapshot)
 
-				FContext("With Replica Set", func() {
+				Context("With Replica Set", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
 						snapshot.Spec.DatabaseName = mongodb.Name
