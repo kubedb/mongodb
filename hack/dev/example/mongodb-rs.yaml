@@ -5,11 +5,11 @@ metadata:
   namespace: demo
 spec:
   version: "3.6-v1"
-  replicas: 5
+  replicas: 4
   replicaSet:
     name: rs0
   storage:
-    storageClassName: "rook-ceph-block"
+    storageClassName: "standard"
     accessModes:
     - ReadWriteOnce
     resources:
