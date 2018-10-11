@@ -2,9 +2,7 @@ package controller
 
 import (
 	"fmt"
-	"strconv"
 
-	"github.com/appscode/go/types"
 	core_util "github.com/appscode/kutil/core/v1"
 	"github.com/appscode/kutil/tools/analytics"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
@@ -17,18 +15,6 @@ import (
 const (
 	snapshotDumpDir = "/var/data"
 )
-
-func (c *Controller) getHost(mongodb *api.MongoDB) string {
-	str := mongodb.ServiceName()
-	if mongodb.Spec.ReplicaSet != nil {
-		str = mongodb.Spec.ReplicaSet.Name + "/" + mongodb.Name + "-0." + c.GoverningService
-		for i := 1; i < int(types.Int32(mongodb.Spec.Replicas)); i++ {
-			str += "," + mongodb.Name + "-" + strconv.Itoa(i) + c.GoverningService
-		}
-	}
-	fmt.Println("-----------------------------", str)
-	return str
-}
 
 func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapshot) (*batch.Job, error) {
 	mongodbVersion, err := c.ExtClient.CatalogV1alpha1().MongoDBVersions().Get(string(mongodb.Spec.Version), metav1.GetOptions{})
@@ -84,7 +70,7 @@ func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapsh
 							Image: mongodbVersion.Spec.Tools.Image,
 							Args: append([]string{
 								api.JobTypeRestore,
-								fmt.Sprintf(`--host=%s`, c.getHost(mongodb)),
+								fmt.Sprintf(`--host=%s`, mongodb.HostAddress()),
 								fmt.Sprintf(`--data-dir=%s`, snapshotDumpDir),
 								fmt.Sprintf(`--bucket=%s`, bucket),
 								fmt.Sprintf(`--folder=%s`, folderName),
@@ -240,7 +226,7 @@ func (c *Controller) getSnapshotterJob(snapshot *api.Snapshot) (*batch.Job, erro
 							Image: mongodbVersion.Spec.Tools.Image,
 							Args: append([]string{
 								api.JobTypeBackup,
-								fmt.Sprintf(`--host=%s`, c.getHost(mongodb)),
+								fmt.Sprintf(`--host=%s`, mongodb.HostAddress()),
 								fmt.Sprintf(`--data-dir=%s`, snapshotDumpDir),
 								fmt.Sprintf(`--bucket=%s`, bucket),
 								fmt.Sprintf(`--folder=%s`, folderName),

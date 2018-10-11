@@ -19,8 +19,7 @@ import (
 )
 
 const (
-	MongoDbPort                   = "27017"
-	mongoDBGoverningServiceSuffix = "-gvr"
+	MongoDBPort = 27017
 )
 
 func (c *Controller) ensureService(mongodb *api.MongoDB) (kutil.VerbType, error) {
@@ -39,7 +38,6 @@ func (c *Controller) ensureService(mongodb *api.MongoDB) (kutil.VerbType, error)
 			"Failed to createOrPatch Service. Reason: %v",
 			err,
 		)
-
 		return kutil.VerbUnchanged, err
 	} else if vt != kutil.VerbUnchanged {
 		c.recorder.Eventf(
@@ -49,7 +47,6 @@ func (c *Controller) ensureService(mongodb *api.MongoDB) (kutil.VerbType, error)
 			"Successfully %s Service",
 			vt,
 		)
-
 	}
 	return vt, nil
 }
@@ -93,7 +90,7 @@ func (c *Controller) createService(mongodb *api.MongoDB) (kutil.VerbType, error)
 				{
 					Name:       "db",
 					Protocol:   core.ProtocolTCP,
-					Port:       27017,
+					Port:       MongoDBPort,
 					TargetPort: intstr.FromString("db"),
 				},
 			}),
@@ -176,7 +173,6 @@ func (c *Controller) ensureStatsService(mongodb *api.MongoDB) (kutil.VerbType, e
 }
 
 func (c *Controller) createMongoDBGoverningService(mongodb *api.MongoDB) (string, error) {
-
 	ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb)
 	if rerr != nil {
 		return "", rerr
@@ -184,7 +180,7 @@ func (c *Controller) createMongoDBGoverningService(mongodb *api.MongoDB) (string
 
 	service := &core.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      mongodb.ServiceName() + mongoDBGoverningServiceSuffix,
+			Name:      mongodb.GoverningServiceName(),
 			Namespace: mongodb.Namespace,
 			Labels:    mongodb.OffshootLabels(),
 			// 'tolerate-unready-endpoints' annotation is deprecated.
@@ -200,7 +196,7 @@ func (c *Controller) createMongoDBGoverningService(mongodb *api.MongoDB) (string
 			Ports: []core.ServicePort{
 				{
 					Name: "db",
-					Port: 27017,
+					Port: MongoDBPort,
 				},
 			},
 			Selector: mongodb.OffshootSelectors(),

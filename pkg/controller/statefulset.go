@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
@@ -132,12 +133,12 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 					"--dbpath=" + dataDirectoryPath,
 					"--auth",
 					"--bind_ip=0.0.0.0",
-					"--port=" + string(MongoDbPort),
+					"--port=" + strconv.Itoa(MongoDBPort),
 				}, mongodb.Spec.PodTemplate.Spec.Args),
 				Ports: []core.ContainerPort{
 					{
 						Name:          "db",
-						ContainerPort: 27017,
+						ContainerPort: MongoDBPort,
 						Protocol:      core.ProtocolTCP,
 					},
 				},

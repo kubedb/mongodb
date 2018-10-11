@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -x
-
 # ref: https://github.com/kubernetes/charts/blob/master/stable/mongodb-replicaset/init/on-start.sh
 
 replica_set="$REPLICA_SET"
@@ -38,7 +36,6 @@ log "Reading standard input..."
 while read -ra line; do
   if [[ "${line}" == *"${my_hostname}"* ]]; then
     service_name="$line"
-
     continue
   fi
   peers=("${peers[@]}" "$line")
