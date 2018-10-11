@@ -56,6 +56,31 @@ var _ = Describe("MongoDB", func() {
 		f.WaitUntilDigitalOceanReady()
 	})
 
+	AfterEach(func() {
+		// Cleanup
+		By("Cleanup Left Overs")
+		By("Delete left over MongoDB objects")
+		root.CleanMongoDB()
+		By("Delete left over Dormant Database objects")
+		root.CleanDormantDatabase()
+		By("Delete left over Snapshot objects")
+		root.CleanSnapshot()
+		By("Delete left over workloads if exists any")
+		root.CleanWorkloadLeftOvers()
+
+		if snapshotPVC != nil {
+			err := f.DeletePersistentVolumeClaim(snapshotPVC.ObjectMeta)
+			if err != nil && !kerr.IsNotFound(err) {
+				Expect(err).NotTo(HaveOccurred())
+			}
+		}
+
+		err = f.DeleteMongoDBVersion(mongodbVersion.ObjectMeta)
+		if err != nil && !kerr.IsNotFound(err) {
+			Expect(err).NotTo(HaveOccurred())
+		}
+	})
+
 	var createAndWaitForRunning = func() {
 		By("Create MongoDBVersion: " + mongodbVersion.Name)
 		err = f.CreateMongoDBVersion(mongodbVersion)
@@ -112,45 +137,30 @@ var _ = Describe("MongoDB", func() {
 		f.EventuallyWipedOut(mongodb.ObjectMeta).Should(Succeed())
 	}
 
-	AfterEach(func() {
-		// Delete test resource
-		deleteTestResource()
-
-		for _, mg := range garbageMongoDB.Items {
-			*mongodb = mg
-			// Delete test resource
-			deleteTestResource()
-		}
-
-		if !skipSnapshotDataChecking {
-			By("Check for snapshot data")
-			f.EventuallySnapshotDataFound(snapshot).Should(BeFalse())
-		}
-
-		if secret != nil {
-			f.DeleteSecret(secret.ObjectMeta)
-		}
-
-		By("Delete left over workloads if exists any")
-		f.CleanWorkloadLeftOvers()
-
-		if snapshotPVC != nil {
-			err := f.DeletePersistentVolumeClaim(snapshotPVC.ObjectMeta)
-			if err != nil && !kerr.IsNotFound(err) {
-				Expect(err).NotTo(HaveOccurred())
-			}
-		}
-
-		err = f.DeleteMongoDBVersion(mongodbVersion.ObjectMeta)
-		if err != nil && !kerr.IsNotFound(err) {
-			Expect(err).NotTo(HaveOccurred())
-		}
-	})
-
 	Describe("Test", func() {
 		BeforeEach(func() {
 			if f.StorageClass == "" {
 				Skip("Missing StorageClassName. Provide as flag to test this.")
+			}
+		})
+
+		AfterEach(func() {
+			// Delete test resource
+			deleteTestResource()
+
+			for _, mg := range garbageMongoDB.Items {
+				*mongodb = mg
+				// Delete test resource
+				deleteTestResource()
+			}
+
+			if !skipSnapshotDataChecking {
+				By("Check for snapshot data")
+				f.EventuallySnapshotDataFound(snapshot).Should(BeFalse())
+			}
+
+			if secret != nil {
+				f.DeleteSecret(secret.ObjectMeta)
 			}
 		})
 
