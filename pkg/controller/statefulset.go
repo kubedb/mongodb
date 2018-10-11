@@ -268,6 +268,7 @@ func (c *Controller) upsertInstallInitContainer(statefulSet *apps.StatefulSet, m
 				MountPath: configDirectoryPath,
 			},
 		},
+		Resources: mongodb.Spec.PodTemplate.Spec.Resources,
 	}
 	if mongodb.Spec.ReplicaSet != nil {
 		installContainer.VolumeMounts = core_util.UpsertVolumeMount(installContainer.VolumeMounts, core.VolumeMount{
@@ -328,7 +329,7 @@ func upsertDataVolume(statefulSet *apps.StatefulSet, mongodb *api.MongoDB) *apps
 				statefulSet.Spec.Template.Spec.Volumes = core_util.UpsertVolume(
 					statefulSet.Spec.Template.Spec.Volumes,
 					core.Volume{
-						Name: "data",
+						Name: dataDirectoryName,
 						VolumeSource: core.VolumeSource{
 							EmptyDir: &ed,
 						},

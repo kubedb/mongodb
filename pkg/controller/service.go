@@ -121,7 +121,7 @@ func (c *Controller) createService(mongodb *api.MongoDB) (kutil.VerbType, error)
 func (c *Controller) ensureStatsService(mongodb *api.MongoDB) (kutil.VerbType, error) {
 	// return if monitoring is not prometheus
 	if mongodb.GetMonitoringVendor() != mona.VendorPrometheus {
-		log.Warningln("spec.monitor.agent is not coreos-operator or builtin.")
+		log.Infoln("spec.monitor.agent is not coreos-operator or builtin.")
 		return kutil.VerbUnchanged, nil
 	}
 
