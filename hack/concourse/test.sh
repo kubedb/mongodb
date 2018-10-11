@@ -41,10 +41,10 @@ pushd "$GOPATH"/src/github.com/$ORG_NAME/$REPO_NAME
   --ginkgo.flakeAttempts=2 \
   --db-version=3.6-v1
 
-#./hack/make.py test e2e \
-#  --v=1 \
-#  --storageclass=$StorageClass \
-#  --selfhosted-operator=true \
-#  --docker-registry=${DOCKER_REGISTRY} \
-#  --ginkgo.flakeAttempts=2 \
-#  --db-version=3.4
+./hack/make.py test e2e \
+  --v=1 \
+  --storageclass=$StorageClass \
+  --selfhosted-operator=true \
+  --docker-registry=${DOCKER_REGISTRY} \
+  --ginkgo.flakeAttempts=2 \
+  --db-version=3.4-v1
