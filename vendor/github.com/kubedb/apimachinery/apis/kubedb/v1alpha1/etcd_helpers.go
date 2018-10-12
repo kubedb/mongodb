@@ -168,7 +168,11 @@ func (e *EtcdSpec) SetDefaults() {
 		e.UpdateStrategy.Type = apps.RollingUpdateStatefulSetStrategyType
 	}
 	if e.TerminationPolicy == "" {
-		e.TerminationPolicy = TerminationPolicyPause
+		if e.StorageType == StorageTypeEphemeral {
+			e.TerminationPolicy = TerminationPolicyDelete
+		} else {
+			e.TerminationPolicy = TerminationPolicyPause
+		}
 	}
 }
 

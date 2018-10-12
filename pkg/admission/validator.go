@@ -152,6 +152,9 @@ func ValidateMongoDB(client kubernetes.Interface, extClient cs.Interface, mongod
 	if mongodb.Spec.StorageType == "" {
 		return fmt.Errorf(`'spec.storageType' is missing`)
 	}
+	if mongodb.Spec.StorageType != api.StorageTypeDurable && mongodb.Spec.StorageType != api.StorageTypeEphemeral {
+		return fmt.Errorf(`'spec.storageType' %s is invalid`, mongodb.Spec.StorageType)
+	}
 	if err := amv.ValidateStorage(client, mongodb.Spec.StorageType, mongodb.Spec.Storage); err != nil {
 		return err
 	}

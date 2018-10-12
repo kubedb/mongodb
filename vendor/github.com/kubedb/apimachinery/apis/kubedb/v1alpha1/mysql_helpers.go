@@ -195,7 +195,11 @@ func (m *MySQLSpec) SetDefaults() {
 		m.UpdateStrategy.Type = apps.RollingUpdateStatefulSetStrategyType
 	}
 	if m.TerminationPolicy == "" {
-		m.TerminationPolicy = TerminationPolicyPause
+		if m.StorageType == StorageTypeEphemeral {
+			m.TerminationPolicy = TerminationPolicyDelete
+		} else {
+			m.TerminationPolicy = TerminationPolicyPause
+		}
 	}
 }
 
