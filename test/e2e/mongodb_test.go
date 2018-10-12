@@ -100,7 +100,7 @@ var _ = Describe("MongoDB", func() {
 		}
 
 		By("Check if mongodb " + mongodb.Name + " exists.")
-		_, err := f.GetMongoDB(mongodb.ObjectMeta)
+		mg, err := f.GetMongoDB(mongodb.ObjectMeta)
 		if err != nil {
 			if kerr.IsNotFound(err) {
 				// MongoDB was not created. Hence, rest of cleanup is not necessary.
@@ -119,19 +119,22 @@ var _ = Describe("MongoDB", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}
 
-		By("Wait for mongodb to be paused")
-		f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
+		if mg.Spec.TerminationPolicy == api.TerminationPolicyPause {
 
-		By("Set DormantDatabase Spec.WipeOut to true")
-		_, err = f.PatchDormantDatabase(mongodb.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
-			in.Spec.WipeOut = true
-			return in
-		})
-		Expect(err).NotTo(HaveOccurred())
+			By("Wait for mongodb to be paused")
+			f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
 
-		By("Delete Dormant Database")
-		err = f.DeleteDormantDatabase(mongodb.ObjectMeta)
-		Expect(err).NotTo(HaveOccurred())
+			By("Set DormantDatabase Spec.WipeOut to true")
+			_, err = f.PatchDormantDatabase(mongodb.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
+				in.Spec.WipeOut = true
+				return in
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Delete Dormant Database")
+			err = f.DeleteDormantDatabase(mongodb.ObjectMeta)
+			Expect(err).NotTo(HaveOccurred())
+		}
 
 		By("Wait for mongodb resources to be wipedOut")
 		f.EventuallyWipedOut(mongodb.ObjectMeta).Should(Succeed())
@@ -214,43 +217,6 @@ var _ = Describe("MongoDB", func() {
 				})
 
 			})
-		})
-
-		Context("DoNotTerminate", func() {
-			BeforeEach(func() {
-				mongodb.Spec.TerminationPolicy = api.TerminationPolicyDoNotTerminate
-			})
-
-			var shouldWorkDoNotTerminate = func() {
-				// Create and wait for running MongoDB
-				createAndWaitForRunning()
-
-				By("Delete mongodb")
-				err = f.DeleteMongoDB(mongodb.ObjectMeta)
-				Expect(err).Should(HaveOccurred())
-
-				By("MongoDB is not paused. Check for mongodb")
-				f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeTrue())
-
-				By("Check for Running mongodb")
-				f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
-
-				By("Update mongodb to set spec.terminationPolicy = Pause")
-				f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
-					in.Spec.TerminationPolicy = api.TerminationPolicyPause
-					return in
-				})
-			}
-			It("should work successfully", shouldWorkDoNotTerminate)
-
-			Context("With Replica Set", func() {
-				BeforeEach(func() {
-					mongodb = f.MongoDBRS()
-					mongodb.Spec.TerminationPolicy = api.TerminationPolicyDoNotTerminate
-				})
-				It("should run successfully", shouldWorkDoNotTerminate)
-			})
-
 		})
 
 		Context("Snapshot", func() {
@@ -1261,6 +1227,45 @@ var _ = Describe("MongoDB", func() {
 				}
 			}
 
+			Context("with TerminationDoNotTerminate", func() {
+				BeforeEach(func() {
+					skipSnapshotDataChecking = true
+					mongodb.Spec.TerminationPolicy = api.TerminationPolicyDoNotTerminate
+				})
+
+				var shouldWorkDoNotTerminate = func() {
+					// Create and wait for running MongoDB
+					createAndWaitForRunning()
+
+					By("Delete mongodb")
+					err = f.DeleteMongoDB(mongodb.ObjectMeta)
+					Expect(err).Should(HaveOccurred())
+
+					By("MongoDB is not paused. Check for mongodb")
+					f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeTrue())
+
+					By("Check for Running mongodb")
+					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+
+					By("Update mongodb to set spec.terminationPolicy = Pause")
+					f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
+						in.Spec.TerminationPolicy = api.TerminationPolicyPause
+						return in
+					})
+				}
+
+				It("should work successfully", shouldWorkDoNotTerminate)
+
+				Context("With Replica Set", func() {
+					BeforeEach(func() {
+						mongodb = f.MongoDBRS()
+						mongodb.Spec.TerminationPolicy = api.TerminationPolicyDoNotTerminate
+					})
+					It("should run successfully", shouldWorkDoNotTerminate)
+				})
+
+			})
+
 			Context("with TerminationPolicyPause (default)", func() {
 				var shouldRunWithTerminationPause = func() {
 					shouldRunWithSnapshot()
@@ -1401,7 +1406,7 @@ var _ = Describe("MongoDB", func() {
 					}
 				}
 
-				It("should run with TerminationPolicyDelete", shouldRunWithTerminationWipeOut)
+				It("should run with TerminationPolicyWipeOut", shouldRunWithTerminationWipeOut)
 
 				Context("with Replica Set", func() {
 					BeforeEach(func() {
@@ -1563,6 +1568,67 @@ var _ = Describe("MongoDB", func() {
 					})
 
 					It("should take Snapshot successfully", withUpdateEnvs)
+				})
+			})
+		})
+
+		Context("StorageType ", func() {
+
+			var shouldRunSuccessfully = func() {
+
+				if skipMessage != "" {
+					Skip(skipMessage)
+				}
+				// Create MongoDB
+				createAndWaitForRunning()
+
+				By("Insert Document Inside DB")
+				f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName).Should(BeTrue())
+
+				By("Checking Inserted Document")
+				f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName).Should(BeTrue())
+			}
+
+			Context("Ephemeral", func() {
+
+				Context("Standalone MongoDB", func() {
+
+					BeforeEach(func() {
+						mongodb.Spec.StorageType = api.StorageTypeEphemeral
+						mongodb.Spec.Storage = nil
+						mongodb.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
+					})
+
+					It("should run successfully", shouldRunSuccessfully)
+				})
+
+				Context("With Replica Set", func() {
+
+					BeforeEach(func() {
+						mongodb = f.MongoDBRS()
+						mongodb.Spec.Replicas = types.Int32P(3)
+						mongodb.Spec.StorageType = api.StorageTypeEphemeral
+						mongodb.Spec.Storage = nil
+						mongodb.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
+					})
+
+					It("should run successfully", shouldRunSuccessfully)
+				})
+
+				Context("With TerminationPolicyPause", func() {
+
+					BeforeEach(func() {
+						mongodb.Spec.StorageType = api.StorageTypeEphemeral
+						mongodb.Spec.Storage = nil
+						mongodb.Spec.TerminationPolicy = api.TerminationPolicyPause
+					})
+
+					It("should reject to create MongoDB object", func() {
+
+						By("Creating MongoDB: " + mongodb.Name)
+						err := f.CreateMongoDB(mongodb)
+						Expect(err).To(HaveOccurred())
+					})
 				})
 			})
 		})

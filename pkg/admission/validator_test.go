@@ -156,7 +156,7 @@ var cases = []struct {
 		editNonExistingSecret(sampleMongoDB()),
 		sampleMongoDB(),
 		false,
-		false,
+		true,
 	},
 	{"Edit Status",
 		requestKind,
