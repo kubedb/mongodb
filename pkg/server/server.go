@@ -29,8 +29,7 @@ import (
 )
 
 const (
-	apiserviceName    = "v1alpha1.validators.kubedb.com"
-	validatingWebhook = "mongodb.validators.kubedb.com"
+	apiserviceName = "v1alpha1.validators.kubedb.com"
 )
 
 var (
@@ -189,7 +188,7 @@ func (c completedConfig) New() (*MongoDBServer, error) {
 		s.GenericAPIServer.AddPostStartHookOrDie("validating-webhook-xray",
 			func(context genericapiserver.PostStartHookContext) error {
 				go func() {
-					xray := reg_util.NewCreateValidatingWebhookXray(c.OperatorConfig.ClientConfig, apiserviceName, validatingWebhook, &api.MongoDB{
+					xray := reg_util.NewCreateValidatingWebhookXray(c.OperatorConfig.ClientConfig, apiserviceName, &api.MongoDB{
 						TypeMeta: metav1.TypeMeta{
 							APIVersion: api.SchemeGroupVersion.String(),
 							Kind:       api.ResourceKindMongoDB,
