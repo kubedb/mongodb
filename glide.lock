@@ -1,5 +1,5 @@
-hash: 7b413f2a933ee967245a54fc3074bedbd136948f886d715b5e17018728c15804
-updated: 2018-10-30T16:03:56.210918874+06:00
+hash: d4f196a475f69b72fec5fd4f82759c2041cffc1d21a905a4cac5e63a3799c5ec
+updated: 2018-11-01T12:38:54.345114405+06:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -36,7 +36,7 @@ imports:
   - admission/v1beta1
   - registry/admissionreview/v1beta1
 - name: github.com/appscode/kutil
-  version: 25382b15981e816818803a66b6e1a1270efa89ab
+  version: 3ea05651189cbff8994265360eb150d4c3513859
   subpackages:
   - admissionregistration/v1beta1
   - apiextensions/v1beta1
@@ -347,7 +347,7 @@ imports:
 - name: github.com/json-iterator/go
   version: 1624edc4454b8682399def8740d46db5e4362ba4
 - name: github.com/kubedb/apimachinery
-  version: 7132ddc36e41bb5325e949f11939b05125abbfc8
+  version: 7d6ac75d29a6f7c7adfec09c056043c913807c01
   subpackages:
   - apis
   - apis/authorization
@@ -580,7 +580,7 @@ imports:
   - googleapi/internal/uritemplates
   - storage/v1
 - name: google.golang.org/appengine
-  version: 80663353cf07ea09bdc45f5cddbb05f93bf16433
+  version: 4a4468ece617fc8205e99368fa2200e9d1fad421
   subpackages:
   - internal
   - internal/app_identity
@@ -636,7 +636,7 @@ imports:
 - name: gopkg.in/tomb.v1
   version: c131134a1947e9afd9cecfe11f4c6dff0732ae58
 - name: gopkg.in/yaml.v2
-  version: 670d4cfef0544295bc27a114dbac37980d83185a
+  version: 53feefa2559fb8dfa8d81baad31be332c97d6c77
 - name: k8s.io/api
   version: fd83cbc87e7632ccd8bbab63d2b673d4e0c631cc
   subpackages:

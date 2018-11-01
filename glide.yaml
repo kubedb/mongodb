@@ -27,7 +27,7 @@ import:
   version: v0.2.0
 - package: github.com/jpillora/go-ogle-analytics
 - package: github.com/kubedb/apimachinery
-  version: fix-dns
+  version: master
 - package: github.com/onsi/ginkgo
   version: v1.6.0
 - package: github.com/onsi/gomega
