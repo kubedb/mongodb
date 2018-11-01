@@ -51,7 +51,7 @@ func (c *Controller) create(snapshot *api.Snapshot) error {
 				eventer.EventReasonFailedToUpdate,
 				err.Error(),
 			)
-			if kutil.IsRequestRetryable(err) || kerr.IsInternalError(err) {
+			if kutil.IsRequestRetryable(err) || kutil.AdmissionWebhookDeniedRequest(err) {
 				return err
 			}
 		}

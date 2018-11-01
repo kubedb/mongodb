@@ -5,9 +5,7 @@ import:
 - package: github.com/codeskyblue/go-sh
   version: master
 - package: github.com/coreos/prometheus-operator
-  repo: https://github.com/kmodules/prometheus-operator.git
-  vcs: git
-  version: k-1.12
+  version: v0.25.0
 - package: github.com/globalsign/mgo
 - package: github.com/go-bongo/bongo
   version: v0.10.4
@@ -27,7 +25,7 @@ import:
   version: v0.2.0
 - package: github.com/jpillora/go-ogle-analytics
 - package: github.com/kubedb/apimachinery
-  version: fix-annot
+  version: master
 - package: github.com/onsi/ginkgo
   version: v1.6.0
 - package: github.com/onsi/gomega

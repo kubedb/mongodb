@@ -1,5 +1,5 @@
-hash: eb4320800e8235a565a64c85e5083ff636a893fc50e3976cccb33fb4dd63b48e
-updated: 2018-10-31T15:09:39.110753165+06:00
+hash: 6bafd27582235adc518922d3f7965b9cc7b59a7617994bd04a17feb296f4f110
+updated: 2018-11-01T12:49:09.707565277+06:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -36,7 +36,7 @@ imports:
   - admission/v1beta1
   - registry/admissionreview/v1beta1
 - name: github.com/appscode/kutil
-  version: 73a92159d35b8266d423a621a9437a77b3ef5f6c
+  version: 3ea05651189cbff8994265360eb150d4c3513859
   subpackages:
   - admissionregistration/v1beta1
   - apiextensions/v1beta1
@@ -204,9 +204,7 @@ imports:
   - daemon
   - journal
 - name: github.com/coreos/prometheus-operator
-  version: b9bfccafc646c76bd9b1ebf209ea528fde37f2e3
-  repo: https://github.com/kmodules/prometheus-operator.git
-  vcs: git
+  version: 82a6ad2071ff653e38b3b4719ecb789d73f3ab05
   subpackages:
   - pkg/client/monitoring/v1
 - name: github.com/cpuguy83/go-md2man
@@ -347,7 +345,7 @@ imports:
 - name: github.com/json-iterator/go
   version: 1624edc4454b8682399def8740d46db5e4362ba4
 - name: github.com/kubedb/apimachinery
-  version: 9abb2ef853c29f57b9d9cdf0b759af6233909d5a
+  version: 7d6ac75d29a6f7c7adfec09c056043c913807c01
   subpackages:
   - apis
   - apis/authorization
@@ -636,7 +634,7 @@ imports:
 - name: gopkg.in/tomb.v1
   version: c131134a1947e9afd9cecfe11f4c6dff0732ae58
 - name: gopkg.in/yaml.v2
-  version: 670d4cfef0544295bc27a114dbac37980d83185a
+  version: 53feefa2559fb8dfa8d81baad31be332c97d6c77
 - name: k8s.io/api
   version: fd83cbc87e7632ccd8bbab63d2b673d4e0c631cc
   subpackages:
