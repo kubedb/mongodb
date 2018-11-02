@@ -2,7 +2,6 @@ package e2e_test
 
 import (
 	"flag"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -32,8 +31,7 @@ import (
 // () => Optional
 
 var (
-	storageClass  string
-	cloudProvider string
+	storageClass string
 
 	prometheusCrdGroup = pcm.Group
 	prometheusCrdKinds = pcm.DefaultCrdKinds
@@ -43,7 +41,6 @@ func init() {
 	scheme.AddToScheme(clientSetScheme.Scheme)
 
 	flag.StringVar(&storageClass, "storageclass", "standard", "Kubernetes StorageClass name")
-	flag.StringVar(&cloudProvider, "cloud-provider", "", "Kubernetes StorageClass name")
 	flag.StringVar(&framework.DockerRegistry, "docker-registry", "kubedbci", "User provided docker repository")
 	flag.StringVar(&framework.DBVersion, "db-version", "3.6-v1", "MongoDB version")
 	flag.StringVar(&framework.ExporterTag, "exporter-tag", "canary", "Tag of kubedb/operator used as exporter")
@@ -74,9 +71,6 @@ var _ = BeforeSuite(func() {
 	userHome := homedir.HomeDir()
 
 	// Kubernetes config
-	if cloudProvider == "" {
-		cloudProvider = os.Getenv(framework.CloudProviderEnvKey)
-	}
 	kubeconfigPath := filepath.Join(userHome, ".kube/config")
 	By("Using kubeconfig from " + kubeconfigPath)
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
@@ -93,7 +87,7 @@ var _ = BeforeSuite(func() {
 		log.Fatalln(err)
 	}
 	// Framework
-	root = framework.New(config, kubeClient, extClient, kaClient, storageClass, cloudProvider)
+	root = framework.New(config, kubeClient, extClient, kaClient, storageClass)
 
 	By("Using namespace " + root.Namespace())
 

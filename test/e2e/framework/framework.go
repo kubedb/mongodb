@@ -10,14 +10,13 @@ import (
 )
 
 type Framework struct {
-	restConfig    *rest.Config
-	kubeClient    kubernetes.Interface
-	extClient     cs.Interface
-	kaClient      ka.Interface
-	namespace     string
-	name          string
-	StorageClass  string
-	CloudProvider string
+	restConfig   *rest.Config
+	kubeClient   kubernetes.Interface
+	extClient    cs.Interface
+	kaClient     ka.Interface
+	namespace    string
+	name         string
+	StorageClass string
 }
 
 func New(
@@ -26,17 +25,15 @@ func New(
 	extClient cs.Interface,
 	kaClient ka.Interface,
 	storageClass string,
-	cloudProvider string,
 ) *Framework {
 	return &Framework{
-		restConfig:    restConfig,
-		kubeClient:    kubeClient,
-		extClient:     extClient,
-		kaClient:      kaClient,
-		name:          "mongodb-operator",
-		namespace:     rand.WithUniqSuffix(api.ResourceSingularMongoDB),
-		StorageClass:  storageClass,
-		CloudProvider: cloudProvider,
+		restConfig:   restConfig,
+		kubeClient:   kubeClient,
+		extClient:    extClient,
+		kaClient:     kaClient,
+		name:         "mongodb-operator",
+		namespace:    rand.WithUniqSuffix(api.ResourceSingularMongoDB),
+		StorageClass: storageClass,
 	}
 }
 

@@ -53,7 +53,6 @@ var _ = Describe("MongoDB", func() {
 		skipMessage = ""
 		skipSnapshotDataChecking = true
 		dbName = "kubedb"
-		f.WaitUntilDigitalOceanReady()
 	})
 
 	AfterEach(func() {
