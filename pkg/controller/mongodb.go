@@ -29,9 +29,11 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 			mongodb,
 			core.EventTypeWarning,
 			eventer.EventReasonInvalid,
-			err.Error())
-
+			err.Error(),
+		)
 		log.Errorln(err)
+		// stop Scheduler in case there is any.
+		c.cronController.StopBackupScheduling(mongodb.ObjectMeta)
 		return nil
 	}
 
@@ -186,9 +188,21 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 }
 
 func (c *Controller) ensureBackupScheduler(mongodb *api.MongoDB) {
+	mongodbVersion, err := c.ExtClient.CatalogV1alpha1().MongoDBVersions().Get(string(mongodb.Spec.Version), metav1.GetOptions{})
+	if err != nil {
+		c.recorder.Eventf(
+			mongodb,
+			core.EventTypeWarning,
+			eventer.EventReasonFailedToSchedule,
+			"Failed to get MongoDBVersion for %v. Reason: %v",
+			mongodb.Spec.Version, err,
+		)
+		log.Errorln(err)
+		return
+	}
 	// Setup Schedule backup
 	if mongodb.Spec.BackupSchedule != nil {
-		err := c.cronController.ScheduleBackup(mongodb, mongodb.ObjectMeta, mongodb.Spec.BackupSchedule)
+		err := c.cronController.ScheduleBackup(mongodb, mongodb.ObjectMeta, mongodb.Spec.BackupSchedule, mongodbVersion)
 		if err != nil {
 			c.recorder.Eventf(
 				mongodb,
