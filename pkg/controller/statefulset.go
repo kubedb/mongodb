@@ -56,14 +56,7 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB) (kutil.VerbType, er
 	// Check StatefulSet Pod status
 	if vt != kutil.VerbUnchanged {
 		if err := c.checkStatefulSetPodStatus(statefulSet); err != nil {
-			c.recorder.Eventf(
-				mongodb,
-				core.EventTypeWarning,
-				eventer.EventReasonFailedToStart,
-				`Failed to CreateOrPatch StatefulSet. Reason: %v`,
-				err,
-			)
-			return kutil.VerbUnchanged, err
+			return kutil.VerbUnchanged, fmt.Errorf(`failed to CreateOrPatch StatefulSet. Reason: %v`, err)
 		}
 		c.recorder.Eventf(
 			mongodb,

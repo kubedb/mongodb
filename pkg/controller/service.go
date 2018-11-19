@@ -31,14 +31,7 @@ func (c *Controller) ensureService(mongodb *api.MongoDB) (kutil.VerbType, error)
 	// create database Service
 	vt, err := c.createService(mongodb)
 	if err != nil {
-		c.recorder.Eventf(
-			mongodb,
-			core.EventTypeWarning,
-			eventer.EventReasonFailedToCreate,
-			"Failed to createOrPatch Service. Reason: %v",
-			err,
-		)
-		return kutil.VerbUnchanged, err
+		return kutil.VerbUnchanged, fmt.Errorf("failed to createOrPatch Service. Reason: %v", err)
 	} else if vt != kutil.VerbUnchanged {
 		c.recorder.Eventf(
 			mongodb,
@@ -152,14 +145,7 @@ func (c *Controller) ensureStatsService(mongodb *api.MongoDB) (kutil.VerbType, e
 		return in
 	})
 	if err != nil {
-		c.recorder.Eventf(
-			ref,
-			core.EventTypeWarning,
-			eventer.EventReasonFailedToCreate,
-			"Failed to reconcile stats service. Reason: %v",
-			err,
-		)
-		return kutil.VerbUnchanged, err
+		return kutil.VerbUnchanged, fmt.Errorf("failed to reconcile stats service. Reason: %v", err)
 	} else if vt != kutil.VerbUnchanged {
 		c.recorder.Eventf(
 			ref,

@@ -39,15 +39,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 
 	// Delete Matching DormantDatabase if exists any
 	if err := c.deleteMatchingDormantDatabase(mongodb); err != nil {
-		c.recorder.Eventf(
-			mongodb,
-			core.EventTypeWarning,
-			eventer.EventReasonFailedToCreate,
-			`Failed to delete dormant Database : "%v". Reason: %v`,
-			mongodb.Name,
-			err,
-		)
-		return err
+		return fmt.Errorf(`failed to delete dormant Database : "%v". Reason: %v`, mongodb.Name, err)
 	}
 
 	if mongodb.Status.Phase == "" {
@@ -56,12 +48,6 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 			return in
 		}, apis.EnableStatusSubresource)
 		if err != nil {
-			c.recorder.Eventf(
-				mongodb,
-				core.EventTypeWarning,
-				eventer.EventReasonFailedToUpdate,
-				err.Error(),
-			)
 			return err
 		}
 		mongodb.Status = mg.Status
@@ -70,15 +56,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 	// create Governing Service
 	governingService, err := c.createMongoDBGoverningService(mongodb)
 	if err != nil {
-		c.recorder.Eventf(
-			mongodb,
-			core.EventTypeWarning,
-			eventer.EventReasonFailedToCreate,
-			`Failed to create Service: "%v". Reason: %v`,
-			governingService,
-			err,
-		)
-		return err
+		return fmt.Errorf(`failed to create Service: "%v". Reason: %v`, governingService, err)
 	}
 	c.GoverningService = governingService
 
@@ -112,7 +90,6 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 			eventer.EventReasonSuccessful,
 			"Successfully patched MongoDB",
 		)
-
 	}
 
 	if _, err := meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized); err == kutil.ErrNotFound &&
@@ -144,19 +121,21 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 		return in
 	}, apis.EnableStatusSubresource)
 	if err != nil {
-		c.recorder.Eventf(
-			mongodb,
-			core.EventTypeWarning,
-			eventer.EventReasonFailedToUpdate,
-			err.Error(),
-		)
-
 		return err
 	}
 	mongodb.Status = mg.Status
 
 	// Ensure Schedule backup
-	c.ensureBackupScheduler(mongodb)
+	if err := c.ensureBackupScheduler(mongodb); err != nil {
+		c.recorder.Eventf(
+			mongodb,
+			core.EventTypeWarning,
+			eventer.EventReasonFailedToSchedule,
+			err.Error(),
+		)
+		log.Errorln(err)
+		// Don't return error. Continue processing rest.
+	}
 
 	// ensure StatsService for desired monitoring
 	if _, err := c.ensureStatsService(mongodb); err != nil {
@@ -168,7 +147,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 			err,
 		)
 
-		log.Errorln(err)
+		log.Errorf("failed to manage monitoring system. Reason: %v", err)
 		return nil
 	}
 
@@ -180,42 +159,28 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 			"Failed to manage monitoring system. Reason: %v",
 			err,
 		)
-		log.Errorln(err)
+		log.Errorf("failed to manage monitoring system. Reason: %v", err)
 		return nil
 	}
 
 	return nil
 }
 
-func (c *Controller) ensureBackupScheduler(mongodb *api.MongoDB) {
+func (c *Controller) ensureBackupScheduler(mongodb *api.MongoDB) error {
 	mongodbVersion, err := c.ExtClient.CatalogV1alpha1().MongoDBVersions().Get(string(mongodb.Spec.Version), metav1.GetOptions{})
 	if err != nil {
-		c.recorder.Eventf(
-			mongodb,
-			core.EventTypeWarning,
-			eventer.EventReasonFailedToSchedule,
-			"Failed to get MongoDBVersion for %v. Reason: %v",
-			mongodb.Spec.Version, err,
-		)
-		log.Errorln(err)
-		return
+		return fmt.Errorf("failed to get MongoDBVersion for %v. Reason: %v", mongodb.Spec.Version, err)
 	}
 	// Setup Schedule backup
 	if mongodb.Spec.BackupSchedule != nil {
-		err := c.cronController.ScheduleBackup(mongodb, mongodb.ObjectMeta, mongodb.Spec.BackupSchedule, mongodbVersion)
+		err := c.cronController.ScheduleBackup(mongodb, mongodb.Spec.BackupSchedule, mongodbVersion)
 		if err != nil {
-			c.recorder.Eventf(
-				mongodb,
-				core.EventTypeWarning,
-				eventer.EventReasonFailedToSchedule,
-				"Failed to schedule snapshot. Reason: %v",
-				err,
-			)
-			log.Errorln(err)
+			return fmt.Errorf("failed to schedule snapshot. Reason: %v", err)
 		}
 	} else {
 		c.cronController.StopBackupScheduling(mongodb.ObjectMeta)
 	}
+	return nil
 }
 
 func (c *Controller) initialize(mongodb *api.MongoDB) error {
@@ -224,13 +189,6 @@ func (c *Controller) initialize(mongodb *api.MongoDB) error {
 		return in
 	}, apis.EnableStatusSubresource)
 	if err != nil {
-		c.recorder.Eventf(
-			mongodb,
-			core.EventTypeWarning,
-			eventer.EventReasonFailedToUpdate,
-			err.Error(),
-		)
-
 		return err
 	}
 	mongodb.Status = mg.Status
@@ -302,7 +260,7 @@ func (c *Controller) terminate(mongodb *api.MongoDB) error {
 					return fmt.Errorf(`DormantDatabase "%v/%v" of kind %v already exists`, mongodb.Namespace, mongodb.Name, val)
 				}
 			} else {
-				return fmt.Errorf(`Failed to create DormantDatabase: "%v/%v". Reason: %v`, mongodb.Namespace, mongodb.Name, err)
+				return fmt.Errorf(`failed to create DormantDatabase: "%v/%v". Reason: %v`, mongodb.Namespace, mongodb.Name, err)
 			}
 		}
 	} else {

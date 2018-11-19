@@ -7,7 +7,6 @@ import (
 	"github.com/appscode/go/crypto/rand"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
-	"github.com/kubedb/apimachinery/pkg/eventer"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,15 +29,8 @@ func (c *Controller) ensureDatabaseSecret(mongodb *api.MongoDB) error {
 	if mongodb.Spec.DatabaseSecret == nil {
 		secretVolumeSource, err := c.createDatabaseSecret(mongodb)
 		if err != nil {
-			c.recorder.Eventf(
-				mongodb,
-				core.EventTypeWarning,
-				eventer.EventReasonFailedToCreate,
-				`Failed to create Database Secret. Reason: %v`,
-				err.Error(),
-			)
+			return fmt.Errorf(`failed to create Database Secret. Reason: %v`, err.Error())
 
-			return err
 		}
 
 		ms, _, err := util.PatchMongoDB(c.ExtClient.KubedbV1alpha1(), mongodb, func(in *api.MongoDB) *api.MongoDB {
@@ -46,13 +38,6 @@ func (c *Controller) ensureDatabaseSecret(mongodb *api.MongoDB) error {
 			return in
 		})
 		if err != nil {
-			c.recorder.Eventf(
-				mongodb,
-				core.EventTypeWarning,
-				eventer.EventReasonFailedToUpdate,
-				err.Error(),
-			)
-
 			return err
 		}
 		mongodb.Spec.DatabaseSecret = ms.Spec.DatabaseSecret
@@ -64,15 +49,7 @@ func (c *Controller) ensureDatabaseSecret(mongodb *api.MongoDB) error {
 
 		secretVolumeSource, err := c.createKeyFileSecret(mongodb)
 		if err != nil {
-			c.recorder.Eventf(
-				mongodb,
-				core.EventTypeWarning,
-				eventer.EventReasonFailedToCreate,
-				`Failed to create KeyFile Secret. Reason: %v`,
-				err.Error(),
-			)
-
-			return err
+			return fmt.Errorf(`failed to create KeyFile Secret. Reason: %v`, err.Error())
 		}
 
 		ms, _, err := util.PatchMongoDB(c.ExtClient.KubedbV1alpha1(), mongodb, func(in *api.MongoDB) *api.MongoDB {
@@ -80,12 +57,6 @@ func (c *Controller) ensureDatabaseSecret(mongodb *api.MongoDB) error {
 			return in
 		})
 		if err != nil {
-			c.recorder.Eventf(
-				mongodb,
-				core.EventTypeWarning,
-				eventer.EventReasonFailedToUpdate,
-				err.Error(),
-			)
 			return err
 		}
 		mongodb.Spec.ReplicaSet.KeyFile = ms.Spec.ReplicaSet.KeyFile
