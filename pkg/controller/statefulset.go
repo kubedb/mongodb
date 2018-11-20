@@ -57,7 +57,7 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB) (kutil.VerbType, er
 	// Check StatefulSet Pod status
 	if vt != kutil.VerbUnchanged {
 		if err := c.checkStatefulSetPodStatus(statefulSet); err != nil {
-			return kutil.VerbUnchanged, fmt.Errorf(`failed to CreateOrPatch StatefulSet. Reason: %v`, err)
+			return kutil.VerbUnchanged, err
 		}
 		c.recorder.Eventf(
 			mongodb,
@@ -82,7 +82,7 @@ func (c *Controller) checkStatefulSet(mongodb *api.MongoDB) error {
 
 	if statefulSet.Labels[api.LabelDatabaseKind] != api.ResourceKindMongoDB ||
 		statefulSet.Labels[api.LabelDatabaseName] != mongodb.Name {
-		return fmt.Errorf(`intended statefulSet "%v" already exists`, mongodb.OffshootName())
+		return fmt.Errorf(`intended statefulSet "%v/%v" already exists`, mongodb.Namespace, mongodb.OffshootName())
 	}
 
 	return nil

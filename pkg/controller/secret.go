@@ -29,8 +29,7 @@ func (c *Controller) ensureDatabaseSecret(mongodb *api.MongoDB) error {
 	if mongodb.Spec.DatabaseSecret == nil {
 		secretVolumeSource, err := c.createDatabaseSecret(mongodb)
 		if err != nil {
-			return fmt.Errorf(`failed to create Database Secret. Reason: %v`, err.Error())
-
+			return err
 		}
 
 		ms, _, err := util.PatchMongoDB(c.ExtClient.KubedbV1alpha1(), mongodb, func(in *api.MongoDB) *api.MongoDB {
@@ -49,7 +48,7 @@ func (c *Controller) ensureDatabaseSecret(mongodb *api.MongoDB) error {
 
 		secretVolumeSource, err := c.createKeyFileSecret(mongodb)
 		if err != nil {
-			return fmt.Errorf(`failed to create KeyFile Secret. Reason: %v`, err.Error())
+			return err
 		}
 
 		ms, _, err := util.PatchMongoDB(c.ExtClient.KubedbV1alpha1(), mongodb, func(in *api.MongoDB) *api.MongoDB {
@@ -139,7 +138,7 @@ func (c *Controller) checkSecret(secretName string, mongodb *api.MongoDB) (*core
 	}
 	if secret.Labels[api.LabelDatabaseKind] != api.ResourceKindMongoDB ||
 		secret.Labels[api.LabelDatabaseName] != mongodb.Name {
-		return nil, fmt.Errorf(`intended secret "%v" already exists`, secretName)
+		return nil, fmt.Errorf(`intended secret "%v/%v" already exists`, mongodb.Namespace, secretName)
 	}
 	return secret, nil
 }

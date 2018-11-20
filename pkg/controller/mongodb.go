@@ -39,7 +39,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 
 	// Delete Matching DormantDatabase if exists any
 	if err := c.deleteMatchingDormantDatabase(mongodb); err != nil {
-		return fmt.Errorf(`failed to delete dormant Database : "%v". Reason: %v`, mongodb.Name, err)
+		return fmt.Errorf(`failed to delete dormant Database : "%v/%v". Reason: %v`, mongodb.Namespace, mongodb.Name, err)
 	}
 
 	if mongodb.Status.Phase == "" {
@@ -56,7 +56,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 	// create Governing Service
 	governingService, err := c.createMongoDBGoverningService(mongodb)
 	if err != nil {
-		return fmt.Errorf(`failed to create Service: "%v". Reason: %v`, governingService, err)
+		return fmt.Errorf(`failed to create Service: "%v/%v". Reason: %v`, mongodb.Namespace, governingService, err)
 	}
 	c.GoverningService = governingService
 
@@ -169,13 +169,13 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 func (c *Controller) ensureBackupScheduler(mongodb *api.MongoDB) error {
 	mongodbVersion, err := c.ExtClient.CatalogV1alpha1().MongoDBVersions().Get(string(mongodb.Spec.Version), metav1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to get MongoDBVersion for %v. Reason: %v", mongodb.Spec.Version, err)
+		return fmt.Errorf("failed to get MongoDBVersion %v for %v/%v. Reason: %v", mongodb.Spec.Version, mongodb.Namespace, mongodb.Name, err)
 	}
 	// Setup Schedule backup
 	if mongodb.Spec.BackupSchedule != nil {
 		err := c.cronController.ScheduleBackup(mongodb, mongodb.Spec.BackupSchedule, mongodbVersion)
 		if err != nil {
-			return fmt.Errorf("failed to schedule snapshot. Reason: %v", err)
+			return fmt.Errorf("failed to schedule snapshot for %v/%v. Reason: %v", mongodb.Namespace, mongodb.Name, err)
 		}
 	} else {
 		c.cronController.StopBackupScheduling(mongodb.ObjectMeta)
