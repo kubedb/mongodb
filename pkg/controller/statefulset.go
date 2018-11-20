@@ -10,6 +10,7 @@ import (
 	app_util "github.com/appscode/kutil/apps/v1"
 	core_util "github.com/appscode/kutil/core/v1"
 	meta_util "github.com/appscode/kutil/meta"
+	"github.com/fatih/structs"
 	catalog "github.com/kubedb/apimachinery/apis/catalog/v1alpha1"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/apimachinery/pkg/eventer"
@@ -135,10 +136,8 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 						Protocol:      core.ProtocolTCP,
 					},
 				},
-				Resources:      mongodb.Spec.PodTemplate.Spec.Resources,
-				LivenessProbe:  mongodb.Spec.PodTemplate.Spec.LivenessProbe,
-				ReadinessProbe: mongodb.Spec.PodTemplate.Spec.ReadinessProbe,
-				Lifecycle:      mongodb.Spec.PodTemplate.Spec.Lifecycle,
+				Resources: mongodb.Spec.PodTemplate.Spec.Resources,
+				Lifecycle: mongodb.Spec.PodTemplate.Spec.Lifecycle,
 			})
 
 		in = c.upsertInstallInitContainer(in, mongodb, mongodbVersion)
@@ -200,33 +199,16 @@ func (c *Controller) createStatefulSet(mongodb *api.MongoDB) (*apps.StatefulSet,
 func addContainerProbe(statefulSet *apps.StatefulSet, mongodb *api.MongoDB) *apps.StatefulSet {
 	for i, container := range statefulSet.Spec.Template.Spec.Containers {
 		if container.Name == api.ResourceSingularMongoDB {
-			cmd := []string{
-				"mongo",
-				"--eval",
-				"db.adminCommand('ping')",
+			readinessProbe := mongodb.Spec.PodTemplate.Spec.ReadinessProbe
+			if structs.IsZero(*readinessProbe) {
+				readinessProbe = nil
 			}
-			statefulSet.Spec.Template.Spec.Containers[i].LivenessProbe = &core.Probe{
-				Handler: core.Handler{
-					Exec: &core.ExecAction{
-						Command: cmd,
-					},
-				},
-				FailureThreshold: 3,
-				PeriodSeconds:    10,
-				SuccessThreshold: 1,
-				TimeoutSeconds:   5,
+			livenessProbe := mongodb.Spec.PodTemplate.Spec.LivenessProbe
+			if structs.IsZero(*livenessProbe) {
+				livenessProbe = nil
 			}
-			statefulSet.Spec.Template.Spec.Containers[i].ReadinessProbe = &core.Probe{
-				Handler: core.Handler{
-					Exec: &core.ExecAction{
-						Command: cmd,
-					},
-				},
-				FailureThreshold: 3,
-				PeriodSeconds:    10,
-				SuccessThreshold: 1,
-				TimeoutSeconds:   1,
-			}
+			statefulSet.Spec.Template.Spec.Containers[i].LivenessProbe = livenessProbe
+			statefulSet.Spec.Template.Spec.Containers[i].ReadinessProbe = readinessProbe
 		}
 	}
 	return statefulSet

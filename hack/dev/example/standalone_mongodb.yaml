@@ -12,3 +12,7 @@ spec:
     resources:
       requests:
         storage: 1Gi
+  podTemplate:
+    spec:
+      livenessProbe: {}
+      readinessProbe: {}

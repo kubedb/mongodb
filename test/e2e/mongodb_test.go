@@ -1130,6 +1130,9 @@ var _ = Describe("MongoDB", func() {
 					By("Count multiple Snapshot Object")
 					f.EventuallySnapshotCount(mongodb.ObjectMeta).Should(matcher.MoreThan(3))
 
+					By("Verify multiple Succeeded Snapshot")
+					f.EventuallyMultipleSnapshotFinishedProcessing(mongodb.ObjectMeta).Should(Succeed())
+
 					By("Delete mongodb")
 					err = f.DeleteMongoDB(mongodb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
