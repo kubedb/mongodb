@@ -49,7 +49,7 @@ var _ = Describe("MongoDB", func() {
 		garbageMongoDB = new(api.MongoDBList)
 		mongodbVersion = f.MongoDBVersion()
 		snapshot = f.Snapshot()
-		secret = new(core.Secret)
+		secret = nil
 		skipMessage = ""
 		skipSnapshotDataChecking = true
 		dbName = "kubedb"
@@ -91,6 +91,13 @@ var _ = Describe("MongoDB", func() {
 
 		By("Wait for Running mongodb")
 		f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+
+		By("Wait for AppBinding to create")
+		f.EventuallyAppBinding(mongodb.ObjectMeta).Should(BeTrue())
+
+		By("Check valid AppBinding Specs")
+		err := f.CheckAppBindingSpec(mongodb)
+		Expect(err).NotTo(HaveOccurred())
 	}
 
 	var deleteTestResource = func() {

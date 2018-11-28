@@ -23,6 +23,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
 	ka "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset"
+	appcat_cs "kmodules.xyz/custom-resources/client/clientset/versioned/typed/appcatalog/v1alpha1"
 )
 
 // To Run E2E tests:
@@ -83,15 +84,16 @@ var _ = BeforeSuite(func() {
 	kubeClient := kubernetes.NewForConfigOrDie(config)
 	extClient := cs.NewForConfigOrDie(config)
 	kaClient := ka.NewForConfigOrDie(config)
+	appCatalogClient, err := appcat_cs.NewForConfig(config)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	// Framework
-	root = framework.New(config, kubeClient, extClient, kaClient, storageClass)
 
-	By("Using namespace " + root.Namespace())
+	// Framework
+	root = framework.New(config, kubeClient, extClient, kaClient, appCatalogClient, storageClass)
 
 	// Create namespace
+	By("Using namespace " + root.Namespace())
 	err = root.CreateNamespace()
 	Expect(err).NotTo(HaveOccurred())
 
