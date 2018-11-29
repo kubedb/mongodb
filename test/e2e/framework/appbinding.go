@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/mongodb/pkg/controller"
 	. "github.com/onsi/gomega"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
@@ -28,17 +27,23 @@ func (f *Framework) EventuallyAppBinding(meta metav1.ObjectMeta) GomegaAsyncAsse
 	)
 }
 
-func (f *Framework) CheckAppBindingSpec(mongoDB *api.MongoDB) error {
-	appBinding, err := f.appCatalogClient.AppBindings(mongoDB.Namespace).Get(mongoDB.Name, metav1.GetOptions{})
+func (f *Framework) CheckAppBindingSpec(meta metav1.ObjectMeta) error {
+	mongodb, err := f.GetMongoDB(meta)
+	Expect(err).NotTo(HaveOccurred())
+
+	appBinding, err := f.appCatalogClient.AppBindings(mongodb.Namespace).Get(mongodb.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
 	if appBinding.Spec.ClientConfig.Service == nil ||
-		appBinding.Spec.ClientConfig.Service.Name != mongoDB.ServiceName() ||
+		appBinding.Spec.ClientConfig.Service.Name != mongodb.ServiceName() ||
 		appBinding.Spec.ClientConfig.Service.Port != controller.MongoDBPort {
 		return fmt.Errorf("appbinding %v/%v contains invalid data", appBinding.Namespace, appBinding.Name)
 	}
-	// todo: check secret names too
+	if appBinding.Spec.Secret == nil ||
+		appBinding.Spec.Secret.Name != mongodb.Spec.DatabaseSecret.SecretName {
+		return fmt.Errorf("appbinding %v/%v contains invalid data", appBinding.Namespace, appBinding.Name)
+	}
 	return nil
 }

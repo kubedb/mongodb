@@ -96,7 +96,7 @@ var _ = Describe("MongoDB", func() {
 		f.EventuallyAppBinding(mongodb.ObjectMeta).Should(BeTrue())
 
 		By("Check valid AppBinding Specs")
-		err := f.CheckAppBindingSpec(mongodb)
+		err := f.CheckAppBindingSpec(mongodb.ObjectMeta)
 		Expect(err).NotTo(HaveOccurred())
 	}
 
