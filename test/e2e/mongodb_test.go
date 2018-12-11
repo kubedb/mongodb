@@ -330,6 +330,30 @@ var _ = Describe("MongoDB", func() {
 				})
 
 				It("should take Snapshot successfully", shouldTakeSnapshot)
+
+				Context("Faulty Snapshot", func() {
+					BeforeEach(func() {
+						skipSnapshotDataChecking = true
+						snapshot.Spec.S3 = &store.S3Spec{
+							Bucket: "nonexisting",
+						}
+					})
+					It("should take Snapshot successfully", func() {
+						// Create and wait for running MongoDB
+						createAndWaitForRunning()
+
+						By("Create Secret")
+						err := f.CreateSecret(secret)
+						Expect(err).NotTo(HaveOccurred())
+
+						By("Create Snapshot")
+						err = f.CreateSnapshot(snapshot)
+						Expect(err).NotTo(HaveOccurred())
+
+						By("Check for Failed snapshot")
+						f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseFailed))
+					})
+				})
 			})
 
 			Context("In GCS", func() {

@@ -262,7 +262,9 @@ func (c *Controller) create(snapshot *api.Snapshot) error {
 
 func (c *Controller) delete(snapshot *api.Snapshot) error {
 	db, err := c.snapshotter.GetDatabase(metav1.ObjectMeta{Name: snapshot.Spec.DatabaseName, Namespace: snapshot.Namespace})
-	if err != nil {
+	// Database may not exists while dormantdb is deleted and wipedout.
+	// So, skip error if not found. But process the rest.
+	if err != nil && !kerr.IsNotFound(err) {
 		c.eventRecorder.Event(
 			snapshot,
 			core.EventTypeWarning,
@@ -272,32 +274,38 @@ func (c *Controller) delete(snapshot *api.Snapshot) error {
 		return err
 	}
 
-	c.eventRecorder.Eventf(
-		db,
-		core.EventTypeNormal,
-		eventer.EventReasonWipingOut,
-		"Wiping out Snapshot: %v",
-		snapshot.Name,
-	)
-
-	if err := c.snapshotter.WipeOutSnapshot(snapshot); err != nil {
+	if db != nil {
 		c.eventRecorder.Eventf(
 			db,
-			core.EventTypeWarning,
-			eventer.EventReasonFailedToWipeOut,
-			"Failed to wipeOut. Reason: %v",
-			err,
+			core.EventTypeNormal,
+			eventer.EventReasonWipingOut,
+			"Wiping out Snapshot: %v",
+			snapshot.Name,
 		)
+	}
+
+	if err := c.snapshotter.WipeOutSnapshot(snapshot); err != nil {
+		if db != nil {
+			c.eventRecorder.Eventf(
+				db,
+				core.EventTypeWarning,
+				eventer.EventReasonFailedToWipeOut,
+				"Failed to wipeOut. Reason: %v",
+				err,
+			)
+		}
 		return err
 	}
 
-	c.eventRecorder.Eventf(
-		db,
-		core.EventTypeNormal,
-		eventer.EventReasonSuccessfulWipeOut,
-		"Successfully wiped out Snapshot: %v",
-		snapshot.Name,
-	)
+	if db != nil {
+		c.eventRecorder.Eventf(
+			db,
+			core.EventTypeNormal,
+			eventer.EventReasonSuccessfulWipeOut,
+			"Successfully wiped out Snapshot: %v",
+			snapshot.Name,
+		)
+	}
 	return nil
 }
 
