@@ -26,7 +26,7 @@ func (i *Invocation) MongoDBStandalone() *api.MongoDB {
 			},
 		},
 		Spec: api.MongoDBSpec{
-			Version: jsonTypes.StrYo(DBVersion),
+			Version: jsonTypes.StrYo(DBCatalogName),
 			Storage: &core.PersistentVolumeClaimSpec{
 				Resources: core.ResourceRequirements{
 					Requests: core.ResourceList{
@@ -50,7 +50,7 @@ func (i *Invocation) MongoDBRS() *api.MongoDB {
 			},
 		},
 		Spec: api.MongoDBSpec{
-			Version:  jsonTypes.StrYo(DBVersion),
+			Version:  jsonTypes.StrYo(DBCatalogName),
 			Replicas: types.Int32P(2),
 			ReplicaSet: &api.MongoDBReplicaSet{
 				Name: dbName,

@@ -90,7 +90,7 @@ func (f *Framework) GetPrimaryInstance(meta metav1.ObjectMeta, dbName string) (s
 	return "", err
 }
 
-func (f *Framework) EventuallyInsertDocument(meta metav1.ObjectMeta, dbName string) GomegaAsyncAssertion {
+func (f *Framework) EventuallyInsertDocument(meta metav1.ObjectMeta, dbName string, collectionCount int) GomegaAsyncAssertion {
 	return Eventually(
 		func() bool {
 			podName, err := f.GetPrimaryInstance(meta, dbName)
@@ -128,6 +128,20 @@ func (f *Framework) EventuallyInsertDocument(meta metav1.ObjectMeta, dbName stri
 				fmt.Println("creation error", err)
 				return false
 			}
+
+			// above one is 0th element
+			for i := 1; i < collectionCount; i++ {
+				person := &KubedbTable{
+					FirstName: fmt.Sprintf("kubernetes-%03d", i),
+					LastName:  fmt.Sprintf("database-%03d", i),
+				}
+
+				if err := en.Collection(fmt.Sprintf("people-%03d", i)).Save(person); err != nil {
+					fmt.Println("creation error", err)
+					return false
+				}
+			}
+
 			return true
 		},
 		time.Minute*5,
@@ -135,7 +149,7 @@ func (f *Framework) EventuallyInsertDocument(meta metav1.ObjectMeta, dbName stri
 	)
 }
 
-func (f *Framework) EventuallyDocumentExists(meta metav1.ObjectMeta, dbName string) GomegaAsyncAssertion {
+func (f *Framework) EventuallyDocumentExists(meta metav1.ObjectMeta, dbName string, collectionCount int) GomegaAsyncAssertion {
 	return Eventually(
 		func() bool {
 			podName, err := f.GetPrimaryInstance(meta, dbName)
@@ -162,14 +176,32 @@ func (f *Framework) EventuallyDocumentExists(meta metav1.ObjectMeta, dbName stri
 				fmt.Println("Ping error", err)
 				return false
 			}
+
+			expected := &KubedbTable{
+				FirstName: "kubernetes",
+				LastName:  "database",
+			}
 			person := &KubedbTable{}
 
-			if er := en.Collection("people").FindOne(bson.M{"firstname": "kubernetes"}, person); er == nil {
-				return true
-			} else {
+			if er := en.Collection("people").FindOne(bson.M{"firstname": expected.FirstName}, person); er != nil || person == nil || person.LastName != expected.LastName {
 				fmt.Println("checking error", er)
+				return false
 			}
-			return false
+
+			// above one is 0th element
+			for i := 1; i < collectionCount; i++ {
+				expected := &KubedbTable{
+					FirstName: fmt.Sprintf("kubernetes-%03d", i),
+					LastName:  fmt.Sprintf("database-%03d", i),
+				}
+				person := &KubedbTable{}
+
+				if er := en.Collection(fmt.Sprintf("people-%03d", i)).FindOne(bson.M{"firstname": expected.FirstName}, person); er != nil || person == nil || person.LastName != expected.LastName {
+					fmt.Println("checking error", er)
+					return false
+				}
+			}
+			return true
 		},
 		time.Minute*5,
 		time.Second*5,
