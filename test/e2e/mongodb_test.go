@@ -338,7 +338,7 @@ var _ = Describe("MongoDB", func() {
 							Bucket: "nonexisting",
 						}
 					})
-					It("should take Snapshot successfully", func() {
+					It("snapshot should fail", func() {
 						// Create and wait for running MongoDB
 						createAndWaitForRunning()
 
