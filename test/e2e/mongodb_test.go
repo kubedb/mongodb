@@ -1593,11 +1593,10 @@ var _ = Describe("MongoDB", func() {
 						}
 						return in
 					})
-
-					Expect(err).To(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 				}
 
-				It("should initialize database specified by env", withUpdateEnvs)
+				It("should not reject to update EnvVar", withUpdateEnvs)
 
 				Context("With Replica Set", func() {
 					BeforeEach(func() {
@@ -1614,7 +1613,7 @@ var _ = Describe("MongoDB", func() {
 						}
 					})
 
-					It("should take Snapshot successfully", withUpdateEnvs)
+					It("should not reject to update EnvVar", withUpdateEnvs)
 				})
 			})
 		})
