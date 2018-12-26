@@ -1,5 +1,5 @@
-hash: ce314d10a1d9430928e770be4f9258ea32c30187b57d882b5f12b5282fff43ed
-updated: 2018-12-20T05:52:04.386750411-08:00
+hash: f1144b78b7b04740e6f87763259af80098b1a5e0c3602294d8e73487fa97340c
+updated: 2018-12-26T05:13:49.18508491-08:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -247,7 +247,7 @@ imports:
 - name: github.com/go-bongo/bongo
   version: 58e3a1fbb5ea15dde8675b60becb2a9950e70164
 - name: github.com/go-ini/ini
-  version: 300e940a926eb277d3901b20bdfcc54928ad3642
+  version: a9da9309fb4822643ceebb765f80025c35ac19a1
 - name: github.com/go-openapi/jsonpointer
   version: 46af16f9f7b149af66e5d1bd010e3574dc06de98
 - name: github.com/go-openapi/jsonreference
@@ -281,7 +281,7 @@ imports:
 - name: github.com/google/btree
   version: 7d79101e329e5a3adf994758c578dab82b90c017
 - name: github.com/google/go-cmp
-  version: 2248b49eaa8e1c8c0963ee77b40841adbc19d4ca
+  version: 3af367b6b30c263d47e8895973edcca9a49cf029
   subpackages:
   - cmp
   - cmp/internal/diff
@@ -346,7 +346,7 @@ imports:
 - name: github.com/json-iterator/go
   version: 1624edc4454b8682399def8740d46db5e4362ba4
 - name: github.com/kubedb/apimachinery
-  version: 793a8b1f7757af96aafd2c0228f97761c4c1933a
+  version: 4c42014d5745345e56a41261142b9ae4b977d696
   subpackages:
   - apis
   - apis/authorization
@@ -410,7 +410,7 @@ imports:
 - name: github.com/modern-go/reflect2
   version: 05fbef0ca5da472bbf96c9322b84a53edc03c9fd
 - name: github.com/ncw/swift
-  version: 6f342da371d063863f2f354f183e4ab0ef72d287
+  version: 3d63426e3fec66c303577c2257565bd19a5ca3bc
 - name: github.com/NYTimes/gziphandler
   version: 56545f4a5d46df9a6648819d1664c3a03a13ffdb
 - name: github.com/oleiade/reflections
@@ -613,6 +613,8 @@ imports:
   version: c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
+- name: gopkg.in/ini.v1
+  version: a9da9309fb4822643ceebb765f80025c35ac19a1
 - name: gopkg.in/mgo.v2
   version: 9856a29383ce1c59f308dd1cf0363a79b5bef6b5
   subpackages:
@@ -733,7 +735,7 @@ imports:
   - third_party/forked/golang/netutil
   - third_party/forked/golang/reflect
 - name: k8s.io/apiserver
-  version: 70f523ccd088c9dca12de68b719d9b29f8e8c7d2
+  version: 419ab4faf457be27411fc8125ed110a03be373e8
   repo: https://github.com/kmodules/apiserver.git
   vcs: git
   subpackages:
@@ -1029,7 +1031,7 @@ imports:
   - pkg/util
   - pkg/util/proto
 - name: kmodules.xyz/custom-resources
-  version: 9aa5331613e863c76b7735db66af27c6f027d878
+  version: b4ef1fe08b7a09681a676c1b697cf66fd74b7ed4
   repo: https://github.com/kmodules/custom-resources.git
   vcs: git
   subpackages:
