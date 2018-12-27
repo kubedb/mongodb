@@ -101,7 +101,7 @@ func (f *Framework) EventuallyMongoDB(meta metav1.ObjectMeta) GomegaAsyncAsserti
 			}
 			return true
 		},
-		time.Minute*10,
+		time.Minute*13,
 		time.Second*5,
 	)
 }
