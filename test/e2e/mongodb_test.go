@@ -354,6 +354,66 @@ var _ = Describe("MongoDB", func() {
 						f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseFailed))
 					})
 				})
+
+				Context("Delete One Snapshot keeping others", func() {
+
+					BeforeEach(func() {
+						mongodb.Spec.Init = &api.InitSpec{
+							ScriptSource: &api.ScriptSourceSpec{
+								VolumeSource: core.VolumeSource{
+									GitRepo: &core.GitRepoVolumeSource{
+										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+										Directory:  ".",
+									},
+								},
+							},
+						}
+					})
+
+					It("Delete One Snapshot keeping others", func() {
+						// Create and wait for running MongoDB
+						shouldTakeSnapshot()
+
+						oldSnapshot := snapshot.DeepCopy()
+
+						// New snapshot that has old snapshot's name in prefix
+						snapshot.Name += "-2"
+
+						By(fmt.Sprintf("Create Snapshot %v", snapshot.Name))
+						err = f.CreateSnapshot(snapshot)
+						Expect(err).NotTo(HaveOccurred())
+
+						By("Check for Succeeded snapshot")
+						f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
+
+						if !skipSnapshotDataChecking {
+							By("Check for snapshot data")
+							f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
+						}
+
+						// delete old snapshot
+						By(fmt.Sprintf("Delete old Snapshot %v", oldSnapshot.Name))
+						err = f.DeleteSnapshot(oldSnapshot.ObjectMeta)
+						Expect(err).NotTo(HaveOccurred())
+
+						By("Waiting for old Snapshot to be deleted")
+						f.EventuallySnapshot(oldSnapshot.ObjectMeta).Should(BeFalse())
+						if !skipSnapshotDataChecking {
+							By(fmt.Sprintf("Check data for old snapshot %v", oldSnapshot.Name))
+							f.EventuallySnapshotDataFound(oldSnapshot).Should(BeFalse())
+						}
+
+						// check remaining snapshot
+						By(fmt.Sprintf("Checking another Snapshot %v still exists", snapshot.Name))
+						_, err = f.GetSnapshot(snapshot.ObjectMeta)
+						Expect(err).NotTo(HaveOccurred())
+
+						if !skipSnapshotDataChecking {
+							By(fmt.Sprintf("Check data for remaining snapshot %v", snapshot.Name))
+							f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
+						}
+					})
+				})
 			})
 
 			Context("In GCS", func() {
@@ -377,6 +437,7 @@ var _ = Describe("MongoDB", func() {
 				})
 
 				Context("Delete One Snapshot keeping others", func() {
+
 					BeforeEach(func() {
 						mongodb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
@@ -392,13 +453,14 @@ var _ = Describe("MongoDB", func() {
 
 					It("Delete One Snapshot keeping others", func() {
 						// Create and wait for running MongoDB
-						createAndWaitForRunning()
+						shouldTakeSnapshot()
 
-						By("Create Secret")
-						err := f.CreateSecret(secret)
-						Expect(err).NotTo(HaveOccurred())
+						oldSnapshot := snapshot.DeepCopy()
 
-						By("Create Snapshot")
+						// New snapshot that has old snapshot's name in prefix
+						snapshot.Name += "-2"
+
+						By(fmt.Sprintf("Create Snapshot %v", snapshot.Name))
 						err = f.CreateSnapshot(snapshot)
 						Expect(err).NotTo(HaveOccurred())
 
@@ -410,47 +472,25 @@ var _ = Describe("MongoDB", func() {
 							f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
 						}
 
-						oldSnapshot := snapshot
-
-						// create new Snapshot
-						snapshot := f.Snapshot()
-						snapshot.Spec.DatabaseName = mongodb.Name
-						snapshot.Spec.StorageSecretName = secret.Name
-						snapshot.Spec.GCS = &store.GCSSpec{
-							Bucket: os.Getenv(GCS_BUCKET_NAME),
-						}
-
-						By("Create Snapshot")
-						err = f.CreateSnapshot(snapshot)
+						// delete old snapshot
+						By(fmt.Sprintf("Delete old Snapshot %v", oldSnapshot.Name))
+						err = f.DeleteSnapshot(oldSnapshot.ObjectMeta)
 						Expect(err).NotTo(HaveOccurred())
 
-						By("Check for Succeeded snapshot")
-						f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
-
+						By("Waiting for old Snapshot to be deleted")
+						f.EventuallySnapshot(oldSnapshot.ObjectMeta).Should(BeFalse())
 						if !skipSnapshotDataChecking {
-							By("Check for snapshot data")
-							f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
+							By(fmt.Sprintf("Check data for old snapshot %v", oldSnapshot.Name))
+							f.EventuallySnapshotDataFound(oldSnapshot).Should(BeFalse())
 						}
 
-						By(fmt.Sprintf("Delete Snapshot %v", snapshot.Name))
-						err = f.DeleteSnapshot(snapshot.ObjectMeta)
-						Expect(err).NotTo(HaveOccurred())
-
-						By("Wait for Deleting Snapshot")
-						f.EventuallySnapshot(mongodb.ObjectMeta).Should(BeFalse())
-						if !skipSnapshotDataChecking {
-							By("Check for snapshot data")
-							f.EventuallySnapshotDataFound(snapshot).Should(BeFalse())
-						}
-
-						snapshot = oldSnapshot
-
-						By(fmt.Sprintf("Old Snapshot %v Still Exists", snapshot.Name))
+						// check remaining snapshot
+						By(fmt.Sprintf("Checking another Snapshot %v still exists", snapshot.Name))
 						_, err = f.GetSnapshot(snapshot.ObjectMeta)
 						Expect(err).NotTo(HaveOccurred())
 
 						if !skipSnapshotDataChecking {
-							By(fmt.Sprintf("Check for old snapshot %v data", snapshot.Name))
+							By(fmt.Sprintf("Check data for remaining snapshot %v", snapshot.Name))
 							f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
 						}
 					})
@@ -467,6 +507,66 @@ var _ = Describe("MongoDB", func() {
 				})
 
 				It("should take Snapshot successfully", shouldTakeSnapshot)
+
+				Context("Delete One Snapshot keeping others", func() {
+
+					BeforeEach(func() {
+						mongodb.Spec.Init = &api.InitSpec{
+							ScriptSource: &api.ScriptSourceSpec{
+								VolumeSource: core.VolumeSource{
+									GitRepo: &core.GitRepoVolumeSource{
+										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+										Directory:  ".",
+									},
+								},
+							},
+						}
+					})
+
+					It("Delete One Snapshot keeping others", func() {
+						// Create and wait for running MongoDB
+						shouldTakeSnapshot()
+
+						oldSnapshot := snapshot.DeepCopy()
+
+						// New snapshot that has old snapshot's name in prefix
+						snapshot.Name += "-2"
+
+						By(fmt.Sprintf("Create Snapshot %v", snapshot.Name))
+						err = f.CreateSnapshot(snapshot)
+						Expect(err).NotTo(HaveOccurred())
+
+						By("Check for Succeeded snapshot")
+						f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
+
+						if !skipSnapshotDataChecking {
+							By("Check for snapshot data")
+							f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
+						}
+
+						// delete old snapshot
+						By(fmt.Sprintf("Delete old Snapshot %v", oldSnapshot.Name))
+						err = f.DeleteSnapshot(oldSnapshot.ObjectMeta)
+						Expect(err).NotTo(HaveOccurred())
+
+						By("Waiting for old Snapshot to be deleted")
+						f.EventuallySnapshot(oldSnapshot.ObjectMeta).Should(BeFalse())
+						if !skipSnapshotDataChecking {
+							By(fmt.Sprintf("Check data for old snapshot %v", oldSnapshot.Name))
+							f.EventuallySnapshotDataFound(oldSnapshot).Should(BeFalse())
+						}
+
+						// check remaining snapshot
+						By(fmt.Sprintf("Checking another Snapshot %v still exists", snapshot.Name))
+						_, err = f.GetSnapshot(snapshot.ObjectMeta)
+						Expect(err).NotTo(HaveOccurred())
+
+						if !skipSnapshotDataChecking {
+							By(fmt.Sprintf("Check data for remaining snapshot %v", snapshot.Name))
+							f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
+						}
+					})
+				})
 			})
 
 			Context("In Swift", func() {
