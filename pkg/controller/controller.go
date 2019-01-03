@@ -1,6 +1,7 @@
 package controller
 
 import (
+	authorization "github.com/kubedb/apimachinery/apis/authorization/v1alpha1"
 	"github.com/appscode/go/encoding/json/types"
 	"github.com/appscode/go/log"
 	reg_util "github.com/appscode/kutil/admissionregistration/v1beta1"
@@ -93,6 +94,8 @@ func (c *Controller) EnsureCustomResourceDefinitions() error {
 		catlog.MongoDBVersion{}.CustomResourceDefinition(),
 		api.DormantDatabase{}.CustomResourceDefinition(),
 		api.Snapshot{}.CustomResourceDefinition(),
+		authorization.MongoDBRole{}.CustomResourceDefinition(),
+		authorization.DatabaseAccessRequest{}.CustomResourceDefinition(),
 		appcat.AppBinding{}.CustomResourceDefinition(),
 	}
 	return apiext_util.RegisterCRDs(c.ApiExtKubeClient, crds)
