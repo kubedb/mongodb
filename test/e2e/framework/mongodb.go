@@ -16,6 +16,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+var (
+	JobPvcStorageSize = "2Gi"
+	DBPvcStorageSize  = "1Gi"
+)
+
 func (i *Invocation) MongoDBStandalone() *api.MongoDB {
 	return &api.MongoDB{
 		ObjectMeta: metav1.ObjectMeta{
@@ -30,7 +35,7 @@ func (i *Invocation) MongoDBStandalone() *api.MongoDB {
 			Storage: &core.PersistentVolumeClaimSpec{
 				Resources: core.ResourceRequirements{
 					Requests: core.ResourceList{
-						core.ResourceStorage: resource.MustParse("1Gi"),
+						core.ResourceStorage: resource.MustParse(DBPvcStorageSize),
 					},
 				},
 				StorageClassName: types.StringP(i.StorageClass),
@@ -58,7 +63,7 @@ func (i *Invocation) MongoDBRS() *api.MongoDB {
 			Storage: &core.PersistentVolumeClaimSpec{
 				Resources: core.ResourceRequirements{
 					Requests: core.ResourceList{
-						core.ResourceStorage: resource.MustParse("1Gi"),
+						core.ResourceStorage: resource.MustParse(DBPvcStorageSize),
 					},
 				},
 				StorageClassName: types.StringP(i.StorageClass),
