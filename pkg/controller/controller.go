@@ -1,7 +1,6 @@
 package controller
 
 import (
-	authorization "github.com/kubedb/apimachinery/apis/authorization/v1alpha1"
 	"github.com/appscode/go/encoding/json/types"
 	"github.com/appscode/go/log"
 	reg_util "github.com/appscode/kutil/admissionregistration/v1beta1"
@@ -10,6 +9,7 @@ import (
 	"github.com/appscode/kutil/tools/queue"
 	pcm "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
 	"github.com/kubedb/apimachinery/apis"
+	authorization "github.com/kubedb/apimachinery/apis/authorization/v1alpha1"
 	catlog "github.com/kubedb/apimachinery/apis/catalog/v1alpha1"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	cs "github.com/kubedb/apimachinery/client/clientset/versioned"

@@ -97,7 +97,7 @@ func (f *Framework) EventuallySnapshotCount(meta metav1.ObjectMeta) GomegaAsyncA
 
 			return len(snapshotList.Items)
 		},
-		time.Minute*15,
+		time.Minute*10,
 		time.Second*5,
 	)
 }
@@ -121,7 +121,7 @@ func (f *Framework) EventuallyMultipleSnapshotFinishedProcessing(meta metav1.Obj
 			}
 			return nil
 		},
-		time.Minute*15,
+		time.Minute*10,
 		time.Second*5,
 	)
 }

@@ -101,7 +101,7 @@ func (f *Framework) EventuallyMongoDB(meta metav1.ObjectMeta) GomegaAsyncAsserti
 			}
 			return true
 		},
-		time.Minute*13,
+		time.Minute*10,
 		time.Second*5,
 	)
 }
@@ -113,7 +113,7 @@ func (f *Framework) EventuallyMongoDBRunning(meta metav1.ObjectMeta) GomegaAsync
 			Expect(err).NotTo(HaveOccurred())
 			return mongodb.Status.Phase == api.DatabasePhaseRunning
 		},
-		time.Minute*15,
+		time.Minute*10,
 		time.Second*5,
 	)
 }
