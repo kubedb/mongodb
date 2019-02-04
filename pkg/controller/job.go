@@ -36,12 +36,15 @@ func (c *Controller) createRestoreJob(mongodb *api.MongoDB, snapshot *api.Snapsh
 	}
 
 	// Get PersistentVolume object for Backup Util pod.
-	pvcSpec := mongodb.Spec.Storage
-	persistentVolume, err := c.GetVolumeForSnapshot(
-		mongodb.Spec.StorageType,
-		pvcSpec, snapshot.Spec.PodVolumeClaimSpec,
-		jobName, snapshot.Namespace,
-	)
+	pvcSpec := snapshot.Spec.PodVolumeClaimSpec
+	if pvcSpec == nil {
+		pvcSpec = mongodb.Spec.Storage
+	}
+	st := snapshot.Spec.StorageType
+	if st == nil {
+		st = &mongodb.Spec.StorageType
+	}
+	persistentVolume, err := c.GetVolumeForSnapshot(*st, pvcSpec, jobName, snapshot.Namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -201,12 +204,15 @@ func (c *Controller) getSnapshotterJob(snapshot *api.Snapshot) (*batch.Job, erro
 	}
 
 	// Get PersistentVolume object for Backup Util pod.
-	pvcSpec := mongodb.Spec.Storage
-	persistentVolume, err := c.GetVolumeForSnapshot(
-		mongodb.Spec.StorageType,
-		pvcSpec, snapshot.Spec.PodVolumeClaimSpec,
-		jobName, snapshot.Namespace,
-	)
+	pvcSpec := snapshot.Spec.PodVolumeClaimSpec
+	if pvcSpec == nil {
+		pvcSpec = mongodb.Spec.Storage
+	}
+	st := snapshot.Spec.StorageType
+	if st == nil {
+		st = &mongodb.Spec.StorageType
+	}
+	persistentVolume, err := c.GetVolumeForSnapshot(*st, pvcSpec, jobName, snapshot.Namespace)
 	if err != nil {
 		return nil, err
 	}
