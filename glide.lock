@@ -1,5 +1,5 @@
 hash: f1144b78b7b04740e6f87763259af80098b1a5e0c3602294d8e73487fa97340c
-updated: 2019-02-04T15:20:11.262398815+06:00
+updated: 2019-02-06T14:38:19.017908252+06:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -346,7 +346,7 @@ imports:
 - name: github.com/json-iterator/go
   version: 1624edc4454b8682399def8740d46db5e4362ba4
 - name: github.com/kubedb/apimachinery
-  version: 2ba704f42f3a01216fbcf234001398d4e5b14544
+  version: eeb9deabd8e6713fe06eb09dd44bfc40f180a652
   subpackages:
   - apis
   - apis/authorization
