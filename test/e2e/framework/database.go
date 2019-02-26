@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/appscode/kutil/tools/portforward"
 	"github.com/globalsign/mgo/bson"
 	"github.com/go-bongo/bongo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"kmodules.xyz/client-go/tools/portforward"
 )
 
 // Todo: use official go-mongodb driver. https://github.com/mongodb/mongo-go-driver
