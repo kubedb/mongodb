@@ -1,5 +1,22 @@
 # Change Log
 
+## [0.3.0](https://github.com/kubedb/mongodb/tree/0.3.0) (2019-02-19)
+[Full Changelog](https://github.com/kubedb/mongodb/compare/0.2.0...0.3.0)
+
+**Merged pull requests:**
+
+- Revendor dependencies [\#141](https://github.com/kubedb/mongodb/pull/141) ([tamalsaha](https://github.com/tamalsaha))
+- Revendor dependencies : Retry Failed Scheduler Snapshot [\#140](https://github.com/kubedb/mongodb/pull/140) ([the-redback](https://github.com/the-redback))
+- Support for mongo 4.x [\#139](https://github.com/kubedb/mongodb/pull/139) ([the-redback](https://github.com/the-redback))
+- Added ephemeral StorageType support [\#138](https://github.com/kubedb/mongodb/pull/138) ([the-redback](https://github.com/the-redback))
+- Initial RBAC support: create and use K8s service account for MongoDB … [\#137](https://github.com/kubedb/mongodb/pull/137) ([maartenvandenbogaard](https://github.com/maartenvandenbogaard))
+- Use PVC spec from snapshot if provided [\#135](https://github.com/kubedb/mongodb/pull/135) ([tamalsaha](https://github.com/tamalsaha))
+- Revendored and updated tests for 'Prevent prefix matching of multiple snapshots' [\#134](https://github.com/kubedb/mongodb/pull/134) ([the-redback](https://github.com/the-redback))
+- Update peer-finder binary [\#133](https://github.com/kubedb/mongodb/pull/133) ([the-redback](https://github.com/the-redback))
+- Add certificate health checker [\#132](https://github.com/kubedb/mongodb/pull/132) ([tamalsaha](https://github.com/tamalsaha))
+- Update E2E test: Env update is not restricted anymore [\#131](https://github.com/kubedb/mongodb/pull/131) ([the-redback](https://github.com/the-redback))
+- Fix AppBinding [\#130](https://github.com/kubedb/mongodb/pull/130) ([tamalsaha](https://github.com/tamalsaha))
+
 ## [0.2.0](https://github.com/kubedb/mongodb/tree/0.2.0) (2018-12-17)
 [Full Changelog](https://github.com/kubedb/mongodb/compare/0.2.0-rc.2...0.2.0)
 
