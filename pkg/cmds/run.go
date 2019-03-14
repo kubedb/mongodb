@@ -2,6 +2,7 @@ package cmds
 
 import (
 	"io"
+	"kmodules.xyz/client-go/meta"
 
 	"github.com/appscode/go/log"
 	"github.com/kubedb/mongodb/pkg/cmds/server"
@@ -36,6 +37,7 @@ func NewCmdRun(version string, out, errOut io.Writer, stopCh <-chan struct{}) *c
 	}
 
 	o.AddFlags(cmd.Flags())
+	meta.AddLabelBlacklistFlag(cmd.Flags())
 
 	return cmd
 }

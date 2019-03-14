@@ -8,7 +8,6 @@ import (
 
 	"github.com/appscode/go/homedir"
 	"github.com/appscode/go/log"
-	pcm "github.com/coreos/prometheus-operator/pkg/client/versioned/typed/monitoring/v1"
 	cs "github.com/kubedb/apimachinery/client/clientset/versioned"
 	"github.com/kubedb/apimachinery/client/clientset/versioned/scheme"
 	"github.com/kubedb/mongodb/pkg/controller"
@@ -33,9 +32,6 @@ import (
 
 var (
 	storageClass = "standard"
-
-	prometheusCrdGroup = pcm.Group
-	prometheusCrdKinds = pcm.DefaultCrdKinds
 )
 
 func init() {
