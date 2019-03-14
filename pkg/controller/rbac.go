@@ -94,7 +94,7 @@ func (c *Controller) createRoleBinding(db *api.MongoDB, name string) error {
 	return err
 }
 
-func (c *Controller) getPolicyNames(db  *api.MongoDB) (string, string, error) {
+func (c *Controller) getPolicyNames(db *api.MongoDB) (string, string, error) {
 	dbVersion, err := c.ExtClient.CatalogV1alpha1().MongoDBVersions().Get(string(db.Spec.Version), metav1.GetOptions{})
 	if err != nil {
 		return "", "", err
