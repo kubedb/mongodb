@@ -28,6 +28,13 @@ func (i *Invocation) MongoDBVersion() *api.MongoDBVersion {
 			Tools: api.MongoDBVersionTools{
 				Image: fmt.Sprintf("%s/mongo-tools:%s", DockerRegistry, DBToolsTag),
 			},
+			InitContainer: api.MongoDBVersionInitContainer{
+				Image: "kubedb/busybox",
+			},
+			PodSecurityPolicies: api.MongoDBVersionPodSecurityPolicy{
+				SnapshotterPolicyName: "mongodb-snapshot",
+				DatabasePolicyName:    "mongodb-db",
+			},
 		},
 	}
 }
