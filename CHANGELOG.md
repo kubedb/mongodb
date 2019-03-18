@@ -1,5 +1,17 @@
 # Change Log
 
+## [0.4.0](https://github.com/kubedb/mongodb/tree/0.4.0) (2019-03-18)
+[Full Changelog](https://github.com/kubedb/mongodb/compare/0.3.0...0.4.0)
+
+**Merged pull requests:**
+
+- Init container and DB psp in e2e test framework [\#147](https://github.com/kubedb/mongodb/pull/147) ([iamrz1](https://github.com/iamrz1))
+- Don't inherit app.kubernetes.io labels from CRD into offshoots [\#146](https://github.com/kubedb/mongodb/pull/146) ([tamalsaha](https://github.com/tamalsaha))
+- Support for init container  [\#145](https://github.com/kubedb/mongodb/pull/145) ([iamrz1](https://github.com/iamrz1))
+- Add role label to stats service [\#144](https://github.com/kubedb/mongodb/pull/144) ([tamalsaha](https://github.com/tamalsaha))
+- PSP support for MongoDB [\#143](https://github.com/kubedb/mongodb/pull/143) ([iamrz1](https://github.com/iamrz1))
+- Update Kubernetes client libraries to 1.13.0 release [\#142](https://github.com/kubedb/mongodb/pull/142) ([tamalsaha](https://github.com/tamalsaha))
+
 ## [0.3.0](https://github.com/kubedb/mongodb/tree/0.3.0) (2019-02-19)
 [Full Changelog](https://github.com/kubedb/mongodb/compare/0.2.0...0.3.0)
 
