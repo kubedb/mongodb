@@ -1,5 +1,5 @@
-hash: 73b23cc3ce22538e1153c7b779b193595e3b5dcfd3216d6d4ce58eb3614bc833
-updated: 2019-03-14T12:58:40.037535378-07:00
+hash: 89d01926e13d12bf306ff99244d2e8011c05baa9148c03784abd98b998b314c5
+updated: 2019-03-18T15:32:28.554349856-07:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -325,7 +325,7 @@ imports:
 - name: github.com/json-iterator/go
   version: 1624edc4454b8682399def8740d46db5e4362ba4
 - name: github.com/kubedb/apimachinery
-  version: 334b49d77d819d1e3a8d90c7a4ea526bbb71f8b4
+  version: fb8b2533cc4f81f8c39214d943b3951206be0a2b
   subpackages:
   - apis
   - apis/authorization
@@ -1013,7 +1013,7 @@ imports:
   - util/retry
   - util/workqueue
 - name: k8s.io/klog
-  version: 8139d8cb77af419532b33dfa7dd09fbc5f1d344f
+  version: b9b56d5dfc9208f60ea747056670942d8b0afdc8
 - name: k8s.io/kube-aggregator
   version: 71ff10f5febb8733ad25fc112736ff5f8cd97beb
   subpackages:
