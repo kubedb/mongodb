@@ -40,9 +40,9 @@ func (a *MongoDBValidator) Resource() (plural schema.GroupVersionResource, singu
 	return schema.GroupVersionResource{
 			Group:    "validators.kubedb.com",
 			Version:  "v1alpha1",
-			Resource: "mongodbs",
+			Resource: "mongodbvalidators",
 		},
-		"mongodb"
+		"mongodbvalidator"
 }
 
 func (a *MongoDBValidator) Initialize(config *rest.Config, stopCh <-chan struct{}) error {

@@ -36,9 +36,9 @@ func (a *MongoDBMutator) Resource() (plural schema.GroupVersionResource, singula
 	return schema.GroupVersionResource{
 			Group:    "mutators.kubedb.com",
 			Version:  "v1alpha1",
-			Resource: "mongodbs",
+			Resource: "mongodbmutators",
 		},
-		"mongodb"
+		"mongodbmutator"
 }
 
 func (a *MongoDBMutator) Initialize(config *rest.Config, stopCh <-chan struct{}) error {
