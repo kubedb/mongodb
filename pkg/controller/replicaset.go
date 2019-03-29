@@ -95,6 +95,7 @@ func (c *Controller) upsertRSInitContainer(statefulSet *apps.StatefulSet, mongod
 				MountPath: dataDirectoryPath,
 			},
 		},
+		Resources: mongodb.Spec.PodTemplate.Spec.Resources,
 	}
 
 	initContainers := statefulSet.Spec.Template.Spec.InitContainers
