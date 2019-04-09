@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"testing"
 
+	types2 "github.com/appscode/go/encoding/json/types"
 	"github.com/appscode/go/types"
 	catalog "github.com/kubedb/apimachinery/apis/catalog/v1alpha1"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
@@ -37,6 +38,8 @@ var requestKind = metaV1.GroupVersionKind{
 func TestMongoDBValidator_Admit(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.testName, func(t *testing.T) {
+			//c.object.SetDefaults()
+
 			validator := MongoDBValidator{}
 
 			validator.initialized = true
@@ -158,6 +161,26 @@ var cases = []struct {
 		false,
 		true,
 	},
+	{"Edit MongoDB Spec.DatabaseSecret",
+		requestKind,
+		"foo",
+		"default",
+		admission.Update,
+		editNonExistingSecret(sampleMongoDB()),
+		editExistingSecret(sampleMongoDB()),
+		false,
+		false,
+	},
+	{"Edit MongoDB Sharding Prefix",
+		requestKind,
+		"foo",
+		"default",
+		admission.Update,
+		sampleShardMongo(),
+		editShardPrefix(sampleShardMongo()),
+		false,
+		false,
+	},
 	{"Edit Status",
 		requestKind,
 		"foo",
@@ -273,6 +296,55 @@ func sampleMongoDB() api.MongoDB {
 	}
 }
 
+func sampleShardMongo() api.MongoDB {
+	return api.MongoDB{
+		ObjectMeta: metaV1.ObjectMeta{
+			Name:      "demo-name",
+			Namespace: "demo",
+			Labels: map[string]string{
+				"app": "kubedb",
+			},
+		},
+		Spec: api.MongoDBSpec{
+			Version: types2.StrYo("3.6-v2"),
+			ShardTopology: &api.MongoDBShardingTopology{
+				Shard: api.MongoDBShardNode{
+					Shards: 3,
+					MongoDBNode: api.MongoDBNode{
+						Replicas: 3,
+					},
+					Storage: &core.PersistentVolumeClaimSpec{
+						Resources: core.ResourceRequirements{
+							Requests: core.ResourceList{
+								core.ResourceStorage: resource.MustParse("1Gi"),
+							},
+						},
+						StorageClassName: types.StringP("standard"),
+					},
+				},
+				ConfigServer: api.MongoDBConfigNode{
+					MongoDBNode: api.MongoDBNode{
+						Replicas: 3,
+					},
+					Storage: &core.PersistentVolumeClaimSpec{
+						Resources: core.ResourceRequirements{
+							Requests: core.ResourceList{
+								core.ResourceStorage: resource.MustParse("1Gi"),
+							},
+						},
+						StorageClassName: types.StringP("standard"),
+					},
+				},
+				Mongos: api.MongoDBMongosNode{
+					MongoDBNode: api.MongoDBNode{
+						Replicas: 2,
+					},
+				},
+			},
+		},
+	}
+}
+
 func getAwkwardMongoDB() api.MongoDB {
 	mongodb := sampleMongoDB()
 	mongodb.Spec.Version = "3.0"
@@ -320,5 +392,10 @@ func editSpecInvalidMonitor(old api.MongoDB) api.MongoDB {
 
 func pauseDatabase(old api.MongoDB) api.MongoDB {
 	old.Spec.TerminationPolicy = api.TerminationPolicyPause
+	return old
+}
+
+func editShardPrefix(old api.MongoDB) api.MongoDB {
+	old.Spec.ShardTopology.Shard.Prefix = "demo-prefix"
 	return old
 }

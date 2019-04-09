@@ -45,7 +45,7 @@ func (i *Invocation) MongoDBStandalone() *api.MongoDB {
 }
 
 func (i *Invocation) MongoDBRS() *api.MongoDB {
-	dbName := rand.WithUniqSuffix("mongodb-rs")
+	dbName := rand.WithUniqSuffix("mongo-rs")
 	return &api.MongoDB{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      dbName,
@@ -67,6 +67,56 @@ func (i *Invocation) MongoDBRS() *api.MongoDB {
 					},
 				},
 				StorageClassName: types.StringP(i.StorageClass),
+			},
+		},
+	}
+}
+
+func (i *Invocation) MongoDBShard() *api.MongoDB {
+	dbName := rand.WithUniqSuffix("mongo-sh")
+	return &api.MongoDB{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      dbName,
+			Namespace: i.namespace,
+			Labels: map[string]string{
+				"app": i.app,
+			},
+		},
+		Spec: api.MongoDBSpec{
+			Version: jsonTypes.StrYo(DBCatalogName),
+			ShardTopology: &api.MongoDBShardingTopology{
+				Shard: api.MongoDBShardNode{
+					Shards: 2,
+					MongoDBNode: api.MongoDBNode{
+						Replicas: 2,
+					},
+					Storage: &core.PersistentVolumeClaimSpec{
+						Resources: core.ResourceRequirements{
+							Requests: core.ResourceList{
+								core.ResourceStorage: resource.MustParse(DBPvcStorageSize),
+							},
+						},
+						StorageClassName: types.StringP(i.StorageClass),
+					},
+				},
+				ConfigServer: api.MongoDBConfigNode{
+					MongoDBNode: api.MongoDBNode{
+						Replicas: 2,
+					},
+					Storage: &core.PersistentVolumeClaimSpec{
+						Resources: core.ResourceRequirements{
+							Requests: core.ResourceList{
+								core.ResourceStorage: resource.MustParse(DBPvcStorageSize),
+							},
+						},
+						StorageClassName: types.StringP(i.StorageClass),
+					},
+				},
+				Mongos: api.MongoDBMongosNode{
+					MongoDBNode: api.MongoDBNode{
+						Replicas: 2,
+					},
+				},
 			},
 		},
 	}

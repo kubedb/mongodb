@@ -2,16 +2,15 @@
 set -xeou pipefail
 
 DOCKER_REGISTRY=${DOCKER_REGISTRY:-kubedb}
-IMG=mongo
-DB_VERSION=4.0
-TAG="$DB_VERSION"
 
 IMG=mongo
+SUFFIX=v1
+
 DB_VERSION=4.0
 PATCH=4.0.5
 
-TAG="$DB_VERSION" # suffix will be added in later versions
-BASE_TAG="$PATCH" # suffix will be added in later versions
+TAG="$DB_VERSION-$SUFFIX"
+BASE_TAG="$PATCH-$SUFFIX"
 
 
 docker pull "$DOCKER_REGISTRY/$IMG:$BASE_TAG"

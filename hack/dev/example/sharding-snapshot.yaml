@@ -1,12 +1,12 @@
 apiVersion: kubedb.com/v1alpha1
 kind: Snapshot
 metadata:
-  name: snapshot-rs
+  name: snapshot-sharding
   namespace: demo
   labels:
     kubedb.com/kind: MongoDB
 spec:
-  databaseName: mgo-rs
+  databaseName: mongo-sh
   storageSecretName: gcs-secret
   gcs:
-    bucket: kubedb
+    bucket: kubedb-qa

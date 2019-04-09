@@ -18,6 +18,7 @@ show_help() {
   echo "    --bucket=BUCKET                name of bucket"
   echo "    --folder=FOLDER                name of folder in bucket"
   echo "    --snapshot=SNAPSHOT            name of snapshot"
+  echo "    --skip-config=true/false       skip config db of sharded cluster dump (default: false)"
   echo "    --enable-analytics=ENABLE_ANALYTICS   send analytical events to Google Analytics (default true)"
 }
 
@@ -30,6 +31,7 @@ DB_PASSWORD=${DB_PASSWORD:-}
 DB_BUCKET=${DB_BUCKET:-}
 DB_FOLDER=${DB_FOLDER:-}
 DB_SNAPSHOT=${DB_SNAPSHOT:-}
+DB_SKIP_CONFIG=${DB_SKIP_CONFIG:-'false'}
 DB_DATA_DIR=${DB_DATA_DIR:-/var/data}
 OSM_CONFIG_FILE=/etc/osm/config
 ENABLE_ANALYTICS=${ENABLE_ANALYTICS:-true}
@@ -65,6 +67,10 @@ while test $# -gt 0; do
       ;;
     --snapshot*)
       export DB_SNAPSHOT=$(echo $1 | sed -e 's/^[^=]*=//g')
+      shift
+      ;;
+    --skip-config*)
+      export DB_SKIP_CONFIG=$(echo $1 | sed -e 's/^[^=]*=//g')
       shift
       ;;
     --analytics* | --enable-analytics*)
@@ -106,6 +112,13 @@ case "$op" in
     ;;
   restore)
     osm pull --enable-analytics="$ENABLE_ANALYTICS" --osmconfig="$OSM_CONFIG_FILE" -c "$DB_BUCKET" "$DB_FOLDER/$DB_SNAPSHOT" "$DB_DATA_DIR"
+    if [[ -d "$DB_DATA_DIR/config" ]]; then
+      if [[ "$DB_SKIP_CONFIG" == "false" ]]; then
+        mongorestore --host "$DB_HOST" --port $DB_PORT --username "$DB_USER" --password "$DB_PASSWORD" \
+        --authenticationDatabase admin -d config "$DB_DATA_DIR/config" "$@"
+      fi
+      rm -rf "$DB_DATA_DIR/config"
+    fi
     mongorestore --host "$DB_HOST" --port $DB_PORT --username "$DB_USER" --password "$DB_PASSWORD" "$DB_DATA_DIR" "$@"
     ;;
   *)
