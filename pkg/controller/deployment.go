@@ -42,18 +42,18 @@ func (c *Controller) checkDeployment(mongodb *api.MongoDB, deployName string) er
 func (c *Controller) ensureDeployment(
 	mongodb *api.MongoDB,
 	strategy apps.DeploymentStrategy,
-	deployOption Options,
+	opts workloadOptions,
 ) (kutil.VerbType, error) {
 	// Take value of podTemplate
 	var pt ofst.PodTemplateSpec
-	if deployOption.podTemplate != nil {
-		pt = *deployOption.podTemplate
+	if opts.podTemplate != nil {
+		pt = *opts.podTemplate
 	}
-	if err := c.checkDeployment(mongodb, deployOption.stsName); err != nil {
+	if err := c.checkDeployment(mongodb, opts.stsName); err != nil {
 		return kutil.VerbUnchanged, err
 	}
 	deploymentMeta := metav1.ObjectMeta{
-		Name:      deployOption.stsName,
+		Name:      opts.stsName,
 		Namespace: mongodb.Namespace,
 	}
 
@@ -77,15 +77,15 @@ func (c *Controller) ensureDeployment(
 	}
 
 	deployment, vt, err := app_util.CreateOrPatchDeployment(c.Client, deploymentMeta, func(in *apps.Deployment) *apps.Deployment {
-		in.Labels = deployOption.labels
+		in.Labels = opts.labels
 		in.Annotations = pt.Controller.Annotations
 		core_util.EnsureOwnerReference(&in.ObjectMeta, ref)
 
-		in.Spec.Replicas = deployOption.replicas
+		in.Spec.Replicas = opts.replicas
 		in.Spec.Selector = &metav1.LabelSelector{
-			MatchLabels: deployOption.selectors,
+			MatchLabels: opts.selectors,
 		}
-		in.Spec.Template.Labels = deployOption.selectors
+		in.Spec.Template.Labels = opts.selectors
 		in.Spec.Template.Annotations = pt.Annotations
 		in.Spec.Template.Spec.InitContainers = core_util.UpsertContainers(
 			in.Spec.Template.Spec.InitContainers, pt.Spec.InitContainers,
@@ -96,9 +96,9 @@ func (c *Controller) ensureDeployment(
 				Name:            api.ResourceSingularMongoDB,
 				Image:           mongodbVersion.Spec.DB.Image,
 				ImagePullPolicy: core.PullIfNotPresent,
-				Command:         deployOption.cmd,
+				Command:         opts.cmd,
 				Args: meta_util.UpsertArgumentList(
-					deployOption.args, pt.Spec.Args),
+					opts.args, pt.Spec.Args),
 				Ports: []core.ContainerPort{
 					{
 						Name:          "db",
@@ -106,17 +106,17 @@ func (c *Controller) ensureDeployment(
 						Protocol:      core.ProtocolTCP,
 					},
 				},
-				Env:            core_util.UpsertEnvVars(deployOption.envList, pt.Spec.Env...),
+				Env:            core_util.UpsertEnvVars(opts.envList, pt.Spec.Env...),
 				Resources:      pt.Spec.Resources,
 				Lifecycle:      pt.Spec.Lifecycle,
 				LivenessProbe:  livenessProbe,
 				ReadinessProbe: readinessProbe,
-				VolumeMounts:   deployOption.volumeMount,
+				VolumeMounts:   opts.volumeMount,
 			})
 
 		in.Spec.Template.Spec.InitContainers = core_util.UpsertContainers(
 			in.Spec.Template.Spec.InitContainers,
-			deployOption.initContainers,
+			opts.initContainers,
 		)
 
 		if mongodb.GetMonitoringVendor() == mona.VendorPrometheus {
@@ -146,7 +146,7 @@ func (c *Controller) ensureDeployment(
 
 		in.Spec.Template.Spec.Volumes = core_util.UpsertVolume(
 			in.Spec.Template.Spec.Volumes,
-			deployOption.volume...,
+			opts.volume...,
 		)
 
 		in.Spec.Template.Spec.Volumes = core_util.UpsertVolume(in.Spec.Template.Spec.Volumes, core.Volume{
@@ -195,7 +195,7 @@ func (c *Controller) ensureDeployment(
 			core.EventTypeNormal,
 			eventer.EventReasonSuccessful,
 			"Successfully %v Deployment %v/%v",
-			vt, mongodb.Namespace, deployOption.stsName,
+			vt, mongodb.Namespace, opts.stsName,
 		)
 	}
 	return vt, nil
@@ -282,7 +282,7 @@ func (c *Controller) ensureMongosNode(mongodb *api.MongoDB) (kutil.VerbType, err
 	initContainers = append(initContainers, bootstrpContnr)
 	volumes = append(volumes, bootstrpVol...)
 
-	deployOptions := Options{
+	opts := workloadOptions{
 		stsName:        mongodb.MongosNodeName(),
 		labels:         mongodb.MongosLabels(),
 		selectors:      mongodb.MongosSelectors(),
@@ -301,7 +301,7 @@ func (c *Controller) ensureMongosNode(mongodb *api.MongoDB) (kutil.VerbType, err
 	return c.ensureDeployment(
 		mongodb,
 		mongodb.Spec.ShardTopology.Mongos.Strategy,
-		deployOptions,
+		opts,
 	)
 }
 
