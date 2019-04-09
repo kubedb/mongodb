@@ -1,7 +1,7 @@
 apiVersion: kubedb.com/v1alpha1
 kind: Snapshot
 metadata:
-  name: snapshot-sh
+  name: snapshot-rs
   namespace: demo
   labels:
     kubedb.com/kind: MongoDB

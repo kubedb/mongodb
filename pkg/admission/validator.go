@@ -140,32 +140,32 @@ func ValidateMongoDB(client kubernetes.Interface, extClient cs.Interface, mongod
 	top := mongodb.Spec.ShardTopology
 	if top != nil {
 		if mongodb.Spec.Replicas != nil {
-			return fmt.Errorf(`doesn't support 'spec.replicas' when spec.topology is set`)
+			return fmt.Errorf(`doesn't support 'spec.replicas' when spec.shardTopology is set`)
 		}
 		if mongodb.Spec.PodTemplate != nil {
-			return fmt.Errorf(`doesn't support 'spec.podTemplate' when spec.topology is set`)
+			return fmt.Errorf(`doesn't support 'spec.podTemplate' when spec.shardTopology is set`)
 		}
 		if mongodb.Spec.ConfigSource != nil {
-			return fmt.Errorf(`doesn't support 'spec.configSource' when spec.topology is set`)
+			return fmt.Errorf(`doesn't support 'spec.configSource' when spec.shardTopology is set`)
 		}
 
 		// Validate Topology Replicas values
 		if top.Shard.Shards < 1 {
-			return fmt.Errorf(`spec.topology.shard.shards %v invalid. Must be greater than zero when spec.topology is set`, top.Shard.Shards)
+			return fmt.Errorf(`spec.shardTopology.shard.shards %v invalid. Must be greater than zero when spec.shardTopology is set`, top.Shard.Shards)
 		}
 		if top.Shard.Replicas < 1 {
-			return fmt.Errorf(`spec.topology.shard.replicas %v invalid. Must be greater than zero when spec.topology is set`, top.Shard.Replicas)
+			return fmt.Errorf(`spec.shardTopology.shard.replicas %v invalid. Must be greater than zero when spec.shardTopology is set`, top.Shard.Replicas)
 		}
 		if top.ConfigServer.Replicas < 1 {
-			return fmt.Errorf(`spec.topology.configServer.replicas %v invalid. Must be greater than zero when spec.topology is set`, top.ConfigServer.Replicas)
+			return fmt.Errorf(`spec.shardTopology.configServer.replicas %v invalid. Must be greater than zero when spec.shardTopology is set`, top.ConfigServer.Replicas)
 		}
 		if top.Mongos.Replicas < 1 {
-			return fmt.Errorf(`spec.topology.mongos.replicas %v invalid. Must be greater than zero when spec.topology is set`, top.Mongos.Replicas)
+			return fmt.Errorf(`spec.shardTopology.mongos.replicas %v invalid. Must be greater than zero when spec.shardTopology is set`, top.Mongos.Replicas)
 		}
 
 		// Validate Mongos deployment strategy
 		if top.Mongos.Strategy.Type == "" {
-			return fmt.Errorf(`spec.topology.mongos.strategy.type is missing`)
+			return fmt.Errorf(`spec.shardTopology.mongos.strategy.type is missing`)
 		}
 
 		// Validate Envs
@@ -180,7 +180,7 @@ func ValidateMongoDB(client kubernetes.Interface, extClient cs.Interface, mongod
 		}
 	} else {
 		if mongodb.Spec.Replicas == nil || *mongodb.Spec.Replicas < 1 {
-			return fmt.Errorf(`spec.replicas "%v" invalid. Must be greater than zero in non-topology`, mongodb.Spec.Replicas)
+			return fmt.Errorf(`spec.replicas "%v" invalid. Must be greater than zero in non-shardTopology`, mongodb.Spec.Replicas)
 		}
 
 		if mongodb.Spec.Replicas == nil || (mongodb.Spec.ReplicaSet == nil && *mongodb.Spec.Replicas != 1) {
@@ -203,12 +203,12 @@ func ValidateMongoDB(client kubernetes.Interface, extClient cs.Interface, mongod
 	// Validate storage for topology or non-topology
 	if top != nil {
 		if mongodb.Spec.Storage != nil {
-			return fmt.Errorf("doesn't support 'spec.storage' when spec.topology is set")
+			return fmt.Errorf("doesn't support 'spec.storage' when spec.shardTopology is set")
 		}
-		if err := amv.ValidateStorage(client, mongodb.Spec.StorageType, top.Shard.Storage, "spec.topology.shard.storage"); err != nil {
+		if err := amv.ValidateStorage(client, mongodb.Spec.StorageType, top.Shard.Storage, "spec.shardTopology.shard.storage"); err != nil {
 			return err
 		}
-		if err := amv.ValidateStorage(client, mongodb.Spec.StorageType, top.ConfigServer.Storage, "spec.topology.configServer.storage"); err != nil {
+		if err := amv.ValidateStorage(client, mongodb.Spec.StorageType, top.ConfigServer.Storage, "spec.shardTopology.configServer.storage"); err != nil {
 			return err
 		}
 	} else {

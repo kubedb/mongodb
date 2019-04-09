@@ -4,7 +4,7 @@ metadata:
   name: mgo-rs
   namespace: demo
 spec:
-  version: "3.6-v1"
+  version: "3.6-v3"
   replicas: 4
   replicaSet:
     name: rs0

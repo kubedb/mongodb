@@ -4,7 +4,7 @@ metadata:
   name: mgo-mon-prometheus-rs
   namespace: demo
 spec:
-  version: "3.6"
+  version: "3.6-v3"
   replicas: 3
   replicaSet:
     name: rs0

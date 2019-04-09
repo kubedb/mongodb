@@ -10,7 +10,7 @@ spec:
         directory: .
         repository: https://github.com/kubedb/mongodb-init-scripts.git
   storageType: Durable
-  topology:
+  shardTopology:
     configServer:
       replicas: 2
       storage:
@@ -32,5 +32,5 @@ spec:
         storageClassName: standard
   updateStrategy:
     type: RollingUpdate
-  version: 3.6-v2
+  version: 3.6-v3
   terminationPolicy: WipeOut

@@ -44,6 +44,27 @@ const (
 	InitBootstrapContainerName = "bootstrap"
 )
 
+type Options struct {
+	// App level options
+	stsName   string
+	labels    map[string]string
+	selectors map[string]string
+
+	// db container options
+	cmd         []string      // cmd of `mongodb` container
+	args        []string      // args of `mongodb` container
+	envList     []core.EnvVar // envList of `mongodb` container
+	volumeMount []core.VolumeMount
+
+	// pod Template level options
+	replicas       *int32
+	gvrSvcName     string
+	podTemplate    *ofst.PodTemplateSpec
+	pvcSpec        *core.PersistentVolumeClaimSpec
+	initContainers []core.Container
+	volume         []core.Volume // volumes to mount on stsPodTemplate
+}
+
 func (c *Controller) ensureMongoDBNode(mongodb *api.MongoDB) (kutil.VerbType, error) {
 	// Standalone, replicaset, shard
 	if mongodb.Spec.ShardTopology != nil {
@@ -121,23 +142,23 @@ func (c *Controller) ensureShardNode(mongodb *api.MongoDB) (kutil.VerbType, erro
 		initContainers = append(initContainers, bootstrpContnr)
 		volumes = append(volumes, bootstrpVol...)
 
-		return c.ensureStatefulSet(
-			mongodb,
-			mongodb.ShardNodeName(nodeNum),
-			&mongodb.Spec.ShardTopology.Shard.Replicas,
-			mongodb.ShardLabels(nodeNum),
-			mongodb.ShardSelectors(nodeNum),
-			mongodb.GvrSvcName(mongodb.ShardNodeName(nodeNum)),
-			cmds,
-			args,
-			nil,
-			&mongodb.Spec.ShardTopology.Shard.PodTemplate,
-			mongodb.Spec.ShardTopology.Shard.Storage,
-			mongodb.Spec.StorageType,
-			volumeMounts,
-			initContainers,
-			volumes,
-		)
+		stsOptions := Options{
+			stsName:        mongodb.ShardNodeName(nodeNum),
+			labels:         mongodb.ShardLabels(nodeNum),
+			selectors:      mongodb.ShardSelectors(nodeNum),
+			args:           args,
+			cmd:            cmds,
+			envList:        nil,
+			initContainers: initContainers,
+			gvrSvcName:     mongodb.GvrSvcName(mongodb.ShardNodeName(nodeNum)),
+			podTemplate:    &mongodb.Spec.ShardTopology.Shard.PodTemplate,
+			pvcSpec:        mongodb.Spec.ShardTopology.Shard.Storage,
+			replicas:       &mongodb.Spec.ShardTopology.Shard.Replicas,
+			volume:         volumes,
+			volumeMount:    volumeMounts,
+		}
+
+		return c.ensureStatefulSet(mongodb, stsOptions)
 	}
 
 	for i := int32(0); i < mongodb.Spec.ShardTopology.Shard.Shards; i++ {
@@ -191,23 +212,23 @@ func (c *Controller) ensureConfigNode(mongodb *api.MongoDB) (kutil.VerbType, err
 	initContainers = append(initContainers, bootstrpContnr)
 	volumes = append(volumes, bootstrpVol...)
 
-	return c.ensureStatefulSet(
-		mongodb,
-		mongodb.ConfigSvrNodeName(),
-		&mongodb.Spec.ShardTopology.ConfigServer.Replicas,
-		mongodb.ConfigSvrLabels(),
-		mongodb.ConfigSvrSelectors(),
-		mongodb.GvrSvcName(mongodb.ConfigSvrNodeName()),
-		cmds,
-		args,
-		nil,
-		&mongodb.Spec.ShardTopology.ConfigServer.PodTemplate,
-		mongodb.Spec.ShardTopology.ConfigServer.Storage,
-		mongodb.Spec.StorageType,
-		volumeMounts,
-		initContainers,
-		volumes,
-	)
+	stsOptions := Options{
+		stsName:        mongodb.ConfigSvrNodeName(),
+		labels:         mongodb.ConfigSvrLabels(),
+		selectors:      mongodb.ConfigSvrSelectors(),
+		args:           args,
+		cmd:            cmds,
+		envList:        nil,
+		initContainers: initContainers,
+		gvrSvcName:     mongodb.GvrSvcName(mongodb.ConfigSvrNodeName()),
+		podTemplate:    &mongodb.Spec.ShardTopology.ConfigServer.PodTemplate,
+		pvcSpec:        mongodb.Spec.ShardTopology.ConfigServer.Storage,
+		replicas:       &mongodb.Spec.ShardTopology.ConfigServer.Replicas,
+		volume:         volumes,
+		volumeMount:    volumeMounts,
+	}
+
+	return c.ensureStatefulSet(mongodb, stsOptions)
 }
 
 func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, error) {
@@ -266,48 +287,32 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 		volumes = append(volumes, bootstrpVol...)
 	}
 
-	return c.ensureStatefulSet(
-		mongodb,
-		mongodb.OffshootName(),
-		mongodb.Spec.Replicas,
-		mongodb.OffshootLabels(),
-		mongodb.OffshootSelectors(),
-		mongodb.GvrSvcName(mongodb.OffshootName()),
-		cmds,
-		args,
-		nil,
-		mongodb.Spec.PodTemplate,
-		mongodb.Spec.Storage,
-		mongodb.Spec.StorageType,
-		volumeMounts,
-		initContainers,
-		volumes,
-	)
+	stsOptions := Options{
+		stsName:        mongodb.OffshootName(),
+		labels:         mongodb.OffshootLabels(),
+		selectors:      mongodb.OffshootSelectors(),
+		args:           args,
+		cmd:            cmds,
+		envList:        nil,
+		initContainers: initContainers,
+		gvrSvcName:     mongodb.GvrSvcName(mongodb.OffshootName()),
+		podTemplate:    mongodb.Spec.PodTemplate,
+		pvcSpec:        mongodb.Spec.Storage,
+		replicas:       mongodb.Spec.Replicas,
+		volume:         volumes,
+		volumeMount:    volumeMounts,
+	}
+
+	return c.ensureStatefulSet(mongodb, stsOptions)
 }
 
-func (c *Controller) ensureStatefulSet(
-	mongodb *api.MongoDB,
-	stsName string,
-	replicas *int32,
-	labels map[string]string,
-	selectors map[string]string,
-	gvrSvcName string,
-	cmd []string, // cmd of `mongodb` container
-	args []string, // args of `mongodb` container
-	envList []core.EnvVar, // envList of `mongodb` container
-	podTemplate *ofst.PodTemplateSpec,
-	pvcSpec *core.PersistentVolumeClaimSpec,
-	storageType api.StorageType,
-	volumeMount []core.VolumeMount,
-	initContainers []core.Container,
-	volume []core.Volume, // volumes to mount on stsPodTemplate
-) (kutil.VerbType, error) {
+func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB, stsOption Options) (kutil.VerbType, error) {
 	// Take value of podTemplate
 	var pt ofst.PodTemplateSpec
-	if podTemplate != nil {
-		pt = *podTemplate
+	if stsOption.podTemplate != nil {
+		pt = *stsOption.podTemplate
 	}
-	if err := c.checkStatefulSet(mongodb, stsName); err != nil {
+	if err := c.checkStatefulSet(mongodb, stsOption.stsName); err != nil {
 		return kutil.VerbUnchanged, err
 	}
 
@@ -318,7 +323,7 @@ func (c *Controller) ensureStatefulSet(
 
 	// Create statefulSet for MongoDB database
 	statefulSetMeta := metav1.ObjectMeta{
-		Name:      stsName,
+		Name:      stsOption.stsName,
 		Namespace: mongodb.Namespace,
 	}
 
@@ -337,16 +342,16 @@ func (c *Controller) ensureStatefulSet(
 	}
 
 	statefulSet, vt, err := app_util.CreateOrPatchStatefulSet(c.Client, statefulSetMeta, func(in *apps.StatefulSet) *apps.StatefulSet {
-		in.Labels = labels
+		in.Labels = stsOption.labels
 		in.Annotations = pt.Controller.Annotations
 		core_util.EnsureOwnerReference(&in.ObjectMeta, ref)
 
-		in.Spec.Replicas = replicas
-		in.Spec.ServiceName = gvrSvcName
+		in.Spec.Replicas = stsOption.replicas
+		in.Spec.ServiceName = stsOption.gvrSvcName
 		in.Spec.Selector = &metav1.LabelSelector{
-			MatchLabels: selectors,
+			MatchLabels: stsOption.selectors,
 		}
-		in.Spec.Template.Labels = selectors
+		in.Spec.Template.Labels = stsOption.selectors
 		in.Spec.Template.Annotations = pt.Annotations
 		in.Spec.Template.Spec.InitContainers = core_util.UpsertContainers(
 			in.Spec.Template.Spec.InitContainers,
@@ -358,9 +363,9 @@ func (c *Controller) ensureStatefulSet(
 				Name:            api.ResourceSingularMongoDB,
 				Image:           mongodbVersion.Spec.DB.Image,
 				ImagePullPolicy: core.PullIfNotPresent,
-				Command:         cmd,
+				Command:         stsOption.cmd,
 				Args: meta_util.UpsertArgumentList(
-					args, pt.Spec.Args),
+					stsOption.args, pt.Spec.Args),
 				Ports: []core.ContainerPort{
 					{
 						Name:          "db",
@@ -368,17 +373,17 @@ func (c *Controller) ensureStatefulSet(
 						Protocol:      core.ProtocolTCP,
 					},
 				},
-				Env:            core_util.UpsertEnvVars(envList, pt.Spec.Env...),
+				Env:            core_util.UpsertEnvVars(stsOption.envList, pt.Spec.Env...),
 				Resources:      pt.Spec.Resources,
 				Lifecycle:      pt.Spec.Lifecycle,
 				LivenessProbe:  livenessProbe,
 				ReadinessProbe: readinessProbe,
-				VolumeMounts:   volumeMount,
+				VolumeMounts:   stsOption.volumeMount,
 			})
 
 		in.Spec.Template.Spec.InitContainers = core_util.UpsertContainers(
 			in.Spec.Template.Spec.InitContainers,
-			initContainers,
+			stsOption.initContainers,
 		)
 
 		if mongodb.GetMonitoringVendor() == mona.VendorPrometheus {
@@ -405,10 +410,10 @@ func (c *Controller) ensureStatefulSet(
 				})
 		}
 
-		in.Spec.Template.Spec.Volumes = core_util.UpsertVolume(in.Spec.Template.Spec.Volumes, volume...)
+		in.Spec.Template.Spec.Volumes = core_util.UpsertVolume(in.Spec.Template.Spec.Volumes, stsOption.volume...)
 
 		in.Spec.Template = upsertEnv(in.Spec.Template, mongodb)
-		in = upsertDataVolume(in, pvcSpec, storageType)
+		in = upsertDataVolume(in, stsOption.pvcSpec, mongodb.Spec.StorageType)
 
 		if mongodb.Spec.ConfigSource != nil {
 			in.Spec.Template = c.upsertConfigSourceVolume(in.Spec.Template, mongodb)
@@ -447,7 +452,7 @@ func (c *Controller) ensureStatefulSet(
 			core.EventTypeNormal,
 			eventer.EventReasonSuccessful,
 			"Successfully %v StatefulSet %v/%v",
-			vt, mongodb.Namespace, stsName,
+			vt, mongodb.Namespace, stsOption.stsName,
 		)
 	}
 	return vt, nil
