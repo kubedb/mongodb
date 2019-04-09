@@ -82,6 +82,7 @@ func (f *Framework) EventuallyWipedOut(meta metav1.ObjectMeta) GomegaAsyncAssert
 				return err
 			}
 			if len(pvcList.Items) > 0 {
+				fmt.Println("PVCs have not wiped out yet")
 				return fmt.Errorf("PVCs have not wiped out yet")
 			}
 
@@ -95,6 +96,7 @@ func (f *Framework) EventuallyWipedOut(meta metav1.ObjectMeta) GomegaAsyncAssert
 				return err
 			}
 			if len(snapshotList.Items) > 0 {
+				fmt.Println("all snapshots have not wiped out yet")
 				return fmt.Errorf("all snapshots have not wiped out yet")
 			}
 
@@ -108,6 +110,7 @@ func (f *Framework) EventuallyWipedOut(meta metav1.ObjectMeta) GomegaAsyncAssert
 				return err
 			}
 			if len(secretList.Items) > 0 {
+				fmt.Println("secrets have not wiped out yet")
 				return fmt.Errorf("secrets have not wiped out yet")
 			}
 
@@ -121,6 +124,7 @@ func (f *Framework) EventuallyWipedOut(meta metav1.ObjectMeta) GomegaAsyncAssert
 				return err
 			}
 			if len(appBindingList.Items) > 0 {
+				fmt.Println("appBindings have not wiped out yet")
 				return fmt.Errorf("appBindings have not wiped out yet")
 			}
 

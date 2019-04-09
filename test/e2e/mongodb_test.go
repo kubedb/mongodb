@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/appscode/go/types"
-	catalog "github.com/kubedb/apimachinery/apis/catalog/v1alpha1"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 	"github.com/kubedb/mongodb/test/e2e/framework"
@@ -17,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta_util "kmodules.xyz/client-go/meta"
 	store "kmodules.xyz/objectstore-api/api/v1"
+	ofst "kmodules.xyz/offshoot-api/api/v1"
 )
 
 const (
@@ -34,7 +34,6 @@ var _ = Describe("MongoDB", func() {
 		err                      error
 		f                        *framework.Invocation
 		mongodb                  *api.MongoDB
-		mongodbVersion           *catalog.MongoDBVersion
 		garbageMongoDB           *api.MongoDBList
 		snapshot                 *api.Snapshot
 		snapshotPVC              *core.PersistentVolumeClaim
@@ -48,7 +47,6 @@ var _ = Describe("MongoDB", func() {
 		f = root.Invoke()
 		mongodb = f.MongoDBStandalone()
 		garbageMongoDB = new(api.MongoDBList)
-		mongodbVersion = f.MongoDBVersion()
 		snapshot = f.Snapshot()
 		secret = nil
 		skipMessage = ""
@@ -74,18 +72,9 @@ var _ = Describe("MongoDB", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 		}
-
-		err = f.DeleteMongoDBVersion(mongodbVersion.ObjectMeta)
-		if err != nil && !kerr.IsNotFound(err) {
-			Expect(err).NotTo(HaveOccurred())
-		}
 	})
 
 	var createAndWaitForRunning = func() {
-		By("Create MongoDBVersion: " + mongodbVersion.Name)
-		err = f.CreateMongoDBVersion(mongodbVersion)
-		Expect(err).NotTo(HaveOccurred())
-
 		By("Create MongoDB: " + mongodb.Name)
 		err = f.CreateMongoDB(mongodb)
 		Expect(err).NotTo(HaveOccurred())
@@ -226,6 +215,13 @@ var _ = Describe("MongoDB", func() {
 					It("should run successfully", shouldRunWithPVC)
 				})
 
+				Context("With Sharding", func() {
+					BeforeEach(func() {
+						mongodb = f.MongoDBShard()
+					})
+					It("should run successfully", shouldRunWithPVC)
+				})
+
 			})
 		})
 
@@ -309,6 +305,20 @@ var _ = Describe("MongoDB", func() {
 				Context("With Replica Set", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
+						snapshot.Spec.DatabaseName = mongodb.Name
+						snapshot.Spec.Local = &store.LocalSpec{
+							MountPath: "/repo",
+							VolumeSource: core.VolumeSource{
+								EmptyDir: &core.EmptyDirVolumeSource{},
+							},
+						}
+					})
+					It("should take Snapshot successfully", shouldTakeSnapshot)
+				})
+
+				Context("With Sharding", func() {
+					BeforeEach(func() {
+						mongodb = f.MongoDBShard()
 						snapshot.Spec.DatabaseName = mongodb.Name
 						snapshot.Spec.Local = &store.LocalSpec{
 							MountPath: "/repo",
@@ -432,6 +442,14 @@ var _ = Describe("MongoDB", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
 						mongodb.Spec.Replicas = types.Int32P(3)
+						snapshot.Spec.DatabaseName = mongodb.Name
+					})
+					It("should take Snapshot successfully", shouldTakeSnapshot)
+				})
+
+				Context("With Sharding", func() {
+					BeforeEach(func() {
+						mongodb = f.MongoDBShard()
 						snapshot.Spec.DatabaseName = mongodb.Name
 					})
 					It("should take Snapshot successfully", shouldTakeSnapshot)
@@ -768,6 +786,7 @@ var _ = Describe("MongoDB", func() {
 		})
 
 		Context("Initialize", func() {
+
 			Context("With Script", func() {
 				BeforeEach(func() {
 					mongodb.Spec.Init = &api.InitSpec{
@@ -794,6 +813,29 @@ var _ = Describe("MongoDB", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
 						mongodb.Spec.Replicas = types.Int32P(3)
+						mongodb.Spec.Init = &api.InitSpec{
+							ScriptSource: &api.ScriptSourceSpec{
+								VolumeSource: core.VolumeSource{
+									GitRepo: &core.GitRepoVolumeSource{
+										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+										Directory:  ".",
+									},
+								},
+							},
+						}
+					})
+					It("should Initialize successfully", func() {
+						// Create MongoDB
+						createAndWaitForRunning()
+
+						By("Checking Inserted Document")
+						f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
+					})
+				})
+
+				Context("With Sharding", func() {
+					BeforeEach(func() {
+						mongodb = f.MongoDBShard()
 						mongodb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
@@ -864,10 +906,12 @@ var _ = Describe("MongoDB", func() {
 
 					By("Create mongodb from snapshot")
 					mongodb = anotherMongoDB
+					mongodb.Spec.DatabaseSecret = oldMongoDB.Spec.DatabaseSecret
 					mongodb.Spec.Init = &api.InitSpec{
 						SnapshotSource: &api.SnapshotSourceSpec{
 							Namespace: snapshot.Namespace,
 							Name:      snapshot.Name,
+							Args:      []string{"--skip-config=true"},
 						},
 					}
 
@@ -912,6 +956,24 @@ var _ = Describe("MongoDB", func() {
 						mongodb = f.MongoDBRS()
 						snapshot.Spec.DatabaseName = mongodb.Name
 						anotherMongoDB = f.MongoDBRS()
+					})
+					It("should take Snapshot successfully", shouldInitializeSnapshot)
+				})
+
+				Context("With Sharding", func() {
+					BeforeEach(func() {
+						mongodb = f.MongoDBShard()
+						snapshot.Spec.DatabaseName = mongodb.Name
+						anotherMongoDB = f.MongoDBShard()
+					})
+					It("should take Snapshot successfully", shouldInitializeSnapshot)
+				})
+
+				Context("From Sharding to standalone", func() {
+					BeforeEach(func() {
+						mongodb = f.MongoDBShard()
+						snapshot.Spec.DatabaseName = mongodb.Name
+						anotherMongoDB = f.MongoDBStandalone()
 					})
 					It("should take Snapshot successfully", shouldInitializeSnapshot)
 				})
@@ -1021,6 +1083,13 @@ var _ = Describe("MongoDB", func() {
 					})
 					It("should take Snapshot successfully", shouldResumeWithoutInit)
 				})
+
+				Context("With Sharding", func() {
+					BeforeEach(func() {
+						mongodb = f.MongoDBShard()
+					})
+					It("should take Snapshot successfully", shouldResumeWithoutInit)
+				})
 			})
 
 			Context("with init Script", func() {
@@ -1096,6 +1165,22 @@ var _ = Describe("MongoDB", func() {
 					It("should take Snapshot successfully", shouldResumeWithInit)
 				})
 
+				Context("With Sharding", func() {
+					BeforeEach(func() {
+						mongodb = f.MongoDBShard()
+						mongodb.Spec.Init = &api.InitSpec{
+							ScriptSource: &api.ScriptSourceSpec{
+								VolumeSource: core.VolumeSource{
+									GitRepo: &core.GitRepoVolumeSource{
+										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+										Directory:  ".",
+									},
+								},
+							},
+						}
+					})
+					It("should take Snapshot successfully", shouldResumeWithInit)
+				})
 			})
 
 			Context("With Snapshot Init", func() {
@@ -1196,6 +1281,15 @@ var _ = Describe("MongoDB", func() {
 					})
 					It("should take Snapshot successfully", shouldResumeWithSnapshot)
 				})
+
+				Context("With Sharding", func() {
+					BeforeEach(func() {
+						mongodb = f.MongoDBShard()
+						snapshot.Spec.DatabaseName = mongodb.Name
+						anotherMongoDB = f.MongoDBShard()
+					})
+					It("should take Snapshot successfully", shouldResumeWithSnapshot)
+				})
 			})
 
 			Context("Multiple times with init script", func() {
@@ -1259,6 +1353,23 @@ var _ = Describe("MongoDB", func() {
 				Context("With Replica Set", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
+						mongodb.Spec.Init = &api.InitSpec{
+							ScriptSource: &api.ScriptSourceSpec{
+								VolumeSource: core.VolumeSource{
+									GitRepo: &core.GitRepoVolumeSource{
+										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+										Directory:  ".",
+									},
+								},
+							},
+						}
+					})
+					It("should take Snapshot successfully", shouldResumeMultipleTimes)
+				})
+
+				Context("With Sharding", func() {
+					BeforeEach(func() {
+						mongodb = f.MongoDBShard()
 						mongodb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
@@ -1356,6 +1467,26 @@ var _ = Describe("MongoDB", func() {
 						})
 						It("should take Snapshot successfully", shouldStartupSchedular)
 					})
+
+					Context("With Sharding", func() {
+						BeforeEach(func() {
+							mongodb = f.MongoDBShard()
+							mongodb.Spec.BackupSchedule = &api.BackupScheduleSpec{
+								CronExpression: "@every 20s",
+								Backend: store.Backend{
+									StorageSecretName: secret.Name,
+									Local: &store.LocalSpec{
+										MountPath: "/repo",
+										VolumeSource: core.VolumeSource{
+											EmptyDir: &core.EmptyDirVolumeSource{},
+										},
+									},
+								},
+							}
+						})
+						It("should take Snapshot successfully", shouldStartupSchedular)
+					})
+
 				})
 			})
 
@@ -1412,6 +1543,13 @@ var _ = Describe("MongoDB", func() {
 				Context("With Replica Set", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
+					})
+					It("should take Snapshot successfully", shouldScheduleWithUpdate)
+				})
+
+				Context("With Sharding", func() {
+					BeforeEach(func() {
+						mongodb = f.MongoDBShard()
 					})
 					It("should take Snapshot successfully", shouldScheduleWithUpdate)
 				})
@@ -1498,6 +1636,13 @@ var _ = Describe("MongoDB", func() {
 				It("should re-use scheduler successfully", shouldeReUseDormantDBcheduler)
 
 				Context("With Replica Set", func() {
+					BeforeEach(func() {
+						mongodb = f.MongoDBRS()
+					})
+					It("should take Snapshot successfully", shouldeReUseDormantDBcheduler)
+				})
+
+				Context("With Sharding", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
 					})
@@ -1596,6 +1741,14 @@ var _ = Describe("MongoDB", func() {
 					It("should run successfully", shouldWorkDoNotTerminate)
 				})
 
+				Context("With Sharding", func() {
+					BeforeEach(func() {
+						mongodb = f.MongoDBShard()
+						mongodb.Spec.TerminationPolicy = api.TerminationPolicyDoNotTerminate
+					})
+					It("should run successfully", shouldWorkDoNotTerminate)
+				})
+
 			})
 
 			Context("with TerminationPolicyPause (default)", func() {
@@ -1643,6 +1796,15 @@ var _ = Describe("MongoDB", func() {
 				Context("with Replica Set", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
+						snapshot.Spec.DatabaseName = mongodb.Name
+					})
+
+					It("should create dormantdatabase successfully", shouldRunWithTerminationPause)
+				})
+
+				Context("with Sharding", func() {
+					BeforeEach(func() {
+						mongodb = f.MongoDBShard()
 						snapshot.Spec.DatabaseName = mongodb.Name
 					})
 
@@ -1703,6 +1865,15 @@ var _ = Describe("MongoDB", func() {
 					})
 					It("should initialize database successfully", shouldRunWithTerminationDelete)
 				})
+
+				Context("with Sharding", func() {
+					BeforeEach(func() {
+						mongodb = f.MongoDBRS()
+						mongodb.Spec.TerminationPolicy = api.TerminationPolicyDelete
+						snapshot.Spec.DatabaseName = mongodb.Name
+					})
+					It("should initialize database successfully", shouldRunWithTerminationDelete)
+				})
 			})
 
 			Context("with TerminationPolicyWipeOut", func() {
@@ -1748,6 +1919,15 @@ var _ = Describe("MongoDB", func() {
 					})
 					It("should initialize database successfully", shouldRunWithTerminationWipeOut)
 				})
+
+				Context("with Sharding", func() {
+					BeforeEach(func() {
+						mongodb = f.MongoDBShard()
+						snapshot.Spec.DatabaseName = mongodb.Name
+						mongodb.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
+					})
+					It("should initialize database successfully", shouldRunWithTerminationWipeOut)
+				})
 			})
 		})
 
@@ -1769,11 +1949,22 @@ var _ = Describe("MongoDB", func() {
 
 				var withAllowedEnvs = func() {
 					dbName = "envDB"
-					mongodb.Spec.PodTemplate.Spec.Env = []core.EnvVar{
+					envs := []core.EnvVar{
 						{
 							Name:  MONGO_INITDB_DATABASE,
 							Value: dbName,
 						},
+					}
+					if mongodb.Spec.ShardTopology != nil {
+						mongodb.Spec.ShardTopology.Shard.PodTemplate.Spec.Env = envs
+						mongodb.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.Env = envs
+						mongodb.Spec.ShardTopology.Mongos.PodTemplate.Spec.Env = envs
+
+					} else {
+						if mongodb.Spec.PodTemplate == nil {
+							mongodb.Spec.PodTemplate = new(ofst.PodTemplateSpec)
+						}
+						mongodb.Spec.PodTemplate.Spec.Env = envs
 					}
 
 					// Create MongoDB
@@ -1802,6 +1993,23 @@ var _ = Describe("MongoDB", func() {
 					It("should take Snapshot successfully", withAllowedEnvs)
 				})
 
+				Context("With Sharding", func() {
+					BeforeEach(func() {
+						mongodb = f.MongoDBShard()
+						mongodb.Spec.Init = &api.InitSpec{
+							ScriptSource: &api.ScriptSourceSpec{
+								VolumeSource: core.VolumeSource{
+									GitRepo: &core.GitRepoVolumeSource{
+										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+										Directory:  ".",
+									},
+								},
+							},
+						}
+					})
+					It("should take Snapshot successfully", withAllowedEnvs)
+				})
+
 			})
 
 			Context("With forbidden Envs", func() {
@@ -1809,21 +2017,43 @@ var _ = Describe("MongoDB", func() {
 				var withForbiddenEnvs = func() {
 
 					By("Create MongoDB with " + MONGO_INITDB_ROOT_USERNAME + " env var")
-					mongodb.Spec.PodTemplate.Spec.Env = []core.EnvVar{
+					envs := []core.EnvVar{
 						{
 							Name:  MONGO_INITDB_ROOT_USERNAME,
 							Value: "mg-user",
 						},
 					}
+					if mongodb.Spec.ShardTopology != nil {
+						mongodb.Spec.ShardTopology.Shard.PodTemplate.Spec.Env = envs
+						mongodb.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.Env = envs
+						mongodb.Spec.ShardTopology.Mongos.PodTemplate.Spec.Env = envs
+
+					} else {
+						if mongodb.Spec.PodTemplate == nil {
+							mongodb.Spec.PodTemplate = new(ofst.PodTemplateSpec)
+						}
+						mongodb.Spec.PodTemplate.Spec.Env = envs
+					}
 					err = f.CreateMongoDB(mongodb)
 					Expect(err).To(HaveOccurred())
 
 					By("Create MongoDB with " + MONGO_INITDB_ROOT_PASSWORD + " env var")
-					mongodb.Spec.PodTemplate.Spec.Env = []core.EnvVar{
+					envs = []core.EnvVar{
 						{
 							Name:  MONGO_INITDB_ROOT_PASSWORD,
 							Value: "not@secret",
 						},
+					}
+					if mongodb.Spec.ShardTopology != nil {
+						mongodb.Spec.ShardTopology.Shard.PodTemplate.Spec.Env = envs
+						mongodb.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.Env = envs
+						mongodb.Spec.ShardTopology.Mongos.PodTemplate.Spec.Env = envs
+
+					} else {
+						if mongodb.Spec.PodTemplate == nil {
+							mongodb.Spec.PodTemplate = new(ofst.PodTemplateSpec)
+						}
+						mongodb.Spec.PodTemplate.Spec.Env = envs
 					}
 					err = f.CreateMongoDB(mongodb)
 					Expect(err).To(HaveOccurred())
@@ -1834,6 +2064,13 @@ var _ = Describe("MongoDB", func() {
 				Context("With Replica Set", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
+					})
+					It("should take Snapshot successfully", withForbiddenEnvs)
+				})
+
+				Context("With Sharding", func() {
+					BeforeEach(func() {
+						mongodb = f.MongoDBShard()
 					})
 					It("should take Snapshot successfully", withForbiddenEnvs)
 				})
@@ -1856,11 +2093,22 @@ var _ = Describe("MongoDB", func() {
 				var withUpdateEnvs = func() {
 
 					dbName = "envDB"
-					mongodb.Spec.PodTemplate.Spec.Env = []core.EnvVar{
+					envs := []core.EnvVar{
 						{
 							Name:  MONGO_INITDB_DATABASE,
 							Value: dbName,
 						},
+					}
+					if mongodb.Spec.ShardTopology != nil {
+						mongodb.Spec.ShardTopology.Shard.PodTemplate.Spec.Env = envs
+						mongodb.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.Env = envs
+						mongodb.Spec.ShardTopology.Mongos.PodTemplate.Spec.Env = envs
+
+					} else {
+						if mongodb.Spec.PodTemplate == nil {
+							mongodb.Spec.PodTemplate = new(ofst.PodTemplateSpec)
+						}
+						mongodb.Spec.PodTemplate.Spec.Env = envs
 					}
 
 					// Create MongoDB
@@ -1870,11 +2118,22 @@ var _ = Describe("MongoDB", func() {
 					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
 
 					_, _, err = util.PatchMongoDB(f.ExtClient().KubedbV1alpha1(), mongodb, func(in *api.MongoDB) *api.MongoDB {
-						in.Spec.PodTemplate.Spec.Env = []core.EnvVar{
+						envs = []core.EnvVar{
 							{
 								Name:  MONGO_INITDB_DATABASE,
 								Value: "patched-db",
 							},
+						}
+						if in.Spec.ShardTopology != nil {
+							in.Spec.ShardTopology.Shard.PodTemplate.Spec.Env = envs
+							in.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.Env = envs
+							in.Spec.ShardTopology.Mongos.PodTemplate.Spec.Env = envs
+
+						} else {
+							if in.Spec.PodTemplate == nil {
+								in.Spec.PodTemplate = new(ofst.PodTemplateSpec)
+							}
+							in.Spec.PodTemplate.Spec.Env = envs
 						}
 						return in
 					})
@@ -1886,6 +2145,24 @@ var _ = Describe("MongoDB", func() {
 				Context("With Replica Set", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
+						mongodb.Spec.Init = &api.InitSpec{
+							ScriptSource: &api.ScriptSourceSpec{
+								VolumeSource: core.VolumeSource{
+									GitRepo: &core.GitRepoVolumeSource{
+										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+										Directory:  ".",
+									},
+								},
+							},
+						}
+					})
+
+					It("should not reject to update EnvVar", withUpdateEnvs)
+				})
+
+				Context("With Sharding", func() {
+					BeforeEach(func() {
+						mongodb = f.MongoDBShard()
 						mongodb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
@@ -1940,6 +2217,17 @@ var _ = Describe("MongoDB", func() {
 						mongodb.Spec.Replicas = types.Int32P(3)
 						mongodb.Spec.StorageType = api.StorageTypeEphemeral
 						mongodb.Spec.Storage = nil
+						mongodb.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
+					})
+
+					It("should run successfully", shouldRunSuccessfully)
+				})
+
+				Context("With Sharding", func() {
+
+					BeforeEach(func() {
+						mongodb = f.MongoDBShard()
+						mongodb.Spec.StorageType = api.StorageTypeEphemeral
 						mongodb.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
 					})
 

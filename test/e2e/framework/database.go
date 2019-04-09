@@ -2,6 +2,7 @@ package framework
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/globalsign/mgo/bson"
@@ -54,14 +55,31 @@ func (f *Framework) GetMongoDBClient(meta metav1.ObjectMeta, tunnel *portforward
 	return bongo.Connect(config)
 }
 
+func (f *Framework) GetMongosPodName(meta metav1.ObjectMeta) (string, error) {
+	pods, err := f.kubeClient.CoreV1().Pods(meta.Namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return "", err
+	}
+	for _, pod := range pods.Items {
+		if strings.HasPrefix(pod.Name, fmt.Sprintf("%v-mongos", meta.Name)) {
+			return pod.Name, nil
+		}
+	}
+	return "", fmt.Errorf("no pod found for memcache: %s", meta.Name)
+}
+
 func (f *Framework) GetPrimaryInstance(meta metav1.ObjectMeta, dbName string) (string, error) {
 	mongodb, err := f.GetMongoDB(meta)
 	if err != nil {
 		return "", err
 	}
 
-	if mongodb.Spec.ReplicaSet == nil {
+	if mongodb.Spec.ReplicaSet == nil && mongodb.Spec.ShardTopology == nil {
 		return fmt.Sprintf("%v-0", mongodb.Name), nil
+	}
+
+	if mongodb.Spec.ShardTopology != nil {
+		return f.GetMongosPodName(meta)
 	}
 
 	// For MongoDB ReplicaSet, Find out the primary instance.

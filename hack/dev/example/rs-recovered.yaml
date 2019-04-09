@@ -1,11 +1,11 @@
 apiVersion: kubedb.com/v1alpha1
 kind: MongoDB
 metadata:
-  name: mgo-rs
+  name: mgo-recovered-rs
   namespace: demo
 spec:
-  version: "3.6-v1"
-  replicas: 4
+  version: "3.6-v3"
+  replicas: 3
   replicaSet:
     name: rs0
   storage:
@@ -14,4 +14,8 @@ spec:
     - ReadWriteOnce
     resources:
       requests:
-        storage: 1Gi
+        storage: 50Mi
+  init:
+    snapshotSource:
+      name: snapshot-rs
+      namespace: demo

@@ -16,7 +16,7 @@ function log() {
   local msg="$1"
   local timestamp
   timestamp=$(date --iso-8601=ns)
-  echo "[$timestamp] [$script_name] $msg" >>/work-dir/log.txt
+  echo "[$timestamp] [$script_name] $msg" | tee -a /work-dir/log.txt
 }
 
 function shutdown_mongo() {
@@ -132,7 +132,8 @@ if mongo "${ssl_args[@]}" --eval "rs.status()" | grep "no replset config has bee
     mongo admin "${ssl_args[@]}" --eval "db.createUser({user: '$admin_user', pwd: '$admin_password', roles: [{role: 'root', db: 'admin'}]})"
   fi
 
-  # Initialize Part for KubeDB. ref: https://github.com/docker-library/mongo/blob/a499e81e743b05a5237e2fd700c0284b17d3d416/3.4/docker-entrypoint.sh#L302
+  # Initialize Part for KubeDB.
+  # ref: https://github.com/docker-library/mongo/blob/a499e81e743b05a5237e2fd700c0284b17d3d416/3.4/docker-entrypoint.sh#L302
   # Start
   export MONGO_INITDB_DATABASE="${MONGO_INITDB_DATABASE:-test}"
 

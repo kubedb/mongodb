@@ -1,0 +1,36 @@
+apiVersion: kubedb.com/v1alpha1
+kind: MongoDB
+metadata:
+  name: mongo-sh-script
+  namespace: demo
+spec:
+  init:
+    scriptSource:
+      gitRepo:
+        directory: .
+        repository: https://github.com/kubedb/mongodb-init-scripts.git
+  storageType: Durable
+  shardTopology:
+    configServer:
+      replicas: 2
+      storage:
+        resources:
+          requests:
+            storage: 1Gi
+        storageClassName: standard
+    mongos:
+      replicas: 2
+      strategy:
+        type: RollingUpdate
+    shard:
+      replicas: 2
+      shards: 2
+      storage:
+        resources:
+          requests:
+            storage: 1Gi
+        storageClassName: standard
+  updateStrategy:
+    type: RollingUpdate
+  version: 3.6-v3
+  terminationPolicy: WipeOut

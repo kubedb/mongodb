@@ -1,4 +1,4 @@
-FROM mongo:3.6-jessie
+FROM mongo:3.6
 
 RUN set -x \
   && apt-get update \

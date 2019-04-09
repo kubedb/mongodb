@@ -1,10 +1,10 @@
 apiVersion: kubedb.com/v1alpha1
 kind: MongoDB
 metadata:
-  name: mgo-recovered-rs
+  name: mgo-mon-coreos-rs
   namespace: demo
 spec:
-  version: "3.6"
+  version: "3.6-v3"
   replicas: 3
   replicaSet:
     name: rs0
@@ -15,7 +15,10 @@ spec:
     resources:
       requests:
         storage: 50Mi
-  init:
-    snapshotSource:
-      name: snapshot-rs
-      namespace: demo
+  monitor:
+    agent: prometheus.io/coreos-operator
+    prometheus:
+      namespace: monitoring
+      labels:
+        k8s-app: prometheus
+      interval: 10s

@@ -1,0 +1,33 @@
+apiVersion: kubedb.com/v1alpha1
+kind: MongoDB
+metadata:
+  name: mongo-sh-builtin
+  namespace: demo
+spec:
+  version: 3.6-v3
+  shardTopology:
+    configServer:
+      replicas: 2
+      storage:
+        resources:
+          requests:
+            storage: 1Gi
+        storageClassName: standard
+    mongos:
+      replicas: 2
+      strategy:
+        type: RollingUpdate
+    shard:
+      replicas: 2
+      shards: 2
+      storage:
+        resources:
+          requests:
+            storage: 1Gi
+        storageClassName: standard
+  updateStrategy:
+    type: RollingUpdate
+  storageType: Durable
+  terminationPolicy: WipeOut
+  monitor:
+    agent: prometheus.io/builtin
