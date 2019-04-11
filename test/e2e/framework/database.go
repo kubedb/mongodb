@@ -60,7 +60,7 @@ func (f *Framework) GetMongosPodName(meta metav1.ObjectMeta) (string, error) {
 			return pod.Name, nil
 		}
 	}
-	return "", fmt.Errorf("no pod found for memcache: %s", meta.Name)
+	return "", fmt.Errorf("no pod found for mongodb: %s", meta.Name)
 }
 
 func (f *Framework) GetPrimaryInstance(meta metav1.ObjectMeta, isReplSet bool) (string, error) {
@@ -125,41 +125,41 @@ func (f *Framework) GetPrimaryInstance(meta metav1.ObjectMeta, isReplSet bool) (
 
 func (f *Framework) EventuallyInsertDocument(meta metav1.ObjectMeta, dbName string, isRepset bool, collectionCount int) GomegaAsyncAssertion {
 	return Eventually(
-		func() bool {
+		func() (bool,error) {
 			podName, err := f.GetPrimaryInstance(meta, isRepset)
 			if err != nil {
 				fmt.Println("GetPrimaryInstance error:", err)
-				return false
+				return false, err
 			}
 
 			tunnel, err := f.ForwardPort(meta, podName)
 			if err != nil {
 				fmt.Println("Failed to forward port. Reason: ", err)
-				return false
+				return false, err
 			}
 			defer tunnel.Close()
 
 			clientOpts, err := f.GetMongoDBClient(meta, tunnel, isRepset)
 			if err != nil {
-				fmt.Println("GetMongoDB Client error:", err)
+				fmt.Println("GetMongoDB client error:", err)
 			}
 
 			client, err := mongo.Connect(context.Background(), clientOpts)
 			if err != nil {
-				fmt.Println("GetMongoDB Client error:", err)
-				return false
+				fmt.Println("client connect error:", err)
+				return false, err
 			}
 
 			defer func() {
 				if err := client.Disconnect(context.Background()); err != nil {
-					fmt.Println("GetMongoDB Client error:", err)
+					fmt.Println("client disconnect error:", err)
 				}
 			}()
 
 			err = client.Ping(context.TODO(), nil)
 			if err != nil {
 				fmt.Println("Ping error:", err)
-				return false
+				return false, err
 			}
 
 			person := &KubedbTable{
@@ -169,7 +169,7 @@ func (f *Framework) EventuallyInsertDocument(meta metav1.ObjectMeta, dbName stri
 
 			if _, err := client.Database(dbName).Collection("people").InsertOne(context.Background(), person); err != nil {
 				fmt.Println("creation error:", err)
-				return false
+				return false, err
 			}
 
 			// above one is 0th element
@@ -181,11 +181,11 @@ func (f *Framework) EventuallyInsertDocument(meta metav1.ObjectMeta, dbName stri
 
 				if _, err := client.Database(dbName).Collection(fmt.Sprintf("people-%03d", i)).InsertOne(context.Background(), person); err != nil {
 					fmt.Println("creation error:", err)
-					return false
+					return false, err
 				}
 			}
 
-			return true
+			return true, nil
 		},
 		time.Minute*5,
 		time.Second*5,
@@ -194,41 +194,41 @@ func (f *Framework) EventuallyInsertDocument(meta metav1.ObjectMeta, dbName stri
 
 func (f *Framework) EventuallyDocumentExists(meta metav1.ObjectMeta, dbName string, isReplSet bool, collectionCount int) GomegaAsyncAssertion {
 	return Eventually(
-		func() bool {
+		func() (bool, error) {
 			podName, err := f.GetPrimaryInstance(meta, isReplSet)
 			if err != nil {
 				fmt.Println("GetPrimaryInstance error:", err)
-				return false
+				return false, err
 			}
 
 			tunnel, err := f.ForwardPort(meta, podName)
 			if err != nil {
 				fmt.Println("Failed to forward port. Reason: ", err)
-				return false
+				return false, err
 			}
 			defer tunnel.Close()
 
 			clientOpts, err := f.GetMongoDBClient(meta, tunnel, isReplSet)
 			if err != nil {
-				fmt.Println("GetMongoDB Client error:", err)
+				fmt.Println("GetMongoDB client error:", err)
 			}
 
 			client, err := mongo.Connect(context.Background(), clientOpts)
 			if err != nil {
-				fmt.Println("GetMongoDB Client error:", err)
-				return false
+				fmt.Println("client connect error:", err)
+				return false, err
 			}
 
 			defer func() {
 				if err := client.Disconnect(context.Background()); err != nil {
-					fmt.Println("GetMongoDB Client error:", err)
+					fmt.Println("client disconnect error:", err)
 				}
 			}()
 
 			err = client.Ping(context.TODO(), nil)
 			if err != nil {
 				fmt.Println("Ping error:", err)
-				return false
+				return false, err
 			}
 			expected := &KubedbTable{
 				FirstName: "kubernetes",
@@ -238,7 +238,7 @@ func (f *Framework) EventuallyDocumentExists(meta metav1.ObjectMeta, dbName stri
 
 			if er := client.Database(dbName).Collection("people").FindOne(context.Background(), bson.M{"firstname": expected.FirstName}).Decode(&person); er != nil || person == nil || person.LastName != expected.LastName {
 				fmt.Println("checking error:", er)
-				return false
+				return false, er
 			}
 
 			// above one is 0th element
@@ -251,10 +251,129 @@ func (f *Framework) EventuallyDocumentExists(meta metav1.ObjectMeta, dbName stri
 
 				if er := client.Database(dbName).Collection(fmt.Sprintf("people-%03d", i)).FindOne(context.Background(), bson.M{"firstname": expected.FirstName}).Decode(&person); er != nil || person == nil || person.LastName != expected.LastName {
 					fmt.Println("checking error:", er)
-					return false
+					return false, er
 				}
 			}
-			return true
+			return true, nil
+		},
+		time.Minute*5,
+		time.Second*5,
+	)
+}
+
+// EventuallyEnableSharding enables sharding of a database. Call this only when spec.shardTopology is set.
+func (f *Framework) EventuallyEnableSharding(meta metav1.ObjectMeta, dbName string) GomegaAsyncAssertion {
+	return Eventually(
+		func() (bool, error) {
+			podName, err := f.GetPrimaryInstance(meta, false)
+			if err != nil {
+				fmt.Println("GetPrimaryInstance error:", err)
+				return false, err
+			}
+
+			tunnel, err := f.ForwardPort(meta, podName)
+			if err != nil {
+				fmt.Println("Failed to forward port. Reason: ", err)
+				return false, err
+			}
+			defer tunnel.Close()
+
+			clientOpts, err := f.GetMongoDBClient(meta, tunnel, false)
+			if err != nil {
+				fmt.Println("GetMongoDB client error:", err)
+			}
+
+			client, err := mongo.Connect(context.Background(), clientOpts)
+			if err != nil {
+				fmt.Println("client connect error:", err)
+				return false, err
+			}
+
+			defer func() {
+				if err := client.Disconnect(context.Background()); err != nil {
+					fmt.Println("client disconnect error:", err)
+				}
+			}()
+
+			err = client.Ping(context.TODO(), nil)
+			if err != nil {
+				fmt.Println("Ping error:", err)
+				return false, err
+			}
+
+			singleRes := client.Database("admin").RunCommand(context.Background(), bson.D{{"enableSharding", dbName}})
+			if singleRes.Err() != nil {
+				fmt.Println("RunCommand enableSharding error:", err)
+				return false, err
+			}
+
+			// Now shard collection
+			singleRes = client.Database("admin").RunCommand(context.Background(), bson.D{{"shardCollection", fmt.Sprintf("%v.public", dbName)}, {"key", bson.M{"firstname": 1}}})
+			if singleRes.Err() != nil {
+				fmt.Println("RunCommand shardCollection error:", err)
+				return false, err
+			}
+
+			return true, nil
+		},
+		time.Minute*5,
+		time.Second*5,
+	)
+}
+
+// EventuallyCollectionPartitioned checks if a database is partitioned or not. Call this only when spec.shardTopology is set.
+func (f *Framework) EventuallyCollectionPartitioned(meta metav1.ObjectMeta, dbName string) GomegaAsyncAssertion {
+	return Eventually(
+		func() (bool, error) {
+			podName, err := f.GetPrimaryInstance(meta, false)
+			if err != nil {
+				fmt.Println("GetPrimaryInstance error:", err)
+				return false, err
+			}
+
+			tunnel, err := f.ForwardPort(meta, podName)
+			if err != nil {
+				fmt.Println("Failed to forward port. Reason: ", err)
+				return false, err
+			}
+			defer tunnel.Close()
+
+			clientOpts, err := f.GetMongoDBClient(meta, tunnel, false)
+			if err != nil {
+				fmt.Println("GetMongoDB client error:", err)
+			}
+
+			client, err := mongo.Connect(context.Background(), clientOpts)
+			if err != nil {
+				fmt.Println("client connect error:", err)
+				return false, err
+			}
+
+			defer func() {
+				if err := client.Disconnect(context.Background()); err != nil {
+					fmt.Println("client disconnect error:", err)
+				}
+			}()
+
+			err = client.Ping(context.TODO(), nil)
+			if err != nil {
+				fmt.Println("Ping error:", err)
+				return false, err
+			}
+
+			res := make(map[string]interface{})
+			err = client.Database("config").Collection("databases").FindOne(context.TODO(), bson.D{{"_id", dbName}}).Decode(&res)
+			if err != nil {
+				fmt.Println("Query error:", err)
+				return false, err
+			}
+
+			val, ok := res["partitioned"]
+			if ok && val == true {
+				return true, nil
+			}
+			fmt.Println("db", dbName, "is not partitioned. Got partitioned:", val)
+			return false, nil
 		},
 		time.Minute*5,
 		time.Second*5,
