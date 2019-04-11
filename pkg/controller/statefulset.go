@@ -51,10 +51,11 @@ type workloadOptions struct {
 	selectors map[string]string
 
 	// db container options
-	cmd         []string      // cmd of `mongodb` container
-	args        []string      // args of `mongodb` container
-	envList     []core.EnvVar // envList of `mongodb` container
-	volumeMount []core.VolumeMount
+	cmd          []string      // cmd of `mongodb` container
+	args         []string      // args of `mongodb` container
+	envList      []core.EnvVar // envList of `mongodb` container
+	volumeMount  []core.VolumeMount
+	configSource *core.VolumeSource
 
 	// pod Template level options
 	replicas       *int32
@@ -152,6 +153,7 @@ func (c *Controller) ensureShardNode(mongodb *api.MongoDB) (kutil.VerbType, erro
 			initContainers: initContainers,
 			gvrSvcName:     mongodb.GvrSvcName(mongodb.ShardNodeName(nodeNum)),
 			podTemplate:    &mongodb.Spec.ShardTopology.Shard.PodTemplate,
+			configSource:   mongodb.Spec.ShardTopology.Shard.ConfigSource,
 			pvcSpec:        mongodb.Spec.ShardTopology.Shard.Storage,
 			replicas:       &mongodb.Spec.ShardTopology.Shard.Replicas,
 			volume:         volumes,
@@ -222,6 +224,7 @@ func (c *Controller) ensureConfigNode(mongodb *api.MongoDB) (kutil.VerbType, err
 		initContainers: initContainers,
 		gvrSvcName:     mongodb.GvrSvcName(mongodb.ConfigSvrNodeName()),
 		podTemplate:    &mongodb.Spec.ShardTopology.ConfigServer.PodTemplate,
+		configSource:   mongodb.Spec.ShardTopology.ConfigServer.ConfigSource,
 		pvcSpec:        mongodb.Spec.ShardTopology.ConfigServer.Storage,
 		replicas:       &mongodb.Spec.ShardTopology.ConfigServer.Replicas,
 		volume:         volumes,
@@ -297,6 +300,7 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 		initContainers: initContainers,
 		gvrSvcName:     mongodb.GvrSvcName(mongodb.OffshootName()),
 		podTemplate:    mongodb.Spec.PodTemplate,
+		configSource:   mongodb.Spec.ConfigSource,
 		pvcSpec:        mongodb.Spec.Storage,
 		replicas:       mongodb.Spec.Replicas,
 		volume:         volumes,
@@ -415,8 +419,8 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB, opts workloadOption
 		in.Spec.Template = upsertEnv(in.Spec.Template, mongodb)
 		in = upsertDataVolume(in, opts.pvcSpec, mongodb.Spec.StorageType)
 
-		if mongodb.Spec.ConfigSource != nil {
-			in.Spec.Template = c.upsertConfigSourceVolume(in.Spec.Template, mongodb)
+		if opts.configSource != nil {
+			in.Spec.Template = c.upsertConfigSourceVolume(in.Spec.Template, opts.configSource)
 		}
 
 		in.Spec.Template.Spec.NodeSelector = pt.Spec.NodeSelector

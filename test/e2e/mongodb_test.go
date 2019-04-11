@@ -186,7 +186,7 @@ var _ = Describe("MongoDB", func() {
 						f.EventuallyEnableSharding(mongodb.ObjectMeta, dbName).Should(BeTrue())
 					}
 					if verifySharding {
-						By("Check if db " + dbName + "is set to partitioned")
+						By("Check if db " + dbName + " is set to partitioned")
 						f.EventuallyCollectionPartitioned(mongodb.ObjectMeta, dbName).Should(Equal(enableSharding))
 					}
 
@@ -215,7 +215,7 @@ var _ = Describe("MongoDB", func() {
 					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
 
 					if verifySharding {
-						By("Check if db " + dbName + "is set to partitioned")
+						By("Check if db " + dbName + " is set to partitioned")
 						f.EventuallyCollectionPartitioned(mongodb.ObjectMeta, dbName).Should(Equal(enableSharding))
 					}
 
@@ -893,8 +893,10 @@ var _ = Describe("MongoDB", func() {
 			Context("With Snapshot", func() {
 
 				var anotherMongoDB *api.MongoDB
+				var skipConfig bool
 
 				BeforeEach(func() {
+					skipConfig = true
 					anotherMongoDB = f.MongoDBStandalone()
 					anotherMongoDB.Spec.Init = &api.InitSpec{
 						SnapshotSource: &api.SnapshotSourceSpec{
@@ -920,7 +922,7 @@ var _ = Describe("MongoDB", func() {
 						f.EventuallyEnableSharding(mongodb.ObjectMeta, dbName).Should(BeTrue())
 					}
 					if verifySharding {
-						By("Check if db " + dbName + "is set to partitioned")
+						By("Check if db " + dbName + " is set to partitioned")
 						f.EventuallyCollectionPartitioned(mongodb.ObjectMeta, dbName).Should(Equal(enableSharding))
 					}
 
@@ -959,15 +961,12 @@ var _ = Describe("MongoDB", func() {
 					createAndWaitForRunning()
 
 					if verifySharding {
-						By("Check if db " + dbName + "is set to partitioned")
-						f.EventuallyCollectionPartitioned(mongodb.ObjectMeta, dbName).Should(Equal(enableSharding))
+						By("Check if db " + dbName + " is set to partitioned")
+						f.EventuallyCollectionPartitioned(mongodb.ObjectMeta, dbName).Should(Equal(!skipConfig))
 					}
 
-					By("Insert Document Inside DB")
-					f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 50).Should(BeTrue())
-
-					By("Checking Inserted Document")
-					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 100).Should(BeTrue())
+					By("Checking previously Inserted Document")
+					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 50).Should(BeTrue())
 				}
 
 				It("should run successfully", shouldInitializeSnapshot)
@@ -1011,11 +1010,12 @@ var _ = Describe("MongoDB", func() {
 							},
 						}
 					})
-					It("should take Snapshot successfully", shouldInitializeSnapshot)
+					It("should initialize database successfully", shouldInitializeSnapshot)
 				})
 
 				Context("With Sharding", func() {
 					BeforeEach(func() {
+						verifySharding = true
 						mongodb = f.MongoDBShard()
 						snapshot.Spec.DatabaseName = mongodb.Name
 						anotherMongoDB = f.MongoDBShard()
@@ -1026,78 +1026,50 @@ var _ = Describe("MongoDB", func() {
 							},
 						}
 					})
-					var shouldInitializewithoutConfig = func() {
-						// Create and wait for running MongoDB
-						createAndWaitForRunning()
-
-						if enableSharding {
-							By("Enable sharding for db:" + dbName)
-							f.EventuallyEnableSharding(mongodb.ObjectMeta, dbName).Should(BeTrue())
-						}
-						if verifySharding {
-							By("Check if db " + dbName + "is set to partitioned")
-							f.EventuallyCollectionPartitioned(mongodb.ObjectMeta, dbName).Should(Equal(enableSharding))
-						}
-
-						By("Insert Document Inside DB")
-						f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 50).Should(BeTrue())
-
-						By("Checking Inserted Document")
-						f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 50).Should(BeTrue())
-
-						By("Create Secret")
-						err := f.CreateSecret(secret)
-						Expect(err).NotTo(HaveOccurred())
-
-						By("Create Snapshot")
-						err = f.CreateSnapshot(snapshot)
-						Expect(err).NotTo(HaveOccurred())
-
-						By("Check for Succeeded snapshot")
-						f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
-
-						if !skipSnapshotDataChecking {
-							By("Check for snapshot data")
-							f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-						}
-
-						oldMongoDB, err := f.GetMongoDB(mongodb.ObjectMeta)
-						Expect(err).NotTo(HaveOccurred())
-
-						garbageMongoDB.Items = append(garbageMongoDB.Items, *oldMongoDB)
-
-						By("Create mongodb from snapshot")
-						mongodb = anotherMongoDB
-						mongodb.Spec.DatabaseSecret = oldMongoDB.Spec.DatabaseSecret
-
-						// Create and wait for running MongoDB
-						createAndWaitForRunning()
-
-						if verifySharding {
-							By("Check if db " + dbName + "is set to partitioned")
-							f.EventuallyCollectionPartitioned(mongodb.ObjectMeta, dbName).Should(Equal(enableSharding))
-						}
-
-						By("Insert Document Inside DB")
-						f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 50).Should(BeTrue())
-
-						By("Checking Inserted Document")
-						f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 100).Should(BeTrue())
-					}
 					Context("-", func() {
 						BeforeEach(func() {
 							enableSharding = false
+							skipConfig = true
+							anotherMongoDB.Spec.Init = &api.InitSpec{
+								SnapshotSource: &api.SnapshotSourceSpec{
+									Namespace: snapshot.Namespace,
+									Name:      snapshot.Name,
+									Args:      []string{fmt.Sprintf("--skip-config=%v", skipConfig)},
+								},
+							}
 						})
-						It("should take Snapshot successfully", shouldInitializeSnapshot)
+						It("should initialize database successfully", shouldInitializeSnapshot)
 					})
 
 					Context("With Sharding Enabled database", func() {
 						BeforeEach(func() {
 							enableSharding = true
+							skipConfig = true
+							anotherMongoDB.Spec.Init = &api.InitSpec{
+								SnapshotSource: &api.SnapshotSourceSpec{
+									Namespace: snapshot.Namespace,
+									Name:      snapshot.Name,
+									Args:      []string{fmt.Sprintf("--skip-config=%v", skipConfig)},
+								},
+							}
 						})
-						It("should take Snapshot successfully", shouldInitializeSnapshot)
+						It("should initialize database successfully", shouldInitializeSnapshot)
 					})
 
+					Context("With ShardingEnabled database - skipConfig is set false", func() {
+						BeforeEach(func() {
+							enableSharding = true
+							skipConfig = false
+							anotherMongoDB.Spec.Init = &api.InitSpec{
+								SnapshotSource: &api.SnapshotSourceSpec{
+									Namespace: snapshot.Namespace,
+									Name:      snapshot.Name,
+									Args:      []string{fmt.Sprintf("--skip-config=%v", skipConfig)},
+								},
+							}
+						})
+						It("should initialize database successfully", shouldInitializeSnapshot)
+					})
 
 				})
 
@@ -2316,6 +2288,109 @@ var _ = Describe("MongoDB", func() {
 
 					It("should not reject to update EnvVar", withUpdateEnvs)
 				})
+			})
+		})
+
+		Context("Custom config", func() {
+
+			var maxIncomingConnections = int32(10000)
+			customConfigs := []string{
+				fmt.Sprintf(`   maxIncomingConnections: %v`, maxIncomingConnections),
+			}
+
+			Context("from configMap", func() {
+				var userConfig *core.ConfigMap
+
+				BeforeEach(func() {
+					userConfig = f.GetCustomConfig(customConfigs)
+				})
+
+				AfterEach(func() {
+					By("Deleting configMap: " + userConfig.Name)
+					err := f.DeleteConfigMap(userConfig.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+				})
+
+				runWithUserProvidedConfig := func() {
+					if skipMessage != "" {
+						Skip(skipMessage)
+					}
+
+					By("Creating configMap: " + userConfig.Name)
+					err := f.CreateConfigMap(userConfig)
+					Expect(err).NotTo(HaveOccurred())
+
+					// Create MySQL
+					createAndWaitForRunning()
+
+					By("Checking maxIncomingConnections from mongodb config")
+					f.EventuallyMaxIncomingConnections(mongodb.ObjectMeta).Should(Equal(maxIncomingConnections))
+				}
+
+				Context("Standalone MongoDB", func() {
+
+					BeforeEach(func() {
+						mongodb = f.MongoDBStandalone()
+						mongodb.Spec.ConfigSource = &core.VolumeSource{
+							ConfigMap: &core.ConfigMapVolumeSource{
+								LocalObjectReference: core.LocalObjectReference{
+									Name: userConfig.Name,
+								},
+							},
+						}
+					})
+
+					It("should run successfully", runWithUserProvidedConfig)
+				})
+
+				Context("With Replica Set", func() {
+
+					BeforeEach(func() {
+						mongodb = f.MongoDBRS()
+						mongodb.Spec.ConfigSource = &core.VolumeSource{
+							ConfigMap: &core.ConfigMapVolumeSource{
+								LocalObjectReference: core.LocalObjectReference{
+									Name: userConfig.Name,
+								},
+							},
+						}
+					})
+
+					It("should run successfully", runWithUserProvidedConfig)
+				})
+
+				Context("With Sharding", func() {
+
+					BeforeEach(func() {
+						mongodb = f.MongoDBShard()
+						mongodb.Spec.ShardTopology.Shard.ConfigSource = &core.VolumeSource{
+							ConfigMap: &core.ConfigMapVolumeSource{
+								LocalObjectReference: core.LocalObjectReference{
+									Name: userConfig.Name,
+								},
+							},
+						}
+						mongodb.Spec.ShardTopology.ConfigServer.ConfigSource = &core.VolumeSource{
+							ConfigMap: &core.ConfigMapVolumeSource{
+								LocalObjectReference: core.LocalObjectReference{
+									Name: userConfig.Name,
+								},
+							},
+						}
+						mongodb.Spec.ShardTopology.Mongos.ConfigSource = &core.VolumeSource{
+							ConfigMap: &core.ConfigMapVolumeSource{
+								LocalObjectReference: core.LocalObjectReference{
+									Name: userConfig.Name,
+								},
+							},
+						}
+
+					})
+
+					It("should run successfully", runWithUserProvidedConfig)
+				})
+
 			})
 		})
 

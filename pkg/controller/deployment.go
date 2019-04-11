@@ -157,8 +157,8 @@ func (c *Controller) ensureDeployment(
 		})
 		in.Spec.Template = upsertEnv(in.Spec.Template, mongodb)
 
-		if mongodb.Spec.ConfigSource != nil {
-			in.Spec.Template = c.upsertConfigSourceVolume(in.Spec.Template, mongodb)
+		if opts.configSource != nil {
+			in.Spec.Template = c.upsertConfigSourceVolume(in.Spec.Template, opts.configSource)
 		}
 
 		in.Spec.Template.Spec.NodeSelector = pt.Spec.NodeSelector
@@ -292,6 +292,7 @@ func (c *Controller) ensureMongosNode(mongodb *api.MongoDB) (kutil.VerbType, err
 		initContainers: initContainers,
 		gvrSvcName:     mongodb.GvrSvcName(mongodb.OffshootName()),
 		podTemplate:    &mongodb.Spec.ShardTopology.Mongos.PodTemplate,
+		configSource:   mongodb.Spec.ShardTopology.Mongos.ConfigSource,
 		pvcSpec:        mongodb.Spec.Storage,
 		replicas:       &mongodb.Spec.ShardTopology.Mongos.Replicas,
 		volume:         volumes,
