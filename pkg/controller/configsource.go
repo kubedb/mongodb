@@ -12,7 +12,7 @@ import (
 // Initially mount configmap `mongodb.conf` on initialConfigDirectoryPath "/configdb-readonly".
 // But, mongodb can't write this initial mounted file. Because, configmap mounted files is not writable.
 // So, This initial file is copied to configDirectoryPath "/data/configdb" by init-container.
-func (c *Controller) upsertConfigSourceVolume(template core.PodTemplateSpec, mongodb *api.MongoDB) core.PodTemplateSpec {
+func (c *Controller) upsertConfigSourceVolume(template core.PodTemplateSpec, configSource *core.VolumeSource) core.PodTemplateSpec {
 	for i, container := range template.Spec.Containers {
 		if container.Name == api.ResourceSingularMongoDB {
 			template.Spec.Containers[i].Args = meta_util.UpsertArgumentList(
@@ -37,7 +37,7 @@ func (c *Controller) upsertConfigSourceVolume(template core.PodTemplateSpec, mon
 		template.Spec.Volumes,
 		core.Volume{
 			Name:         initialConfigDirectoryName,
-			VolumeSource: *mongodb.Spec.ConfigSource,
+			VolumeSource: *configSource,
 		})
 
 	return template

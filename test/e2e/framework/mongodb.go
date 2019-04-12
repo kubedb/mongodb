@@ -122,6 +122,13 @@ func (i *Invocation) MongoDBShard() *api.MongoDB {
 	}
 }
 
+func IsRepSet(db *api.MongoDB) bool {
+	if db.Spec.ReplicaSet != nil {
+		return true
+	}
+	return false
+}
+
 func (i *Invocation) CreateMongoDB(obj *api.MongoDB) error {
 	_, err := i.extClient.KubedbV1alpha1().MongoDBs(obj.Namespace).Create(obj)
 	return err

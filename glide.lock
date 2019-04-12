@@ -1,5 +1,5 @@
-hash: 5b1e2968bfcf4acfc951a4c22160a8abedd2a8e778c2db731267b84585af6fa1
-updated: 2019-04-08T14:49:35.953749316+06:00
+hash: 52a8677108734e0319d62ae4019fc1fd340ab5a2556f0882ecd8eb6b9e4dd709
+updated: 2019-04-10T16:52:28.704529279+06:00
 imports:
 - name: bitbucket.org/ww/goautoneg
   version: 75cd24fc2f2c2a2088577d12123ddee5f54e0675
@@ -216,13 +216,6 @@ imports:
   version: 878a968ab22548362a09bdb3322f98b00f470d46
 - name: github.com/ghodss/yaml
   version: 0ca9ea5df5451ffdf184b4428c902747c2c11cd7
-- name: github.com/globalsign/mgo
-  version: eeefdecb41b842af6dc652aaea4026e8403e62df
-  subpackages:
-  - bson
-  - internal/json
-- name: github.com/go-bongo/bongo
-  version: 58e3a1fbb5ea15dde8675b60becb2a9950e70164
 - name: github.com/go-ini/ini
   version: a9da9309fb4822643ceebb765f80025c35ac19a1
 - name: github.com/go-openapi/jsonpointer
@@ -233,6 +226,8 @@ imports:
   version: 53d776530bf78a11b03a7b52dd8a083086b045e5
 - name: github.com/go-openapi/swag
   version: 5899d5c5e619fda5fa86e14795a835f473ca284c
+- name: github.com/go-stack/stack
+  version: 2fee6af1a9795aafbe0253a0cfbdf668e1fb8a9a
 - name: github.com/gogo/protobuf
   version: 342cbe0a04158f6dcb03ca0079991a51a4248c02
   subpackages:
@@ -256,6 +251,8 @@ imports:
   - ptypes/duration
   - ptypes/struct
   - ptypes/timestamp
+- name: github.com/golang/snappy
+  version: 2a8bb927dd31d8daada140a5d09578521ce5c36a
 - name: github.com/google/btree
   version: 7d79101e329e5a3adf994758c578dab82b90c017
 - name: github.com/google/go-cmp
@@ -380,8 +377,6 @@ imports:
   version: c12348ce28de40eed0136aa2b644d0ee0650e56c
   subpackages:
   - pbutil
-- name: github.com/maxwellhealth/go-dotaccess
-  version: ae070a2d2a38fd7233e255ded21fb26fe36b4796
 - name: github.com/mitchellh/mapstructure
   version: 3536a929edddb9a5b34bd6861dc4a9647cb459fe
 - name: github.com/modern-go/concurrent
@@ -392,8 +387,6 @@ imports:
   version: 24e3012fc8a71f004a6455bce2088031d50bf2b6
 - name: github.com/NYTimes/gziphandler
   version: 56545f4a5d46df9a6648819d1664c3a03a13ffdb
-- name: github.com/oleiade/reflections
-  version: 0e86b3c98b2ff33e30c85cfe97d9a63d439fe7eb
 - name: github.com/onsi/ginkgo
   version: 3774a09d95489ccaa16032e0770d08ea77ba6184
   subpackages:
@@ -476,6 +469,10 @@ imports:
   - doc
 - name: github.com/spf13/pflag
   version: 298182f68c66c05229eb03ac171abe6e309ee79a
+- name: github.com/xdg/scram
+  version: 7eeb5667e42c09cb51bf7b7c28aea8c56767da90
+- name: github.com/xdg/stringprep
+  version: 73f8eece6fdcd902c185bf651de50f3828bed5ed
 - name: github.com/yudai/gojsondiff
   version: 0525c875b75ca60b9e67ddc44496aa16f21066b0
   subpackages:
@@ -483,9 +480,43 @@ imports:
 - name: github.com/yudai/golcs
   version: d1c525dea8ce39ea9a783d33cf08932305373f2c
   repo: https://github.com/yudai/golcs
+- name: go.mongodb.org/mongo-driver
+  version: 1c3b9b9a41eecdf056560e07b68e6407b8d598c3
+  subpackages:
+  - bson
+  - bson/bsoncodec
+  - bson/bsonrw
+  - bson/bsontype
+  - bson/primitive
+  - event
+  - internal
+  - mongo
+  - mongo/options
+  - mongo/readconcern
+  - mongo/readpref
+  - mongo/writeconcern
+  - tag
+  - version
+  - x/bsonx
+  - x/bsonx/bsoncore
+  - x/mongo/driver
+  - x/mongo/driver/auth
+  - x/mongo/driver/auth/internal/gssapi
+  - x/mongo/driver/session
+  - x/mongo/driver/topology
+  - x/mongo/driver/uuid
+  - x/network/address
+  - x/network/command
+  - x/network/compressor
+  - x/network/connection
+  - x/network/connstring
+  - x/network/description
+  - x/network/result
+  - x/network/wiremessage
 - name: golang.org/x/crypto
   version: de0752318171da717af4ce24d0a2e8626afaeb11
   subpackages:
+  - pbkdf2
   - ssh/terminal
 - name: golang.org/x/net
   version: 0ed95abb35c445290478a5348a7b38bb154135fd
@@ -509,6 +540,10 @@ imports:
   - internal
   - jws
   - jwt
+- name: golang.org/x/sync
+  version: e225da77a7e68af35c70ccbf71af2b83e6acac3c
+  subpackages:
+  - semaphore
 - name: golang.org/x/sys
   version: 95c6576299259db960f6c5b9b69ea52422860fce
   subpackages:
@@ -601,13 +636,6 @@ imports:
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/ini.v1
   version: a9da9309fb4822643ceebb765f80025c35ac19a1
-- name: gopkg.in/mgo.v2
-  version: 3f83fa5005286a7fe593b055f0d7771a7dce4655
-  subpackages:
-  - bson
-  - internal/json
-  - internal/sasl
-  - internal/scram
 - name: gopkg.in/natefinch/lumberjack.v2
   version: 20b71e5b60d756d3d2f80def009790325acc2b23
 - name: gopkg.in/robfig/cron.v2

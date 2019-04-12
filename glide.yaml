@@ -20,9 +20,8 @@ import:
   version: v1.1.1
 - package: github.com/evanphx/json-patch
   version: 5858425f75500d40c52783dce87d085a483ce135
-- package: github.com/globalsign/mgo
-- package: github.com/go-bongo/bongo
-  version: v0.10.4
+- package: go.mongodb.org/mongo-driver
+  version: v1.0.0
 - package: github.com/go-ini/ini
   version: v1.40.0
 - package: github.com/golang/protobuf
