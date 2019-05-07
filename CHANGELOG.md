@@ -1,5 +1,18 @@
 # Change Log
 
+## [0.5.0](https://github.com/kubedb/mongodb/tree/0.5.0) (2019-05-06)
+[Full Changelog](https://github.com/kubedb/mongodb/compare/0.4.0...0.5.0)
+
+**Merged pull requests:**
+
+- \[revendored\] Remove Resources field from shardTopology [\#154](https://github.com/kubedb/mongodb/pull/154) ([the-redback](https://github.com/the-redback))
+- Revendor dependencies [\#153](https://github.com/kubedb/mongodb/pull/153) ([tamalsaha](https://github.com/tamalsaha))
+- Use official Mongo GO Driver for testing MongoDB [\#152](https://github.com/kubedb/mongodb/pull/152) ([the-redback](https://github.com/the-redback))
+- Fix PSP in Role for kubeDB upgrade [\#151](https://github.com/kubedb/mongodb/pull/151) ([iamrz1](https://github.com/iamrz1))
+- Modify mutator validator names [\#150](https://github.com/kubedb/mongodb/pull/150) ([iamrz1](https://github.com/iamrz1))
+- set resource requirements for bootstrap init container [\#149](https://github.com/kubedb/mongodb/pull/149) ([phin1x](https://github.com/phin1x))
+- Add MongoDB Sharding support [\#148](https://github.com/kubedb/mongodb/pull/148) ([the-redback](https://github.com/the-redback))
+
 ## [0.4.0](https://github.com/kubedb/mongodb/tree/0.4.0) (2019-03-18)
 [Full Changelog](https://github.com/kubedb/mongodb/compare/0.3.0...0.4.0)
 
