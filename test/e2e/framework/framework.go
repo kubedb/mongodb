@@ -4,27 +4,28 @@ import (
 	"github.com/appscode/go/crypto/rand"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	cs "github.com/kubedb/apimachinery/client/clientset/versioned"
+	crd_cs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	ka "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset"
 	appcat_cs "kmodules.xyz/custom-resources/client/clientset/versioned/typed/appcatalog/v1alpha1"
+	scs "stash.appscode.dev/stash/client/clientset/versioned"
 )
 
 var (
 	DockerRegistry     = "kubedbci"
 	SelfHostedOperator = false
-	DBCatalogName      = "3.6-v3"
-	DBVersion          = "3.6-v3"
-	DBToolsTag         = "3.6-v3"
-	ExporterTag        = "v1.0.0"
+	DBCatalogName      = "4.1.7-v1"
 )
 
 type Framework struct {
 	restConfig       *rest.Config
 	kubeClient       kubernetes.Interface
-	extClient        cs.Interface
+	apiExtKubeClient crd_cs.ApiextensionsV1beta1Interface
+	dbClient         cs.Interface
 	kaClient         ka.Interface
 	appCatalogClient appcat_cs.AppcatalogV1alpha1Interface
+	stashClient      scs.Interface
 	namespace        string
 	name             string
 	StorageClass     string
@@ -33,17 +34,21 @@ type Framework struct {
 func New(
 	restConfig *rest.Config,
 	kubeClient kubernetes.Interface,
-	extClient cs.Interface,
+	apiExtKubeClient crd_cs.ApiextensionsV1beta1Interface,
+	dbClient cs.Interface,
 	kaClient ka.Interface,
 	appCatalogClient appcat_cs.AppcatalogV1alpha1Interface,
+	stashClient scs.Interface,
 	storageClass string,
 ) *Framework {
 	return &Framework{
 		restConfig:       restConfig,
 		kubeClient:       kubeClient,
-		extClient:        extClient,
+		apiExtKubeClient: apiExtKubeClient,
+		dbClient:         dbClient,
 		kaClient:         kaClient,
 		appCatalogClient: appCatalogClient,
+		stashClient:      stashClient,
 		name:             "mongodb-operator",
 		namespace:        rand.WithUniqSuffix(api.ResourceSingularMongoDB),
 		StorageClass:     storageClass,
@@ -57,8 +62,8 @@ func (f *Framework) Invoke() *Invocation {
 	}
 }
 
-func (i *Invocation) ExtClient() cs.Interface {
-	return i.extClient
+func (i *Invocation) DBClient() cs.Interface {
+	return i.dbClient
 }
 
 type Invocation struct {

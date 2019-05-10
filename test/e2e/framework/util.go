@@ -27,12 +27,12 @@ func deleteInForeground() *metav1.DeleteOptions {
 	return &metav1.DeleteOptions{PropagationPolicy: &policy}
 }
 
-func (f *Invocation) GetCustomConfig(configs []string) *core.ConfigMap {
+func (i *Invocation) GetCustomConfig(configs []string) *core.ConfigMap {
 	configs = append([]string{"net:"}, configs...)
 	return &core.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      f.app,
-			Namespace: f.namespace,
+			Name:      i.app,
+			Namespace: i.namespace,
 		},
 		Data: map[string]string{
 			"mongod.conf": strings.Join(configs, "\n"),
@@ -40,8 +40,8 @@ func (f *Invocation) GetCustomConfig(configs []string) *core.ConfigMap {
 	}
 }
 
-func (f *Invocation) CreateConfigMap(obj *core.ConfigMap) error {
-	_, err := f.kubeClient.CoreV1().ConfigMaps(obj.Namespace).Create(obj)
+func (i *Invocation) CreateConfigMap(obj *core.ConfigMap) error {
+	_, err := i.kubeClient.CoreV1().ConfigMaps(obj.Namespace).Create(obj)
 	return err
 }
 

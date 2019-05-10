@@ -19,6 +19,8 @@ import (
 	meta_util "kmodules.xyz/client-go/meta"
 	store "kmodules.xyz/objectstore-api/api/v1"
 	ofst "kmodules.xyz/offshoot-api/api/v1"
+	stashV1alpha1 "stash.appscode.dev/stash/apis/stash/v1alpha1"
+	stashV1beta1 "stash.appscode.dev/stash/apis/stash/v1beta1"
 )
 
 const (
@@ -1412,6 +1414,151 @@ var _ = Describe("MongoDB", func() {
 					It("should take Snapshot successfully", shouldInitializeSnapshot)
 				})
 			})
+
+			// To run this test,
+			// 1st: Deploy stash latest operator
+			// 2nd: create mongodb related tasks and functions from
+			// `github.com/kubedb/mongodb/hack/dev/examples/stash01_config.yaml`
+			Context("With Stash/Restic", func() {
+				var bc *stashV1beta1.BackupConfiguration
+				var bs *stashV1beta1.BackupSession
+				var rs *stashV1beta1.RestoreSession
+				var repo *stashV1alpha1.Repository
+
+				BeforeEach(func() {
+					skipSnapshotDataChecking = true
+					if !f.FoundStashCRDs() {
+						Skip("Skipping tests for stash integration. reason: stash operator is not running.")
+					}
+				})
+
+				AfterEach(func() {
+					By("Deleting BackupConfiguration")
+					err := f.DeleteBackupConfiguration(bc.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Deleting BackupSession")
+					err = f.DeleteBackupSession(bs.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Deleting RestoreSession")
+					err = f.DeleteRestoreSession(rs.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Deleting Repository")
+					err = f.DeleteRepository(repo.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Deleting Stash RBACs")
+					err = f.DeleteStashMgRBAC(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				var createAndWaitForInitializing = func() {
+					By("Creating MongoDB: " + mongodb.Name)
+					err = f.CreateMongoDB(mongodb)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Wait for Initializing mongodb")
+					f.EventuallyMongoDBPhase(mongodb.ObjectMeta).Should(Equal(api.DatabasePhaseInitializing))
+
+					By("Wait for AppBinding to create")
+					f.EventuallyAppBinding(mongodb.ObjectMeta).Should(BeTrue())
+
+					By("Check valid AppBinding Specs")
+					err = f.CheckAppBindingSpec(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+				}
+
+				var shouldInitializeFromStash = func() {
+					By("Ensuring Stash RBACs")
+					err := f.EnsureStashMgRBAC(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					// Create and wait for running MongoDB
+					createAndWaitForRunning()
+
+					By("Insert Document Inside DB")
+					f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 3).Should(BeTrue())
+
+					By("Checking Inserted Document")
+					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 3).Should(BeTrue())
+
+					By("Create Secret")
+					err = f.CreateSecret(secret)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Create Repositories")
+					err = f.CreateRepository(repo)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Create BackupConfiguration")
+					err = f.CreateBackupConfiguration(bc)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Create BackupSession")
+					err = f.CreateBackupSession(bs)
+					Expect(err).NotTo(HaveOccurred())
+
+					// eventually backupsession succeeded
+					By("Check for Succeeded backupsession")
+					f.EventuallyBackupSessionPhase(bs.ObjectMeta).Should(Equal(stashV1beta1.BackupSessionSucceeded))
+
+					oldMongoDB, err := f.GetMongoDB(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					garbageMongoDB.Items = append(garbageMongoDB.Items, *oldMongoDB)
+
+					By("Create mongodb from stash")
+					*mongodb = *f.MongoDBStandalone()
+					rs = f.RestoreSession(mongodb.ObjectMeta, oldMongoDB.ObjectMeta)
+					mongodb.Spec.DatabaseSecret = oldMongoDB.Spec.DatabaseSecret
+					mongodb.Spec.Init = &api.InitSpec{
+						StashSource: &core.LocalObjectReference{
+							Name: rs.Name,
+						},
+					}
+
+					// Create and wait for running MongoDB
+					createAndWaitForInitializing()
+
+					By("Create RestoreSession")
+					err = f.CreateRestoreSession(rs)
+					Expect(err).NotTo(HaveOccurred())
+
+					// eventually backupsession succeeded
+					By("Check for Succeeded restoreSession")
+					f.EventuallyRestoreSessionPhase(rs.ObjectMeta).Should(Equal(stashV1beta1.RestoreSessionSucceeded))
+
+					By("Wait for Running mongodb")
+					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+
+					By("Checking Inserted Document")
+					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 3).Should(BeTrue())
+				}
+
+				Context("From GCS backend", func() {
+
+					BeforeEach(func() {
+						secret = f.SecretForGCSBackend()
+						secret = f.PatchSecretForRestic(secret)
+						bc = f.BackupConfiguration(mongodb.ObjectMeta)
+						bs = f.BackupSession(mongodb.ObjectMeta)
+						repo = f.Repository(mongodb.ObjectMeta, secret.Name)
+
+						repo.Spec.Backend = store.Backend{
+							GCS: &store.GCSSpec{
+								Bucket: os.Getenv("GCS_BUCKET_NAME"),
+								Prefix: fmt.Sprintf("stash/%v/%v", mongodb.Namespace, mongodb.Name),
+							},
+							StorageSecretName: secret.Name,
+						}
+					})
+
+					It("should run successfully", shouldInitializeFromStash)
+				})
+
+			})
 		})
 
 		Context("Resume", func() {
@@ -2551,7 +2698,7 @@ var _ = Describe("MongoDB", func() {
 					By("Checking Inserted Document")
 					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 1).Should(BeTrue())
 
-					_, _, err = util.PatchMongoDB(f.ExtClient().KubedbV1alpha1(), mongodb, func(in *api.MongoDB) *api.MongoDB {
+					_, _, err = util.PatchMongoDB(f.DBClient().KubedbV1alpha1(), mongodb, func(in *api.MongoDB) *api.MongoDB {
 						envs = []core.EnvVar{
 							{
 								Name:  MONGO_INITDB_DATABASE,
