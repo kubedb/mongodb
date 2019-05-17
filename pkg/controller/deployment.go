@@ -185,6 +185,10 @@ func (c *Controller) ensureDeployment(
 		return kutil.VerbUnchanged, err
 	}
 
+	if err := c.CreateDeploymentPodDisruptionBudget(deployment); err != nil {
+		return kutil.VerbUnchanged, err
+	}
+
 	// Check StatefulSet Pod status
 	if vt != kutil.VerbUnchanged {
 		if err := app_util.WaitUntilDeploymentReady(c.Client, deployment.ObjectMeta); err != nil {

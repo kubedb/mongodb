@@ -11,14 +11,21 @@ import (
 	"github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
+	policy_v1beta1 "k8s.io/api/policy/v1beta1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	meta_util "kmodules.xyz/client-go/meta"
 )
 
 var (
 	JobPvcStorageSize = "2Gi"
 	DBPvcStorageSize  = "1Gi"
+)
+
+const (
+	EvictionKind = "Eviction"
 )
 
 func (i *Invocation) MongoDBStandalone() *api.MongoDB {
@@ -149,6 +156,110 @@ func (f *Framework) PatchMongoDB(meta metav1.ObjectMeta, transform func(*api.Mon
 
 func (f *Framework) DeleteMongoDB(meta metav1.ObjectMeta) error {
 	return f.extClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Delete(meta.Name, deleteInForeground())
+}
+
+func (f *Framework) EvictMongoDBStatefulSetPod(meta metav1.ObjectMeta) (bool, error) {
+	var found = false
+	var stsEvicted = true
+	var evicted = 0
+	var notEvicted = 0
+	var err error
+
+	policyGroupVersion := "v1beta1"
+	labelSelector := labels.Set{
+		meta_util.ManagedByLabelKey: api.GenericKey,
+	}
+	//get sts in the namespace
+	stsList, err := f.kubeClient.AppsV1().StatefulSets(meta.Namespace).List(metav1.ListOptions{LabelSelector: labelSelector.String()})
+	stsSize := len(stsList.Items)
+	for _, sts := range stsList.Items {
+		//if PDB is not found, send error
+		for i := 0; i < 5 && !found; i++ {
+			_, err = f.kubeClient.PolicyV1beta1().PodDisruptionBudgets(sts.Namespace).Get(sts.Name, metav1.GetOptions{})
+			if err == nil {
+				found = true
+			} else {
+				time.Sleep(time.Second * 3)
+			}
+		}
+		if !found {
+			return false, err
+		}
+		eviction := &policy_v1beta1.Eviction{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: policyGroupVersion,
+				Kind:       EvictionKind,
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      sts.Name + "-0",
+				Namespace: sts.Namespace,
+			},
+			DeleteOptions: &metav1.DeleteOptions{},
+		}
+		err = f.kubeClient.PolicyV1beta1().Evictions(eviction.Namespace).Evict(eviction)
+		if err == nil {
+			evicted++
+			stsEvicted = true
+		}
+		if kerr.IsTooManyRequests(err) {
+			err = nil
+			stsEvicted = false
+			notEvicted++
+		}
+	}
+	//ensuring result symmetry
+	if evicted != stsSize && notEvicted != stsSize {
+		stsEvicted = !stsEvicted
+	}
+	return stsEvicted, err
+}
+
+func (f *Framework) EvictMongoDBDeploymentPod(meta metav1.ObjectMeta) (bool, error) {
+	var found = false
+	var deployEvicted = true
+	var err error
+	deployName := meta.Name + "-mongos"
+	//if PDB is not found, send error
+	for i := 0; i < 5 && !found; i++ {
+		_, err := f.kubeClient.PolicyV1beta1().PodDisruptionBudgets(meta.Namespace).Get(deployName, metav1.GetOptions{})
+		if err == nil {
+			found = true
+		} else {
+			time.Sleep(time.Second * 3)
+		}
+	}
+	if !found {
+		return false, err
+	}
+	policyGroupVersion := "v1beta1"
+	podSelector := labels.Set{
+		api.MongoDBMongosLabelKey: meta.Name + "-mongos",
+	}
+	deployedPodLists, err := f.kubeClient.CoreV1().Pods(meta.Namespace).List(metav1.ListOptions{LabelSelector: podSelector.String()})
+	//Delete a pod
+	for _, pod := range deployedPodLists.Items {
+		eviction := &policy_v1beta1.Eviction{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: policyGroupVersion,
+				Kind:       EvictionKind,
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      pod.Name,
+				Namespace: pod.Namespace,
+			},
+			DeleteOptions: &metav1.DeleteOptions{},
+		}
+		err = f.kubeClient.PolicyV1beta1().Evictions(eviction.Namespace).Evict(eviction)
+		break
+	}
+	if err == nil {
+		deployEvicted = true
+	}
+	if kerr.IsTooManyRequests(err) {
+		err = nil
+		deployEvicted = false
+	}
+	return deployEvicted, err
 }
 
 func (f *Framework) EventuallyMongoDB(meta metav1.ObjectMeta) GomegaAsyncAssertion {

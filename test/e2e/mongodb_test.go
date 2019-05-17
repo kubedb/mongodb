@@ -255,6 +255,78 @@ var _ = Describe("MongoDB", func() {
 				})
 
 			})
+
+			Context("PDB", func() {
+				var runAndDontEvict = func() {
+					// Create MongoDB
+					createAndWaitForRunning()
+					//Evict MongoDB pod
+					By("Try to evict a pod")
+					evicted, err := f.EvictMongoDBStatefulSetPod(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(evicted).To(BeFalse())
+				}
+
+				var runAndEvict = func() {
+					mongodb = f.MongoDBRS()
+					mongodb.Spec.Replicas = types.Int32P(3)
+					// Create MongoDB
+					createAndWaitForRunning()
+					//Evict a MongoDB pod
+					By("Try to evict a pod")
+					evicted, err := f.EvictMongoDBStatefulSetPod(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(evicted).To(BeTrue())
+				}
+
+				var runShardAndEvict = func() {
+					mongodb = f.MongoDBShard()
+					mongodb.Spec.ShardTopology.Shard.Shards = int32(2)
+					mongodb.Spec.ShardTopology.ConfigServer.Replicas = int32(3)
+					mongodb.Spec.ShardTopology.Mongos.Replicas = int32(2)
+					mongodb.Spec.ShardTopology.Shard.Replicas = int32(3)
+					// Create MongoDB
+					createAndWaitForRunning()
+					//Evict a MongoDB pod from each sts and deploy
+					By("Try to evict a pod from each statefulset")
+					evicted, err := f.EvictMongoDBStatefulSetPod(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(evicted).To(BeTrue())
+					By("Try to evict a deployment pod")
+					evicted, err = f.EvictMongoDBDeploymentPod(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(evicted).To(BeTrue())
+				}
+
+				var runShardAndDontEvict = func() {
+					mongodb = f.MongoDBShard()
+					mongodb.Spec.ShardTopology.Shard.Shards = int32(1)
+					mongodb.Spec.ShardTopology.Shard.MongoDBNode.Replicas = int32(1)
+					mongodb.Spec.ShardTopology.ConfigServer.MongoDBNode.Replicas = int32(1)
+					mongodb.Spec.ShardTopology.Mongos.MongoDBNode.Replicas = int32(1)
+					// Create MongoDB
+					By("Create and run MongoDB")
+					createAndWaitForRunning()
+					//Evict a MongoDB StatefulSet pod
+					By("Try to evict statefulset pods")
+					evicted, err := f.EvictMongoDBStatefulSetPod(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(evicted).NotTo(BeTrue())
+					//Evict a MongoDB Deployment pod
+					By("Try to evict deployment pod")
+					evicted, err = f.EvictMongoDBDeploymentPod(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(evicted).NotTo(BeTrue())
+				}
+
+				It("should evict successfully", runAndEvict)
+
+				It("should stop eviction successfully", runAndDontEvict)
+
+				It("should evict sharded db successfully", runShardAndEvict)
+
+				It("should stop eviction in sharded db successfully", runShardAndDontEvict)
+			})
 		})
 
 		Context("Snapshot", func() {
