@@ -173,7 +173,7 @@ func (c *Controller) ensureDeployment(
 		in.Spec.Template.Spec.SecurityContext = pt.Spec.SecurityContext
 
 		if c.EnableRBAC {
-			in.Spec.Template.Spec.ServiceAccountName = mongodb.OffshootName()
+			in.Spec.Template.Spec.ServiceAccountName = pt.Spec.ServiceAccountName
 		}
 
 		in.Spec.Strategy = strategy

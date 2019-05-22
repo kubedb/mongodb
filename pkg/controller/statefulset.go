@@ -435,7 +435,7 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB, opts workloadOption
 		in.Spec.Template.Spec.SecurityContext = pt.Spec.SecurityContext
 
 		if c.EnableRBAC {
-			in.Spec.Template.Spec.ServiceAccountName = mongodb.OffshootName()
+			in.Spec.Template.Spec.ServiceAccountName = pt.Spec.ServiceAccountName
 		}
 
 		in.Spec.UpdateStrategy = mongodb.Spec.UpdateStrategy

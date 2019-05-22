@@ -59,8 +59,8 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 	}
 
 	if c.EnableRBAC {
-		// Ensure ClusterRoles for statefulsets
-		if err := c.ensureRBACStuff(mongodb); err != nil {
+		// Ensure Service account, role, rolebinding, and PSP for database statefulsets
+		if err := c.ensureDatabaseRBAC(mongodb); err != nil {
 			return err
 		}
 	}
