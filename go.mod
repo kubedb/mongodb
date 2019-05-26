@@ -3,7 +3,7 @@ module github.com/kubedb/mongodb
 go 1.12
 
 require (
-	github.com/appscode/go v0.0.0-20190424183524-60025f1135c9
+	github.com/appscode/go v0.0.0-20190523031839-1468ee3a76e8
 	github.com/appscode/osm v0.11.0 // indirect
 	github.com/codeskyblue/go-sh v0.0.0-20190412065543-76bd3d59ff27
 	github.com/coreos/prometheus-operator v0.29.0
@@ -11,11 +11,12 @@ require (
 	github.com/fatih/structs v1.1.0
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/graymeta/stow v0.1.0
-	github.com/kubedb/apimachinery v0.0.0-20190508221312-5ba915343400
+	github.com/kubedb/apimachinery v0.0.0-20190526014453-48e4bab67179
+	github.com/ncw/swift v1.0.47 // indirect
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/pkg/errors v0.8.1
-	github.com/spf13/cobra v0.0.3
+	github.com/spf13/cobra v0.0.4
 	github.com/spf13/pflag v1.0.3
 	github.com/tidwall/pretty v0.0.0-20190325153808-1166b9ac2b65 // indirect
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c // indirect
@@ -31,7 +32,7 @@ require (
 	k8s.io/client-go v11.0.0+incompatible
 	k8s.io/component-base v0.0.0-20190508223741-40efa6d42997 // indirect
 	k8s.io/kube-aggregator v0.0.0-20190508224022-f9852b6d3a84
-	kmodules.xyz/client-go v0.0.0-20190508091620-0d215c04352f
+	kmodules.xyz/client-go v0.0.0-20190524133821-9c8a87771aea
 	kmodules.xyz/custom-resources v0.0.0-20190508103408-464e8324c3ec
 	kmodules.xyz/monitoring-agent-api v0.0.0-20190508125842-489150794b9b
 	kmodules.xyz/objectstore-api v0.0.0-20190506085934-94c81c8acca9
