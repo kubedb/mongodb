@@ -2,6 +2,7 @@ package framework
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/appscode/go/crypto/rand"
@@ -195,6 +196,7 @@ func (f *Framework) EvictMongoDBStatefulSetPod(meta metav1.ObjectMeta) (bool, er
 		}
 		err = f.kubeClient.PolicyV1beta1().Evictions(eviction.Namespace).Evict(eviction)
 		if err == nil {
+			fmt.Println("Evicted po")
 			evicted++
 			stsEvicted = true
 		}
@@ -211,51 +213,99 @@ func (f *Framework) EvictMongoDBStatefulSetPod(meta metav1.ObjectMeta) (bool, er
 	return stsEvicted, err
 }
 
-func (f *Framework) EvictMongoDBDeploymentPod(meta metav1.ObjectMeta) (bool, error) {
-	var found = false
-	var deployEvicted = true
+func (f *Framework) EvictPodsFromStatefulSet(meta metav1.ObjectMeta) error {
 	var err error
-	deployName := meta.Name + "-mongos"
-	//if PDB is not found, send error
-	for i := 0; i < 5 && !found; i++ {
-		_, err := f.kubeClient.PolicyV1beta1().PodDisruptionBudgets(meta.Namespace).Get(deployName, metav1.GetOptions{})
-		if err == nil {
-			found = true
-		} else {
-			time.Sleep(time.Second * 3)
+	labelSelector := labels.Set{
+		meta_util.ManagedByLabelKey: api.GenericKey,
+		api.LabelDatabaseKind:       api.ResourceKindMongoDB,
+		api.LabelDatabaseName:       meta.GetName(),
+	}
+	//get sts in the namespace
+	stsList, err := f.kubeClient.AppsV1().StatefulSets(meta.Namespace).List(metav1.ListOptions{LabelSelector: labelSelector.String()})
+	if err != nil {
+		return err
+	}
+	for _, sts := range stsList.Items {
+		// if PDB is not found, send error
+		var pdb *policy.PodDisruptionBudget
+		pdb, err = f.kubeClient.PolicyV1beta1().PodDisruptionBudgets(sts.Namespace).Get(sts.Name, metav1.GetOptions{})
+		if err != nil {
+			return err
 		}
-	}
-	if !found {
-		return false, err
-	}
-	podSelector := labels.Set{
-		api.MongoDBMongosLabelKey: meta.Name + "-mongos",
-	}
-	deployedPodLists, err := f.kubeClient.CoreV1().Pods(meta.Namespace).List(metav1.ListOptions{LabelSelector: podSelector.String()})
-	//Delete a pod
-	for _, pod := range deployedPodLists.Items {
 		eviction := &policy.Eviction{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: policy.SchemeGroupVersion.String(),
 				Kind:       EvictionKind,
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      pod.Name,
-				Namespace: pod.Namespace,
+				Name:      sts.Name,
+				Namespace: sts.Namespace,
 			},
 			DeleteOptions: &metav1.DeleteOptions{},
 		}
+		//try to evict as many pod as allowed in pdb. No err should occur
+		maxUnavailable := pdb.Spec.MaxUnavailable.IntValue()
+		for i := 0; i < maxUnavailable; i++ {
+			eviction.Name = sts.Name + "-" + strconv.Itoa(i)
+
+			err := f.kubeClient.PolicyV1beta1().Evictions(eviction.Namespace).Evict(eviction)
+			if err != nil {
+				return err
+			}
+		}
+
+		//trying to evict one extra pod. TooManyRequests err should occur
+		eviction.Name = sts.Name + "-" + strconv.Itoa(maxUnavailable)
 		err = f.kubeClient.PolicyV1beta1().Evictions(eviction.Namespace).Evict(eviction)
-		break
+		if kerr.IsTooManyRequests(err) {
+			err = nil
+		}
 	}
-	if err == nil {
-		deployEvicted = true
+	return err
+}
+
+func (f *Framework) EvictPodsFromDeployment(meta metav1.ObjectMeta) error {
+	var err error
+	deployName := meta.Name + "-mongos"
+	//if PDB is not found, send error
+	pdb, err := f.kubeClient.PolicyV1beta1().PodDisruptionBudgets(meta.Namespace).Get(deployName, metav1.GetOptions{})
+	if err != nil {
+		return err
 	}
-	if kerr.IsTooManyRequests(err) {
-		err = nil
-		deployEvicted = false
+	podSelector := labels.Set{
+		api.MongoDBMongosLabelKey: meta.Name + "-mongos",
 	}
-	return deployEvicted, err
+	deployedPodLists, err := f.kubeClient.CoreV1().Pods(meta.Namespace).List(metav1.ListOptions{LabelSelector: podSelector.String()})
+	//try to evict as many pods as allowed in pdb
+	minAvailable := pdb.Spec.MinAvailable.IntValue()
+	deploySize := len(deployedPodLists.Items)
+	eviction := &policy.Eviction{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: policy.SchemeGroupVersion.String(),
+			Kind:       EvictionKind,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: meta.Namespace,
+		},
+		DeleteOptions: &metav1.DeleteOptions{},
+	}
+	//Delete a pod
+	for i, pod := range deployedPodLists.Items {
+		eviction.Name = pod.Name
+		if (deploySize - i) == minAvailable {
+			//This pod should not get eveicted
+			err = f.kubeClient.PolicyV1beta1().Evictions(eviction.Namespace).Evict(eviction)
+			if kerr.IsTooManyRequests(err) {
+				err = nil
+			}
+			break
+		}
+		err = f.kubeClient.PolicyV1beta1().Evictions(eviction.Namespace).Evict(eviction)
+		if err != nil {
+			return err
+		}
+	}
+	return err
 }
 
 func (f *Framework) EventuallyMongoDB(meta metav1.ObjectMeta) GomegaAsyncAssertion {
