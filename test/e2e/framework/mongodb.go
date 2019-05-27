@@ -26,7 +26,7 @@ var (
 )
 
 const (
-	EvictionKind = "Eviction"
+	kindEviction = "Eviction"
 )
 
 func (i *Invocation) MongoDBStandalone() *api.MongoDB {
@@ -166,7 +166,7 @@ func (f *Framework) EvictPodsFromStatefulSet(meta metav1.ObjectMeta) error {
 		api.LabelDatabaseKind:       api.ResourceKindMongoDB,
 		api.LabelDatabaseName:       meta.GetName(),
 	}
-	//get sts in the namespace
+	// get sts in the namespace
 	stsList, err := f.kubeClient.AppsV1().StatefulSets(meta.Namespace).List(metav1.ListOptions{LabelSelector: labelSelector.String()})
 	if err != nil {
 		return err
@@ -181,7 +181,7 @@ func (f *Framework) EvictPodsFromStatefulSet(meta metav1.ObjectMeta) error {
 		eviction := &policy.Eviction{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: policy.SchemeGroupVersion.String(),
-				Kind:       EvictionKind,
+				Kind:       kindEviction,
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      sts.Name,
@@ -189,7 +189,12 @@ func (f *Framework) EvictPodsFromStatefulSet(meta metav1.ObjectMeta) error {
 			},
 			DeleteOptions: &metav1.DeleteOptions{},
 		}
-		//try to evict as many pod as allowed in pdb. No err should occur
+
+		if pdb.Spec.MaxUnavailable == nil {
+			return fmt.Errorf("found pdb %s spec.maxUnavailable nil", pdb.Name)
+		}
+
+		// try to evict as many pod as allowed in pdb. No err should occur
 		maxUnavailable := pdb.Spec.MaxUnavailable.IntValue()
 		for i := 0; i < maxUnavailable; i++ {
 			eviction.Name = sts.Name + "-" + strconv.Itoa(i)
@@ -200,11 +205,15 @@ func (f *Framework) EvictPodsFromStatefulSet(meta metav1.ObjectMeta) error {
 			}
 		}
 
-		//trying to evict one extra pod. TooManyRequests err should occur
+		// try to evict one extra pod. TooManyRequests err should occur
 		eviction.Name = sts.Name + "-" + strconv.Itoa(maxUnavailable)
 		err = f.kubeClient.PolicyV1beta1().Evictions(eviction.Namespace).Evict(eviction)
 		if kerr.IsTooManyRequests(err) {
 			err = nil
+		} else if err != nil {
+			return err
+		} else {
+			return fmt.Errorf("expected pod %s/%s to be not evicted due to pdb %s", sts.Namespace, eviction.Name, pdb.Name)
 		}
 	}
 	return err
@@ -218,37 +227,45 @@ func (f *Framework) EvictPodsFromDeployment(meta metav1.ObjectMeta) error {
 	if err != nil {
 		return err
 	}
+	if pdb.Spec.MinAvailable == nil {
+		return fmt.Errorf("found pdb %s spec.minAvailable nil", pdb.Name)
+	}
+
 	podSelector := labels.Set{
 		api.MongoDBMongosLabelKey: meta.Name + "-mongos",
 	}
-	deployedPodLists, err := f.kubeClient.CoreV1().Pods(meta.Namespace).List(metav1.ListOptions{LabelSelector: podSelector.String()})
-	//try to evict as many pods as allowed in pdb
-	minAvailable := pdb.Spec.MinAvailable.IntValue()
-	deploySize := len(deployedPodLists.Items)
+	pods, err := f.kubeClient.CoreV1().Pods(meta.Namespace).List(metav1.ListOptions{LabelSelector: podSelector.String()})
 	eviction := &policy.Eviction{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: policy.SchemeGroupVersion.String(),
-			Kind:       EvictionKind,
+			Kind:       kindEviction,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: meta.Namespace,
 		},
 		DeleteOptions: &metav1.DeleteOptions{},
 	}
-	//Delete a pod
-	for i, pod := range deployedPodLists.Items {
+
+	// try to evict as many pods as allowed in pdb
+	minAvailable := pdb.Spec.MinAvailable.IntValue()
+	podCount := len(pods.Items)
+	for i, pod := range pods.Items {
 		eviction.Name = pod.Name
-		if (deploySize - i) == minAvailable {
-			//This pod should not get eveicted
-			err = f.kubeClient.PolicyV1beta1().Evictions(eviction.Namespace).Evict(eviction)
+		err = f.kubeClient.PolicyV1beta1().Evictions(eviction.Namespace).Evict(eviction)
+		if i < (podCount - minAvailable) {
+			if err != nil {
+				return err
+			}
+		} else {
+			// This pod should not get evicted
 			if kerr.IsTooManyRequests(err) {
 				err = nil
+				break
+			} else if err != nil {
+				return err
+			} else {
+				return fmt.Errorf("expected pod %s/%s to be not evicted due to pdb %s", meta.Namespace, eviction.Name, pdb.Name)
 			}
-			break
-		}
-		err = f.kubeClient.PolicyV1beta1().Evictions(eviction.Namespace).Evict(eviction)
-		if err != nil {
-			return err
 		}
 	}
 	return err

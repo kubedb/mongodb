@@ -257,7 +257,7 @@ var _ = Describe("MongoDB", func() {
 			})
 
 			Context("PDB", func() {
-				var runEviction = func() {
+				It("should run evictions on MongoDB successfully", func() {
 					mongodb = f.MongoDBRS()
 					mongodb.Spec.Replicas = types.Int32P(3)
 					// Create MongoDB
@@ -266,9 +266,9 @@ var _ = Describe("MongoDB", func() {
 					By("Try to evict pods")
 					err = f.EvictPodsFromStatefulSet(mongodb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
-				}
+				})
 
-				var runShardEviction = func() {
+				It("should run evictions on Sharded MongoDB successfully", func() {
 					mongodb = f.MongoDBShard()
 					mongodb.Spec.ShardTopology.Shard.Shards = int32(1)
 					mongodb.Spec.ShardTopology.ConfigServer.Replicas = int32(3)
@@ -283,11 +283,7 @@ var _ = Describe("MongoDB", func() {
 					By("Try to evict pods from deployment")
 					err = f.EvictPodsFromDeployment(mongodb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
-				}
-
-				It("should run evictions on MongoDB successfully", runEviction)
-
-				FIt("should run evictions on Sharded MongoDB successfully", runShardEviction)
+				})
 			})
 		})
 
