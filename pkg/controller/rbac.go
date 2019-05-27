@@ -118,18 +118,15 @@ func (c *Controller) ensureDatabaseRBAC(mongodb *api.MongoDB) error {
 			return errors.New("Pod Template can not be empty.")
 		}
 
-		dbPolicyName, _, err := c.getPolicyNames(mongodb)
-		if err != nil {
-			return err
+		saName := podTemplate.Spec.ServiceAccountName
+		if saName == "" {
+			saName = mongodb.OffshootName() // in case mutator was disabled
+			podTemplate.Spec.ServiceAccountName = saName
 		}
-
-		if podTemplate.Spec.ServiceAccountName == "" {
-			podTemplate.Spec.ServiceAccountName = mongodb.OffshootName() // in case mutator were disabled
-		}
-		sa, err := c.Client.CoreV1().ServiceAccounts(mongodb.Namespace).Get(podTemplate.Spec.ServiceAccountName, metav1.GetOptions{})
+		sa, err := c.Client.CoreV1().ServiceAccounts(mongodb.Namespace).Get(saName, metav1.GetOptions{})
 		if kerr.IsNotFound(err) {
 			// create service account, since it does not exist
-			if err = c.createServiceAccount(mongodb, podTemplate.Spec.ServiceAccountName); err != nil {
+			if err = c.createServiceAccount(mongodb, saName); err != nil {
 				if !kerr.IsAlreadyExists(err) {
 					return err
 				}
@@ -142,12 +139,16 @@ func (c *Controller) ensureDatabaseRBAC(mongodb *api.MongoDB) error {
 		}
 
 		// Create New Role
-		if err = c.ensureRole(mongodb, mongodb.OffshootName(), dbPolicyName); err != nil {
+		pspName, _, err := c.getPolicyNames(mongodb)
+		if err != nil {
+			return err
+		}
+		if err = c.ensureRole(mongodb, mongodb.OffshootName(), pspName); err != nil {
 			return err
 		}
 
 		// Create New RoleBinding
-		if err = c.createRoleBinding(mongodb, mongodb.OffshootName(), podTemplate.Spec.ServiceAccountName); err != nil {
+		if err = c.createRoleBinding(mongodb, mongodb.OffshootName(), saName); err != nil {
 			return err
 		}
 		return nil
