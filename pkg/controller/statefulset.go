@@ -459,6 +459,11 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB, opts workloadOption
 			vt, mongodb.Namespace, opts.stsName,
 		)
 	}
+	// ensure pdb
+	if err := c.CreateStatefulSetPodDisruptionBudget(statefulSet); err != nil {
+		return vt, err
+	}
+
 	return vt, nil
 }
 

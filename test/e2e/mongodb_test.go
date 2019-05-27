@@ -255,6 +255,36 @@ var _ = Describe("MongoDB", func() {
 				})
 
 			})
+
+			Context("PDB", func() {
+				It("should run evictions on MongoDB successfully", func() {
+					mongodb = f.MongoDBRS()
+					mongodb.Spec.Replicas = types.Int32P(3)
+					// Create MongoDB
+					createAndWaitForRunning()
+					//Evict a MongoDB pod
+					By("Try to evict pods")
+					err = f.EvictPodsFromStatefulSet(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("should run evictions on Sharded MongoDB successfully", func() {
+					mongodb = f.MongoDBShard()
+					mongodb.Spec.ShardTopology.Shard.Shards = int32(1)
+					mongodb.Spec.ShardTopology.ConfigServer.Replicas = int32(3)
+					mongodb.Spec.ShardTopology.Mongos.Replicas = int32(3)
+					mongodb.Spec.ShardTopology.Shard.Replicas = int32(3)
+					// Create MongoDB
+					createAndWaitForRunning()
+					//Evict a MongoDB pod from each sts and deploy
+					By("Try to evict pods from each statefulset")
+					err := f.EvictPodsFromStatefulSet(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+					By("Try to evict pods from deployment")
+					err = f.EvictPodsFromDeployment(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+				})
+			})
 		})
 
 		Context("Snapshot", func() {
