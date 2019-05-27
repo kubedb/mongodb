@@ -311,6 +311,17 @@ func matchWithDormantDatabase(extClient cs.Interface, mongodb *api.MongoDB) erro
 	if drmnOriginSpec.ShardTopology != nil && originalSpec.ShardTopology != nil {
 		// Skip checking Mongos deployment strategy
 		drmnOriginSpec.ShardTopology.Mongos.Strategy = originalSpec.ShardTopology.Mongos.Strategy
+		// Skip checking ServiceAccountName of ConfigServer
+		drmnOriginSpec.ShardTopology.ConfigServer.PodTemplate.Spec.ServiceAccountName = originalSpec.ShardTopology.ConfigServer.PodTemplate.Spec.ServiceAccountName
+		// Skip checking ServiceAccountName of Mongos
+		drmnOriginSpec.ShardTopology.Mongos.PodTemplate.Spec.ServiceAccountName = originalSpec.ShardTopology.Mongos.PodTemplate.Spec.ServiceAccountName
+		// Skip checking ServiceAccountName of Shard
+		drmnOriginSpec.ShardTopology.Shard.PodTemplate.Spec.ServiceAccountName = originalSpec.ShardTopology.Shard.PodTemplate.Spec.ServiceAccountName
+	}
+
+	if drmnOriginSpec.PodTemplate != nil && originalSpec.PodTemplate != nil {
+		// Skip checking ServiceAccountName
+		drmnOriginSpec.PodTemplate.Spec.ServiceAccountName = originalSpec.PodTemplate.Spec.ServiceAccountName
 	}
 
 	if !meta_util.Equal(drmnOriginSpec, &originalSpec) {

@@ -2,6 +2,7 @@ package controller
 
 import (
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
+	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	policy_v1beta1 "k8s.io/api/policy/v1beta1"
 	rbac "k8s.io/api/rbac/v1beta1"
@@ -11,6 +12,7 @@ import (
 	"k8s.io/client-go/tools/reference"
 	core_util "kmodules.xyz/client-go/core/v1"
 	rbac_util "kmodules.xyz/client-go/rbac/v1beta1"
+	v1 "kmodules.xyz/offshoot-api/api/v1"
 )
 
 func (c *Controller) createServiceAccount(db *api.MongoDB, saName string) error {
@@ -66,7 +68,7 @@ func (c *Controller) ensureRole(db *api.MongoDB, name string, pspName string) er
 	return err
 }
 
-func (c *Controller) createRoleBinding(db *api.MongoDB, name string) error {
+func (c *Controller) createRoleBinding(db *api.MongoDB, roleName string, saName string) error {
 	ref, rerr := reference.GetReference(clientsetscheme.Scheme, db)
 	if rerr != nil {
 		return rerr
@@ -75,7 +77,7 @@ func (c *Controller) createRoleBinding(db *api.MongoDB, name string) error {
 	_, _, err := rbac_util.CreateOrPatchRoleBinding(
 		c.Client,
 		metav1.ObjectMeta{
-			Name:      name,
+			Name:      roleName,
 			Namespace: db.Namespace,
 		},
 		func(in *rbac.RoleBinding) *rbac.RoleBinding {
@@ -84,12 +86,12 @@ func (c *Controller) createRoleBinding(db *api.MongoDB, name string) error {
 			in.RoleRef = rbac.RoleRef{
 				APIGroup: rbac.GroupName,
 				Kind:     "Role",
-				Name:     name,
+				Name:     roleName,
 			}
 			in.Subjects = []rbac.Subject{
 				{
 					Kind:      rbac.ServiceAccountKind,
-					Name:      name,
+					Name:      saName,
 					Namespace: db.Namespace,
 				},
 			}
@@ -110,29 +112,71 @@ func (c *Controller) getPolicyNames(db *api.MongoDB) (string, string, error) {
 	return dbPolicyName, snapshotPolicyName, nil
 }
 
-func (c *Controller) ensureRBACStuff(mongodb *api.MongoDB) error {
-	dbPolicyName, snapshotPolicyName, err := c.getPolicyNames(mongodb)
-	if err != nil {
-		return err
+func (c *Controller) ensureDatabaseRBAC(mongodb *api.MongoDB) error {
+	var createDatabaseRBAC = func(podTemplate *v1.PodTemplateSpec) error {
+		if podTemplate == nil {
+			return errors.New("Pod Template can not be empty.")
+		}
+
+		dbPolicyName, _, err := c.getPolicyNames(mongodb)
+		if err != nil {
+			return err
+		}
+
+		if podTemplate.Spec.ServiceAccountName == "" {
+			podTemplate.Spec.ServiceAccountName = mongodb.OffshootName() // in case mutator were disabled
+		}
+		sa, err := c.Client.CoreV1().ServiceAccounts(mongodb.Namespace).Get(podTemplate.Spec.ServiceAccountName, metav1.GetOptions{})
+		if kerr.IsNotFound(err) {
+			// create service account, since it does not exist
+			if err = c.createServiceAccount(mongodb, podTemplate.Spec.ServiceAccountName); err != nil {
+				if !kerr.IsAlreadyExists(err) {
+					return err
+				}
+			}
+		} else if err != nil {
+			return err
+		} else if !core_util.IsOwnedBy(sa, mongodb) {
+			// user provided the service account, so do nothing.
+			return nil
+		}
+
+		// Create New Role
+		if err = c.ensureRole(mongodb, mongodb.OffshootName(), dbPolicyName); err != nil {
+			return err
+		}
+
+		// Create New RoleBinding
+		if err = c.createRoleBinding(mongodb, mongodb.OffshootName(), podTemplate.Spec.ServiceAccountName); err != nil {
+			return err
+		}
+		return nil
 	}
 
-	// Create New ServiceAccount
-	if err := c.createServiceAccount(mongodb, mongodb.OffshootName()); err != nil {
-		if !kerr.IsAlreadyExists(err) {
+	if mongodb.Spec.ShardTopology != nil {
+		if err := createDatabaseRBAC(&mongodb.Spec.ShardTopology.ConfigServer.PodTemplate); err != nil {
+			return err
+		}
+		if err := createDatabaseRBAC(&mongodb.Spec.ShardTopology.Mongos.PodTemplate); err != nil {
+			return err
+		}
+		if err := createDatabaseRBAC(&mongodb.Spec.ShardTopology.Shard.PodTemplate); err != nil {
+			return err
+		}
+	} else {
+		if err := createDatabaseRBAC(mongodb.Spec.PodTemplate); err != nil {
 			return err
 		}
 	}
 
-	// Create New Role
-	if err := c.ensureRole(mongodb, mongodb.OffshootName(), dbPolicyName); err != nil {
+	return nil
+}
+
+func (c *Controller) ensureSnapshotRBAC(mongodb *api.MongoDB) error {
+	_, snapshotPolicyName, err := c.getPolicyNames(mongodb)
+	if err != nil {
 		return err
 	}
-
-	// Create New RoleBinding
-	if err := c.createRoleBinding(mongodb, mongodb.OffshootName()); err != nil {
-		return err
-	}
-
 	// Create New Snapshot ServiceAccount
 	if err := c.createServiceAccount(mongodb, mongodb.SnapshotSAName()); err != nil {
 		if !kerr.IsAlreadyExists(err) {
@@ -146,7 +190,7 @@ func (c *Controller) ensureRBACStuff(mongodb *api.MongoDB) error {
 	}
 
 	// Create New RoleBinding for Snapshot
-	if err := c.createRoleBinding(mongodb, mongodb.SnapshotSAName()); err != nil {
+	if err := c.createRoleBinding(mongodb, mongodb.SnapshotSAName(), mongodb.SnapshotSAName()); err != nil {
 		return err
 	}
 

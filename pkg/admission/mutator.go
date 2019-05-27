@@ -185,6 +185,17 @@ func setDefaultsFromDormantDB(extClient cs.Interface, mongodb *api.MongoDB, op a
 	if ddbOriginSpec.ShardTopology != nil && mongodb.Spec.ShardTopology != nil {
 		// Skip checking strategy of mongos
 		ddbOriginSpec.ShardTopology.Mongos.Strategy = mongodb.Spec.ShardTopology.Mongos.Strategy
+		// Skip checking ServiceAccountName of ConfigServer
+		ddbOriginSpec.ShardTopology.ConfigServer.PodTemplate.Spec.ServiceAccountName = mongodb.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.ServiceAccountName
+		// Skip checking ServiceAccountName of Mongos
+		ddbOriginSpec.ShardTopology.Mongos.PodTemplate.Spec.ServiceAccountName = mongodb.Spec.ShardTopology.Mongos.PodTemplate.Spec.ServiceAccountName
+		// Skip checking ServiceAccountName of Shard
+		ddbOriginSpec.ShardTopology.Shard.PodTemplate.Spec.ServiceAccountName = mongodb.Spec.ShardTopology.Shard.PodTemplate.Spec.ServiceAccountName
+	}
+
+	if ddbOriginSpec.PodTemplate != nil && mongodb.Spec.PodTemplate != nil {
+		// Skip checking ServiceAccountName
+		ddbOriginSpec.PodTemplate.Spec.ServiceAccountName = mongodb.Spec.PodTemplate.Spec.ServiceAccountName
 	}
 
 	if !meta_util.Equal(ddbOriginSpec, &mongodb.Spec) {

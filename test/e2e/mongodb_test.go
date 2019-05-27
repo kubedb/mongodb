@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
@@ -12,6 +13,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
+	rbac "k8s.io/api/rbac/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta_util "kmodules.xyz/client-go/meta"
@@ -285,6 +287,113 @@ var _ = Describe("MongoDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 				})
 			})
+			Context("with custom SA Name", func() {
+				BeforeEach(func() {
+					customSecret := f.SecretForDatabaseAuthentication(mongodb.ObjectMeta, false)
+					mongodb.Spec.DatabaseSecret = &core.SecretVolumeSource{
+						SecretName: customSecret.Name,
+					}
+					err = f.CreateSecret(customSecret)
+					mongodb.Spec.TerminationPolicy = api.TerminationPolicyPause
+				})
+
+				It("should start and resume without shard successfully", func() {
+					//shouldTakeSnapshot()
+					Expect(err).NotTo(HaveOccurred())
+					mongodb.Spec.PodTemplate = &ofst.PodTemplateSpec{
+						Spec: ofst.PodSpec{
+							ServiceAccountName: "my-custom-sa",
+						},
+					}
+					createAndWaitForRunning()
+					if mongodb == nil {
+						Skip("Skipping")
+					}
+
+					By("Check if MongoDB " + mongodb.Name + " exists.")
+					_, err = f.GetMongoDB(mongodb.ObjectMeta)
+					if err != nil {
+						if kerr.IsNotFound(err) {
+							// MongoDB was not created. Hence, rest of cleanup is not necessary.
+							return
+						}
+						Expect(err).NotTo(HaveOccurred())
+					}
+
+					By("Delete mongodb: " + mongodb.Name)
+					err = f.DeleteMongoDB(mongodb.ObjectMeta)
+					if err != nil {
+						if kerr.IsNotFound(err) {
+							// MongoDB was not created. Hence, rest of cleanup is not necessary.
+							log.Infof("Skipping rest of cleanup. Reason: MongoDB %s is not found.", mongodb.Name)
+							return
+						}
+						Expect(err).NotTo(HaveOccurred())
+					}
+
+					By("Wait for mongoDB to be paused")
+					f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
+
+					By("Resume DB")
+					createAndWaitForRunning()
+				})
+
+				It("should start and resume with shard successfully", func() {
+					mongodb = f.MongoDBShard()
+					mongodb.Spec.ShardTopology.Shard.Shards = int32(1)
+					mongodb.Spec.ShardTopology.Shard.MongoDBNode.Replicas = int32(1)
+					mongodb.Spec.ShardTopology.ConfigServer.MongoDBNode.Replicas = int32(1)
+					mongodb.Spec.ShardTopology.Mongos.MongoDBNode.Replicas = int32(1)
+
+					mongodb.Spec.ShardTopology.ConfigServer.PodTemplate = ofst.PodTemplateSpec{
+						Spec: ofst.PodSpec{
+							ServiceAccountName: "my-custom-sa-configserver",
+						},
+					}
+					mongodb.Spec.ShardTopology.Mongos.PodTemplate = ofst.PodTemplateSpec{
+						Spec: ofst.PodSpec{
+							ServiceAccountName: "my-custom-sa-mongos",
+						},
+					}
+					mongodb.Spec.ShardTopology.Shard.PodTemplate = ofst.PodTemplateSpec{
+						Spec: ofst.PodSpec{
+							ServiceAccountName: "my-custom-sa-shard",
+						},
+					}
+
+					createAndWaitForRunning()
+					if mongodb == nil {
+						Skip("Skipping")
+					}
+
+					By("Check if MongoDB " + mongodb.Name + " exists.")
+					_, err := f.GetMongoDB(mongodb.ObjectMeta)
+					if err != nil {
+						if kerr.IsNotFound(err) {
+							// MongoDB was not created. Hence, rest of cleanup is not necessary.
+							return
+						}
+						Expect(err).NotTo(HaveOccurred())
+					}
+
+					By("Delete mongodb: " + mongodb.Name)
+					err = f.DeleteMongoDB(mongodb.ObjectMeta)
+					if err != nil {
+						if kerr.IsNotFound(err) {
+							// MongoDB was not created. Hence, rest of cleanup is not necessary.
+							log.Infof("Skipping rest of cleanup. Reason: MongoDB %s is not found.", mongodb.Name)
+							return
+						}
+						Expect(err).NotTo(HaveOccurred())
+					}
+
+					By("Wait for mongoDB to be paused")
+					f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
+
+					By("Resume DB")
+					createAndWaitForRunning()
+				})
+			})
 		})
 
 		Context("Snapshot", func() {
@@ -296,6 +405,11 @@ var _ = Describe("MongoDB", func() {
 			var shouldTakeSnapshot = func() {
 				// Create and wait for running MongoDB
 				createAndWaitForRunning()
+				By("Insert Document Inside DB")
+				f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 50).Should(BeTrue())
+
+				By("Checking Inserted Document")
+				f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 50).Should(BeTrue())
 
 				By("Create Secret")
 				err := f.CreateSecret(secret)
@@ -313,6 +427,185 @@ var _ = Describe("MongoDB", func() {
 					f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
 				}
 			}
+
+			Context("For Custom Resources", func() {
+				BeforeEach(func() {
+					skipSnapshotDataChecking = false
+					secret = f.SecretForGCSBackend()
+					snapshot.Spec.StorageSecretName = secret.Name
+					snapshot.Spec.GCS = &store.GCSSpec{
+						Bucket: os.Getenv(GCS_BUCKET_NAME),
+					}
+				})
+
+				Context("with custom Service Account", func() {
+					var customSAForDB *core.ServiceAccount
+					var customRoleForDB *rbac.Role
+					var customRoleBindingForDB *rbac.RoleBinding
+					var customSAForSnapshot *core.ServiceAccount
+					var customRoleForSnapshot *rbac.Role
+					var customRoleBindingForSnapshot *rbac.RoleBinding
+					var anotherMongoDB *api.MongoDB
+
+					BeforeEach(func() {
+						anotherMongoDB = f.MongoDBStandalone()
+						anotherMongoDB.Spec.Init = &api.InitSpec{
+							SnapshotSource: &api.SnapshotSourceSpec{
+								Namespace: snapshot.Namespace,
+								Name:      snapshot.Name,
+							},
+						}
+						mongodb.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
+						By("Setting up Database SA")
+						customSAForDB = f.ServiceAccount()
+						mongodb.Spec.PodTemplate = &ofst.PodTemplateSpec{
+							Spec: ofst.PodSpec{
+								ServiceAccountName: customSAForDB.Name,
+							},
+						}
+						customRoleForDB = f.RoleForMongoDB(mongodb.ObjectMeta)
+						customRoleBindingForDB = f.RoleBinding(customSAForDB.Name, customRoleForDB.Name)
+
+						By("Setting up Snapshot SA")
+						customSAForSnapshot = f.ServiceAccount()
+						mongodb.Spec.PodTemplate = &ofst.PodTemplateSpec{
+							Spec: ofst.PodSpec{
+								ServiceAccountName: customSAForSnapshot.Name,
+							},
+						}
+						customRoleForSnapshot = f.RoleForSnapshot(mongodb.ObjectMeta)
+						customRoleBindingForSnapshot = f.RoleBinding(customSAForSnapshot.Name, customRoleForSnapshot.Name)
+
+						By("Creating Snapshot SA")
+						By("Create Database SA")
+						err = f.CreateServiceAccount(customSAForDB)
+						Expect(err).NotTo(HaveOccurred())
+						By("Create Database Role")
+						err = f.CreateRole(customRoleForDB)
+						Expect(err).NotTo(HaveOccurred())
+						By("Create Database RoleBinding")
+						err = f.CreateRoleBinding(customRoleBindingForDB)
+						Expect(err).NotTo(HaveOccurred())
+
+						By("Create Snapshot SA")
+						err = f.CreateServiceAccount(customSAForSnapshot)
+						Expect(err).NotTo(HaveOccurred())
+						By("Create Snapshot Role")
+						err = f.CreateRole(customRoleForSnapshot)
+						Expect(err).NotTo(HaveOccurred())
+						By("Create Snapshot RoleBinding")
+						err = f.CreateRoleBinding(customRoleBindingForSnapshot)
+						Expect(err).NotTo(HaveOccurred())
+
+					})
+					It("should take snapshot successfully", func() {
+						shouldTakeSnapshot()
+					})
+
+					It("should initialize from snapshot successfully", func() {
+						By("Start initializing From Snapshot")
+						// Create and wait for running MongoDB
+						createAndWaitForRunning()
+
+						By("Insert Document Inside DB")
+						f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 50).Should(BeTrue())
+
+						By("Checking Inserted Document")
+						f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 50).Should(BeTrue())
+
+						By("Create Secret")
+						err := f.CreateSecret(secret)
+						Expect(err).NotTo(HaveOccurred())
+
+						By("Create Snapshot")
+						err = f.CreateSnapshot(snapshot)
+						Expect(err).NotTo(HaveOccurred())
+
+						By("Check for Succeeded snapshot")
+						f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
+
+						if !skipSnapshotDataChecking {
+							By("Check for snapshot data")
+							f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
+						}
+
+						oldMongoDB, err := f.GetMongoDB(mongodb.ObjectMeta)
+						Expect(err).NotTo(HaveOccurred())
+
+						garbageMongoDB.Items = append(garbageMongoDB.Items, *oldMongoDB)
+
+						By("Create mongodb from snapshot")
+						mongodb = anotherMongoDB
+						mongodb.Spec.DatabaseSecret = oldMongoDB.Spec.DatabaseSecret
+
+						//Setup MongoDB Role and binf with SA
+						By("Get new Role and RB")
+						customRoleForReplayDB := f.RoleForMongoDB(mongodb.ObjectMeta)
+						customRoleBindingForReplayDB := f.RoleBinding(customSAForDB.Name, customRoleForReplayDB.Name)
+
+						By("Create Database Role")
+						err = f.CreateRole(customRoleForReplayDB)
+						Expect(err).NotTo(HaveOccurred())
+						By("Create Database RoleBinding")
+						err = f.CreateRoleBinding(customRoleBindingForReplayDB)
+						Expect(err).NotTo(HaveOccurred())
+
+						By("Setting SA name in ES")
+						mongodb.Spec.PodTemplate = &ofst.PodTemplateSpec{
+							Spec: ofst.PodSpec{
+								ServiceAccountName: customSAForDB.Name,
+							},
+						}
+
+						// Create and wait for running MongoDB
+						By("Create init-MongoDB now")
+						createAndWaitForRunning()
+						By("Checking previously Inserted Document")
+						f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 50).Should(BeTrue())
+					})
+				})
+
+				Context("with custom Secret", func() {
+					var customSecret *core.Secret
+					BeforeEach(func() {
+						customSecret = f.SecretForDatabaseAuthentication(mongodb.ObjectMeta, false)
+						mongodb.Spec.DatabaseSecret = &core.SecretVolumeSource{
+							SecretName: customSecret.Name,
+						}
+
+					})
+					It("should delete secret successfully", func() {
+						By("Create Database Secret")
+						err := f.CreateSecret(customSecret)
+						Expect(err).NotTo(HaveOccurred())
+
+						By("Take Snapshot")
+						shouldTakeSnapshot()
+						By("Delete test resources")
+						deleteTestResource()
+						By("Confirm Database Secret exists")
+						err = f.CheckSecret(customSecret)
+						Expect(err).NotTo(HaveOccurred())
+					})
+					It("should keep custom secret successfully", func() {
+						kubedbSecret := f.SecretForDatabaseAuthentication(mongodb.ObjectMeta, true)
+						mongodb.Spec.DatabaseSecret = &core.SecretVolumeSource{
+							SecretName: kubedbSecret.Name,
+						}
+						By("Create Database Secret")
+						err = f.CreateSecret(kubedbSecret)
+						Expect(err).NotTo(HaveOccurred())
+
+						By("Take Snapshot")
+						shouldTakeSnapshot()
+						By("Delete test resources")
+						deleteTestResource()
+						By("Confirm Database Secret doesnt exist")
+						err = f.CheckSecret(kubedbSecret)
+						Expect(err).To(HaveOccurred())
+					})
+				})
+			})
 
 			Context("In Local", func() {
 				BeforeEach(func() {
