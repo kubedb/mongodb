@@ -159,60 +159,6 @@ func (f *Framework) DeleteMongoDB(meta metav1.ObjectMeta) error {
 	return f.extClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Delete(meta.Name, deleteInForeground())
 }
 
-func (f *Framework) EvictMongoDBStatefulSetPod(meta metav1.ObjectMeta) (bool, error) {
-	var stsEvicted = true
-	var evicted = 0
-	var notEvicted = 0
-	var err error
-
-	labelSelector := labels.Set{
-		meta_util.ManagedByLabelKey: api.GenericKey,
-		api.LabelDatabaseKind:       api.ResourceKindMongoDB,
-		api.LabelDatabaseName:       meta.GetName(),
-	}
-	//get sts in the namespace
-	stsList, err := f.kubeClient.AppsV1().StatefulSets(meta.Namespace).List(metav1.ListOptions{LabelSelector: labelSelector.String()})
-	if err != nil {
-		return false, err
-	}
-	stsSize := len(stsList.Items)
-	for _, sts := range stsList.Items {
-		// if PDB is not found, send error
-		_, err = f.kubeClient.PolicyV1beta1().PodDisruptionBudgets(sts.Namespace).Get(sts.Name, metav1.GetOptions{})
-		if err != nil {
-			return false, err
-		}
-
-		eviction := &policy.Eviction{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: policy.SchemeGroupVersion.String(),
-				Kind:       EvictionKind,
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      sts.Name + "-0",
-				Namespace: sts.Namespace,
-			},
-			DeleteOptions: &metav1.DeleteOptions{},
-		}
-		err = f.kubeClient.PolicyV1beta1().Evictions(eviction.Namespace).Evict(eviction)
-		if err == nil {
-			fmt.Println("Evicted po")
-			evicted++
-			stsEvicted = true
-		}
-		if kerr.IsTooManyRequests(err) {
-			err = nil
-			stsEvicted = false
-			notEvicted++
-		}
-	}
-	// ensuring result symmetry
-	if evicted != stsSize && notEvicted != stsSize {
-		stsEvicted = !stsEvicted
-	}
-	return stsEvicted, err
-}
-
 func (f *Framework) EvictPodsFromStatefulSet(meta metav1.ObjectMeta) error {
 	var err error
 	labelSelector := labels.Set{
