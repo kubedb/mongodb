@@ -10,7 +10,7 @@ require (
 	github.com/fatih/structs v1.1.0
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/graymeta/stow v0.1.0
-	github.com/kubedb/apimachinery v0.0.0-20190529092539-0e7a57f24484
+	github.com/kubedb/apimachinery v0.0.0-20190529152419-7517175ae10f
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/pkg/errors v0.8.1
@@ -36,7 +36,7 @@ require (
 	kmodules.xyz/objectstore-api v0.0.0-20190506085934-94c81c8acca9
 	kmodules.xyz/offshoot-api v0.0.0-20190527060812-295f97bb8061
 	kmodules.xyz/webhook-runtime v0.0.0-20190508094945-962d01212c5b
-	stash.appscode.dev/stash v0.0.0-20190525101310-604af0d5fc92
+	stash.appscode.dev/stash v0.0.0-20190529085714-0a45b44ab960
 )
 
 replace (
