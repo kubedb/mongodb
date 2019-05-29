@@ -16,7 +16,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	crd_api "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-	kext_cs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/discovery"
@@ -76,14 +75,11 @@ func (f *Framework) RunOperatorAndServer(config *restclient.Config, kubeconfigPa
 	defer GinkgoRecover()
 
 	// ensure crds. Mainly for catalogVersions CRD.
-	apiExtKubeClient, err := kext_cs.NewForConfig(config)
-	Expect(err).NotTo(HaveOccurred())
-
 	log.Infoln("Ensuring CustomResourceDefinition...")
 	crds := []*crd_api.CustomResourceDefinition{
 		catlog.MongoDBVersion{}.CustomResourceDefinition(),
 	}
-	err = apiext_util.RegisterCRDs(apiExtKubeClient, crds)
+	err := apiext_util.RegisterCRDs(f.apiExtKubeClient, crds)
 	Expect(err).NotTo(HaveOccurred())
 
 	// Check and set EnableStatusSubresource=true for >=kubernetes v1.11

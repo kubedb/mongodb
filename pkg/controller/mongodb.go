@@ -97,27 +97,42 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 		)
 	}
 
-	if _, err := meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized); err == kutil.ErrNotFound &&
-		mongodb.Spec.Init != nil && mongodb.Spec.Init.SnapshotSource != nil {
+	// ensure appbinding before ensuring Restic scheduler and restore
+	_, err = c.ensureAppBinding(mongodb)
+	if err != nil {
+		log.Errorln(err)
+		return err
+	}
 
-		snapshotSource := mongodb.Spec.Init.SnapshotSource
+	if _, err := meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized); err == kutil.ErrNotFound &&
+		mongodb.Spec.Init != nil &&
+		(mongodb.Spec.Init.SnapshotSource != nil || mongodb.Spec.Init.StashRestoreSession != nil) {
 
 		if mongodb.Status.Phase == api.DatabasePhaseInitializing {
 			return nil
 		}
-		jobName := fmt.Sprintf("%s-%s", api.DatabaseNamePrefix, snapshotSource.Name)
-		if _, err := c.Client.BatchV1().Jobs(snapshotSource.Namespace).Get(jobName, metav1.GetOptions{}); err != nil {
-			if !kerr.IsNotFound(err) {
-				return err
+
+		// add phase that database is being initialized
+		mg, err := util.UpdateMongoDBStatus(c.ExtClient.KubedbV1alpha1(), mongodb, func(in *api.MongoDBStatus) *api.MongoDBStatus {
+			in.Phase = api.DatabasePhaseInitializing
+			return in
+		}, apis.EnableStatusSubresource)
+		if err != nil {
+			return err
+		}
+		mongodb.Status = mg.Status
+
+		init := mongodb.Spec.Init
+		if init.SnapshotSource != nil {
+			err = c.initializeFromSnapshot(mongodb)
+			if err != nil {
+				return fmt.Errorf("failed to complete initialization. Reason: %v", err)
 			}
-		} else {
+			return err
+		} else if init.StashRestoreSession != nil {
+			log.Debugf("MongoDB %v/%v is waiting for restoreSession to be succeeded", mongodb.Namespace, mongodb.Name)
 			return nil
 		}
-
-		if err := c.initialize(mongodb); err != nil {
-			return fmt.Errorf("failed to complete initialization. Reason: %v", err)
-		}
-		return nil
 	}
 
 	mg, err := util.UpdateMongoDBStatus(c.ExtClient.KubedbV1alpha1(), mongodb, func(in *api.MongoDBStatus) *api.MongoDBStatus {
@@ -151,7 +166,6 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 			"Failed to manage monitoring system. Reason: %v",
 			err,
 		)
-
 		log.Errorf("failed to manage monitoring system. Reason: %v", err)
 		return nil
 	}
@@ -168,11 +182,6 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 		return nil
 	}
 
-	_, err = c.ensureAppBinding(mongodb)
-	if err != nil {
-		log.Errorln(err)
-		return err
-	}
 	return nil
 }
 
@@ -193,17 +202,17 @@ func (c *Controller) ensureBackupScheduler(mongodb *api.MongoDB) error {
 	return nil
 }
 
-func (c *Controller) initialize(mongodb *api.MongoDB) error {
-	mg, err := util.UpdateMongoDBStatus(c.ExtClient.KubedbV1alpha1(), mongodb, func(in *api.MongoDBStatus) *api.MongoDBStatus {
-		in.Phase = api.DatabasePhaseInitializing
-		return in
-	}, apis.EnableStatusSubresource)
-	if err != nil {
-		return err
-	}
-	mongodb.Status = mg.Status
-
+func (c *Controller) initializeFromSnapshot(mongodb *api.MongoDB) error {
 	snapshotSource := mongodb.Spec.Init.SnapshotSource
+	jobName := fmt.Sprintf("%s-%s", api.DatabaseNamePrefix, snapshotSource.Name)
+	if _, err := c.Client.BatchV1().Jobs(snapshotSource.Namespace).Get(jobName, metav1.GetOptions{}); err != nil {
+		if !kerr.IsNotFound(err) {
+			return err
+		}
+	} else {
+		return nil
+	}
+
 	// Event for notification that kubernetes objects are creating
 	c.recorder.Eventf(
 		mongodb,

@@ -3,17 +3,14 @@ module github.com/kubedb/mongodb
 go 1.12
 
 require (
-	github.com/Azure/go-autorest v11.1.2+incompatible // indirect
 	github.com/appscode/go v0.0.0-20190523031839-1468ee3a76e8
-	github.com/appscode/osm v0.11.0 // indirect
 	github.com/codeskyblue/go-sh v0.0.0-20190412065543-76bd3d59ff27
 	github.com/coreos/prometheus-operator v0.29.0
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
 	github.com/fatih/structs v1.1.0
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/graymeta/stow v0.1.0
-	github.com/kubedb/apimachinery v0.0.0-20190526014453-48e4bab67179
-	github.com/ncw/swift v1.0.47 // indirect
+	github.com/kubedb/apimachinery v0.0.0-20190529152419-7517175ae10f
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/pkg/errors v0.8.1
@@ -24,7 +21,6 @@ require (
 	github.com/xdg/stringprep v0.0.0-20180714160509-73f8eece6fdc // indirect
 	go.mongodb.org/mongo-driver v1.0.0
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58 // indirect
-	golang.org/x/sys v0.0.0-20190508220229-2d0786266e9c // indirect
 	k8s.io/api v0.0.0-20190503110853-61630f889b3c
 	k8s.io/apiextensions-apiserver v0.0.0-20190508224317-421cff06bf05
 	k8s.io/apimachinery v0.0.0-20190508063446-a3da69d3723c
@@ -32,13 +28,15 @@ require (
 	k8s.io/cli-runtime v0.0.0-20190508184404-b26560c459bd // indirect
 	k8s.io/client-go v11.0.0+incompatible
 	k8s.io/component-base v0.0.0-20190508223741-40efa6d42997 // indirect
+	k8s.io/klog v0.3.2 // indirect
 	k8s.io/kube-aggregator v0.0.0-20190508224022-f9852b6d3a84
 	kmodules.xyz/client-go v0.0.0-20190527113919-eb165836b702
 	kmodules.xyz/custom-resources v0.0.0-20190508103408-464e8324c3ec
 	kmodules.xyz/monitoring-agent-api v0.0.0-20190508125842-489150794b9b
 	kmodules.xyz/objectstore-api v0.0.0-20190506085934-94c81c8acca9
-	kmodules.xyz/offshoot-api v0.0.0-20190508142450-1c69d50f3c1c
+	kmodules.xyz/offshoot-api v0.0.0-20190527060812-295f97bb8061
 	kmodules.xyz/webhook-runtime v0.0.0-20190508094945-962d01212c5b
+	stash.appscode.dev/stash v0.0.0-20190529085714-0a45b44ab960
 )
 
 replace (
