@@ -1514,7 +1514,7 @@ var _ = Describe("MongoDB", func() {
 					rs = f.RestoreSession(mongodb.ObjectMeta, oldMongoDB.ObjectMeta)
 					mongodb.Spec.DatabaseSecret = oldMongoDB.Spec.DatabaseSecret
 					mongodb.Spec.Init = &api.InitSpec{
-						StashSource: &core.LocalObjectReference{
+						StashRestoreSession: &core.LocalObjectReference{
 							Name: rs.Name,
 						},
 					}
