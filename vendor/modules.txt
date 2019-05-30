@@ -25,6 +25,7 @@ github.com/appscode/go/log/golog
 github.com/appscode/go/crypto/rand
 github.com/appscode/go/encoding/json/types
 github.com/appscode/go/types
+github.com/appscode/go/ioutil
 github.com/appscode/go/context
 github.com/appscode/go/arrays
 github.com/appscode/go/sets
@@ -111,6 +112,8 @@ github.com/emicklei/go-restful/log
 github.com/evanphx/json-patch
 # github.com/fatih/structs v1.1.0
 github.com/fatih/structs
+# github.com/fsnotify/fsnotify v1.4.7
+github.com/fsnotify/fsnotify
 # github.com/ghodss/yaml v1.0.0
 github.com/ghodss/yaml
 # github.com/go-ini/ini v1.40.0
@@ -199,7 +202,7 @@ github.com/jmespath/go-jmespath
 github.com/jpillora/go-ogle-analytics
 # github.com/json-iterator/go v1.1.6
 github.com/json-iterator/go
-# github.com/kubedb/apimachinery v0.0.0-20190529152419-7517175ae10f
+# github.com/kubedb/apimachinery v0.0.0-20190530111635-855b9aefbeb5
 github.com/kubedb/apimachinery/apis/kubedb/v1alpha1
 github.com/kubedb/apimachinery/client/clientset/versioned
 github.com/kubedb/apimachinery/pkg/validator
@@ -335,12 +338,12 @@ github.com/yudai/gojsondiff/formatter
 github.com/yudai/golcs
 # go.mongodb.org/mongo-driver v1.0.0
 go.mongodb.org/mongo-driver/bson
+go.mongodb.org/mongo-driver/bson/primitive
 go.mongodb.org/mongo-driver/mongo
 go.mongodb.org/mongo-driver/mongo/options
 go.mongodb.org/mongo-driver/bson/bsoncodec
 go.mongodb.org/mongo-driver/bson/bsonrw
 go.mongodb.org/mongo-driver/bson/bsontype
-go.mongodb.org/mongo-driver/bson/primitive
 go.mongodb.org/mongo-driver/x/bsonx/bsoncore
 go.mongodb.org/mongo-driver/event
 go.mongodb.org/mongo-driver/mongo/readconcern
@@ -432,6 +435,8 @@ golang.org/x/text/internal/language/compact
 golang.org/x/text/internal/tag
 # golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
 golang.org/x/time/rate
+# gomodules.xyz/cert v1.0.0
+gomodules.xyz/cert
 # gomodules.xyz/version v0.0.0-20190507203204-7cec7ee542d3
 gomodules.xyz/version
 # google.golang.org/api v0.4.0

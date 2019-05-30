@@ -9,10 +9,10 @@ if [[ "$AUTH" == "true" ]]; then
   admin_user="$MONGO_INITDB_ROOT_USERNAME"
   admin_password="$MONGO_INITDB_ROOT_PASSWORD"
   admin_creds=(-u "$admin_user" -p "$admin_password")
-  auth_args=(--auth --keyFile=/data/configdb/key.txt)
+  auth_args=(--clusterAuthMode ${CLUSTER_AUTH_MODE} --sslMode ${SSL_MODE} --auth --keyFile=/data/configdb/key.txt)
 fi
 
-function log() {
+log() {
   local msg="$1"
   local timestamp
   timestamp=$(date --iso-8601=ns)
@@ -42,12 +42,25 @@ while read -ra line; do
 done
 
 # Generate the ca cert
-ca_crt=/data/configdb/tls.crt
-if [ -f "$ca_crt" ]; then
-  log "Generating certificate"
+if [[ ${SSL_MODE} != "disabled" ]]; then
+  ca_crt=/data/configdb/tls.crt
   ca_key=/data/configdb/tls.key
-  pem=/work-dir/mongo.pem
+  if [[ ! -f "$ca_crt" ]] || [[ ! -f "$ca_key" ]]; then
+    log "ENABLE_SSL is set to true, but $ca_crt or $ca_key file does not exists "
+    exit 1
+  fi
+
+  log "Generating certificate"
+
+  pem=/data/configdb/mongo.pem
   ssl_args=(--ssl --sslCAFile "$ca_crt" --sslPEMKeyFile "$pem")
+  auth_args=(--clusterAuthMode ${CLUSTER_AUTH_MODE} --sslMode ${SSL_MODE} --sslCAFile "$ca_crt" --sslPEMKeyFile "$pem" --keyFile=/data/configdb/key.txt)
+
+  # extract pod-name.gvr-svc-name.namespace.svc from service_name, which is pod-name.gvr-svc-name.namespace.svc.cluster.local
+  svc_name="$(echo "${service_name%.svc.*}").svc"
+
+  # Move into /work-dir
+  pushd /work-dir
 
   cat >openssl.cnf <<EOL
 [req]
@@ -57,18 +70,21 @@ distinguished_name = req_distinguished_name
 [ v3_req ]
 basicConstraints = CA:FALSE
 keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+extendedKeyUsage  = serverAuth, clientAuth
 subjectAltName = @alt_names
 [alt_names]
 DNS.1 = $(echo -n "$my_hostname" | sed s/-[0-9]*$//)
 DNS.2 = $my_hostname
 DNS.3 = $service_name
-DNS.4 = localhost
-DNS.5 = 127.0.0.1
+DNS.4 = $svc_name
+DNS.5 = localhost
+DNS.6 = 127.0.0.1
 EOL
 
   # Generate the certs
+  export RANDFILE=/work-dir/.rnd
   openssl genrsa -out mongo.key 2048
-  openssl req -new -key mongo.key -out mongo.csr -subj "/CN=$my_hostname" -config openssl.cnf
+  openssl req -new -key mongo.key -out mongo.csr -subj "/OU=MongoDB/CN=$my_hostname" -config openssl.cnf
   openssl x509 -req -in mongo.csr \
     -CA "$ca_crt" -CAkey "$ca_key" -CAcreateserial \
     -out mongo.crt -days 3650 -extensions v3_req -extfile openssl.cnf
@@ -81,7 +97,7 @@ fi
 log "Peers: ${peers[*]}"
 
 log "Starting a MongoDB instance..."
-mongod --config /data/configdb/mongod.conf --dbpath=/data/db --replSet="$replica_set" --port=27017 "${auth_args[@]}" --bind_ip=0.0.0.0 >>/work-dir/log.txt 2>&1 &
+mongod --config /data/configdb/mongod.conf --dbpath=/data/db --replSet="$replica_set" --port=27017 "${auth_args[@]}" --bind_ip=0.0.0.0 2>&1 | tee -a /work-dir/log.txt &
 
 log "Waiting for MongoDB to be ready..."
 until mongo "${ssl_args[@]}" --eval "db.adminCommand('ping')"; do
@@ -101,7 +117,7 @@ for peer in "${peers[@]}"; do
     sleep 3
 
     log 'Waiting for replica to reach SECONDARY state...'
-    until printf '.' && [[ $(mongo admin "${admin_creds[@]}" "${ssl_args[@]}" --quiet --eval "rs.status().myState") == '2' ]]; do
+    until printf '.' && [[ $(mongo admin "${admin_creds[@]}" "${ssl_args[@]}" --quiet --eval "rs.status().myState" | tail -1) == '2' ]]; do
       sleep 1
     done
 
@@ -121,7 +137,7 @@ if mongo "${ssl_args[@]}" --eval "rs.status()" | grep "no replset config has bee
   sleep 3
 
   log 'Waiting for replica to reach PRIMARY state...'
-  until printf '.' && [[ $(mongo "${ssl_args[@]}" --quiet --eval "rs.status().myState") == '1' ]]; do
+  until printf '.' && [[ $(mongo "${ssl_args[@]}" --quiet --eval "rs.status().myState" | tail -1) == '1' ]]; do
     sleep 1
   done
 

@@ -216,8 +216,16 @@ func (c *Controller) ensureMongosNode(mongodb *api.MongoDB) (kutil.VerbType, err
 		"--bind_ip=0.0.0.0",
 		"--port=" + strconv.Itoa(MongoDBPort),
 		"--configdb=$(CONFIGDB_REPSET)",
-		"--clusterAuthMode=keyFile",
+		"--clusterAuthMode=" + string(mongodb.Spec.ClusterAuthMode),
+		"--sslMode=" + string(mongodb.Spec.SSLMode),
 		"--keyFile=" + configDirectoryPath + "/" + KeyForKeyFile,
+	}
+
+	if mongodb.Spec.SSLMode != api.SSLModeDisabled {
+		args = append(args, []string{
+			fmt.Sprintf("--sslCAFile=/data/configdb/%v", TLSCert),
+			fmt.Sprintf("--sslPEMKeyFile=/data/configdb/%v", MongoServerPem),
+		}...)
 	}
 
 	// shardDsn List, separated by space ' '
@@ -238,6 +246,10 @@ func (c *Controller) ensureMongosNode(mongodb *api.MongoDB) (kutil.VerbType, err
 			Name:  "SHARD_REPSETS",
 			Value: shardDsn,
 		},
+		{
+			Name:  "SERVICE_NAME",
+			Value: mongodb.ServiceName(),
+		},
 	}
 
 	initContnr, initvolumes := installInitContainer(
@@ -257,10 +269,10 @@ func (c *Controller) ensureMongosNode(mongodb *api.MongoDB) (kutil.VerbType, err
 	}
 
 	initContainers = append(initContainers, initContnr)
-	volumes = append(volumes, initvolumes)
+	volumes = core_util.UpsertVolume(volumes, initvolumes...)
 
 	if mongodb.Spec.Init != nil && mongodb.Spec.Init.ScriptSource != nil {
-		volumes = append(volumes, core.Volume{
+		volumes = core_util.UpsertVolume(volumes, core.Volume{
 			Name:         "initial-script",
 			VolumeSource: mongodb.Spec.Init.ScriptSource.VolumeSource,
 		})
@@ -284,7 +296,7 @@ func (c *Controller) ensureMongosNode(mongodb *api.MongoDB) (kutil.VerbType, err
 		"mongos.sh",
 	)
 	initContainers = append(initContainers, bootstrpContnr)
-	volumes = append(volumes, bootstrpVol...)
+	volumes = core_util.UpsertVolume(volumes, bootstrpVol...)
 
 	opts := workloadOptions{
 		stsName:        mongodb.MongosNodeName(),
@@ -333,6 +345,14 @@ func mongosInitContainer(
 			{
 				Name:  "AUTH",
 				Value: "true",
+			},
+			{
+				Name:  "SSL_MODE",
+				Value: string(mongodb.Spec.SSLMode),
+			},
+			{
+				Name:  "CLUSTER_AUTH_MODE",
+				Value: string(mongodb.Spec.ClusterAuthMode),
 			},
 			{
 				Name: "MONGO_INITDB_ROOT_USERNAME",

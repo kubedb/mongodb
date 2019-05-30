@@ -9,7 +9,6 @@ import (
 	"github.com/appscode/go/homedir"
 	cs "github.com/kubedb/apimachinery/client/clientset/versioned"
 	"github.com/kubedb/apimachinery/client/clientset/versioned/scheme"
-	"github.com/kubedb/mongodb/pkg/controller"
 	"github.com/kubedb/mongodb/test/e2e/framework"
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
@@ -49,7 +48,6 @@ const (
 )
 
 var (
-	ctrl *controller.Controller
 	root *framework.Framework
 )
 

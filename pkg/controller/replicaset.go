@@ -53,6 +53,14 @@ func topologyInitContainer(
 				Value: "true",
 			},
 			{
+				Name:  "SSL_MODE",
+				Value: string(mongodb.Spec.SSLMode),
+			},
+			{
+				Name:  "CLUSTER_AUTH_MODE",
+				Value: string(mongodb.Spec.ClusterAuthMode),
+			},
+			{
 				Name: "MONGO_INITDB_ROOT_USERNAME",
 				ValueFrom: &core.EnvVarSource{
 					SecretKeyRef: &core.SecretKeySelector{

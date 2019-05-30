@@ -217,6 +217,17 @@ func ValidateMongoDB(client kubernetes.Interface, extClient cs.Interface, mongod
 		}
 	}
 
+	if (mongodb.Spec.ClusterAuthMode == api.ClusterAuthModeX509 || mongodb.Spec.ClusterAuthMode == api.ClusterAuthModeSendX509) &&
+		(mongodb.Spec.SSLMode == api.SSLModeDisabled || mongodb.Spec.SSLMode == api.SSLModeAllowSSL) {
+		return fmt.Errorf("can't have %v set to mongodb.spec.sslMode when mongodb.spec.clusterAuthMode is set to %v",
+			mongodb.Spec.SSLMode, mongodb.Spec.ClusterAuthMode)
+	}
+
+	if mongodb.Spec.ClusterAuthMode == api.ClusterAuthModeSendKeyFile && mongodb.Spec.SSLMode == api.SSLModeDisabled {
+		return fmt.Errorf("can't have %v set to mongodb.spec.sslMode when mongodb.spec.clusterAuthMode is set to %v",
+			mongodb.Spec.SSLMode, mongodb.Spec.ClusterAuthMode)
+	}
+
 	if strictValidation {
 		databaseSecret := mongodb.Spec.DatabaseSecret
 		if databaseSecret != nil {

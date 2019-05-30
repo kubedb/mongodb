@@ -66,7 +66,7 @@ source "$REPO_ROOT/hack/libbuild/common/lib.sh"
 
 export KUBE_CA=$($ONESSL get kube-ca | $ONESSL base64)
 export APPSCODE_ENV=${APPSCODE_ENV:-prod}
-export KUBEDB_SCRIPT="curl -fsSL https://raw.githubusercontent.com/kubedb/cli/0.9.0-rc.0/"
+export KUBEDB_SCRIPT="curl -fsSL https://raw.githubusercontent.com/kubedb/installer/0.9.0-rc.0/"
 
 show_help() {
   echo "setup.sh - setup kubedb operator"
@@ -84,7 +84,7 @@ while test $# -gt 0; do
   case "$1" in
     -h | --help)
       show_help
-      ARGS="$ARGS $1" # also show helps of "CLI repo" installer script
+      ARGS="$ARGS $1" # also show helps of "INSTALLER repo" installer script
       shift
       ;;
     --docker-registry*)
@@ -114,8 +114,8 @@ while test $# -gt 0; do
   esac
 done
 
-# If APPSCODE_ENV==dev , use cli repo locally to run the installer script.
-# Update "CLI_BRANCH" in deploy/settings file to pull a particular CLI repo branch.
+# If APPSCODE_ENV==dev , use installer repo locally to run the installer script.
+# Update "INSTALLER_BRANCH" in deploy/settings file to pull a particular INSTALLER repo branch.
 if [ "$APPSCODE_ENV" = "dev" ]; then
   detect_tag ''
   export KUBEDB_SCRIPT="cat $INSTALLER_ROOT/"
@@ -124,16 +124,16 @@ if [ "$APPSCODE_ENV" = "dev" ]; then
 
   if [[ ! -d $INSTALLER_ROOT ]]; then
     echo ">>> Cloning installer repo"
-    git clone -b $CLI_BRANCH https://github.com/kubedb/installer.git "${INSTALLER_ROOT}"
+    git clone -b $INSTALLER_BRANCH https://github.com/kubedb/installer.git "${INSTALLER_ROOT}"
     pushd $INSTALLER_ROOT
   else
     pushd $INSTALLER_ROOT
     detect_tag ''
-    if [[ $git_branch != $CLI_BRANCH ]]; then
+    if [[ $git_branch != $INSTALLER_BRANCH ]]; then
       git fetch --all
-      git checkout $CLI_BRANCH
+      git checkout $INSTALLER_BRANCH
     fi
-    git pull --ff-only origin $CLI_BRANCH #Pull update from remote only if there will be no conflict.
+    git pull --ff-only origin $INSTALLER_BRANCH #Pull update from remote only if there will be no conflict.
   fi
 fi
 
@@ -142,8 +142,8 @@ env | sort | grep -e KUBEDB* -e APPSCODE*
 echo ""
 
 if [ "$SELF_HOSTED" -eq 1 ]; then
-  echo "${KUBEDB_SCRIPT}hack/deploy/kubedb.sh | bash -s -- --operator-name=mg-operator $ARGS"
-  ${KUBEDB_SCRIPT}hack/deploy/kubedb.sh | bash -s -- --operator-name=mg-operator ${ARGS}
+  echo "${KUBEDB_SCRIPT}deploy/kubedb.sh | bash -s -- --operator-name=mg-operator $ARGS"
+  ${KUBEDB_SCRIPT}deploy/kubedb.sh | bash -s -- --operator-name=mg-operator ${ARGS}
 fi
 
 if [ "$MINIKUBE" -eq 1 ]; then

@@ -10,7 +10,7 @@ require (
 	github.com/fatih/structs v1.1.0
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/graymeta/stow v0.1.0
-	github.com/kubedb/apimachinery v0.0.0-20190529152419-7517175ae10f
+	github.com/kubedb/apimachinery v0.0.0-20190530111635-855b9aefbeb5
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/pkg/errors v0.8.1
@@ -21,6 +21,7 @@ require (
 	github.com/xdg/stringprep v0.0.0-20180714160509-73f8eece6fdc // indirect
 	go.mongodb.org/mongo-driver v1.0.0
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58 // indirect
+	gomodules.xyz/cert v1.0.0
 	k8s.io/api v0.0.0-20190503110853-61630f889b3c
 	k8s.io/apiextensions-apiserver v0.0.0-20190508224317-421cff06bf05
 	k8s.io/apimachinery v0.0.0-20190508063446-a3da69d3723c

@@ -12,6 +12,9 @@ RUN chmod -c 755 /usr/local/bin/peer-finder \
  /usr/local/bin/sharding.sh \
  /usr/local/bin/mongos.sh
 
+ENV SSL_MODE ""
+ENV CLUSTER_AUTH_MODE ""
+
 # For starting mongodb container
 # default entrypoint of parent mongo:3.6
 # ENTRYPOINT ["docker-entrypoint.sh"]

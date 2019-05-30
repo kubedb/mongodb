@@ -131,10 +131,17 @@ func (i *Invocation) MongoDBShard() *api.MongoDB {
 }
 
 func IsRepSet(db *api.MongoDB) bool {
-	if db.Spec.ReplicaSet != nil {
-		return true
-	}
-	return false
+	return db.Spec.ReplicaSet != nil
+}
+
+// ClusterAuthModeP returns a pointer to the int32 value passed in.
+func ClusterAuthModeP(v api.ClusterAuthMode) *api.ClusterAuthMode {
+	return &v
+}
+
+// SSLModeP returns a pointer to the int32 value passed in.
+func SSLModeP(v api.SSLMode) *api.SSLMode {
+	return &v
 }
 
 func (i *Invocation) CreateMongoDB(obj *api.MongoDB) error {
