@@ -211,17 +211,31 @@ func (c *Controller) ensureMongosNode(mongodb *api.MongoDB) (kutil.VerbType, err
 		return kutil.VerbUnchanged, err
 	}
 
+	// mongodb.Spec.SSLMode & mongodb.Spec.ClusterAuthMode can be empty if upgraded operator from
+	// previous version. But, eventually it will be defaulted. TODO: delete in future.
+	sslMode := mongodb.Spec.SSLMode
+	if sslMode == "" {
+		sslMode = api.SSLModeDisabled
+	}
+	clusterAuth := mongodb.Spec.ClusterAuthMode
+	if clusterAuth == "" {
+		clusterAuth = api.ClusterAuthModeKeyFile
+		if sslMode != api.SSLModeDisabled {
+			clusterAuth = api.ClusterAuthModeX509
+		}
+	}
+
 	cmds := []string{"mongos"}
 	args := []string{
 		"--bind_ip=0.0.0.0",
 		"--port=" + strconv.Itoa(MongoDBPort),
 		"--configdb=$(CONFIGDB_REPSET)",
-		"--clusterAuthMode=" + string(mongodb.Spec.ClusterAuthMode),
-		"--sslMode=" + string(mongodb.Spec.SSLMode),
+		"--clusterAuthMode=" + string(clusterAuth),
+		"--sslMode=" + string(sslMode),
 		"--keyFile=" + configDirectoryPath + "/" + KeyForKeyFile,
 	}
 
-	if mongodb.Spec.SSLMode != api.SSLModeDisabled {
+	if sslMode != api.SSLModeDisabled {
 		args = append(args, []string{
 			fmt.Sprintf("--sslCAFile=/data/configdb/%v", TLSCert),
 			fmt.Sprintf("--sslPEMKeyFile=/data/configdb/%v", MongoServerPem),
@@ -332,6 +346,20 @@ func mongosInitContainer(
 
 	envList = core_util.UpsertEnvVars(envList, podTemplate.Spec.Env...)
 
+	// mongodb.Spec.SSLMode & mongodb.Spec.ClusterAuthMode can be empty if upgraded operator from
+	// previous version. But, eventually it will be defaulted. TODO: delete in future.
+	sslMode := mongodb.Spec.SSLMode
+	if sslMode == "" {
+		sslMode = api.SSLModeDisabled
+	}
+	clusterAuth := mongodb.Spec.ClusterAuthMode
+	if clusterAuth == "" {
+		clusterAuth = api.ClusterAuthModeKeyFile
+		if sslMode != api.SSLModeDisabled {
+			clusterAuth = api.ClusterAuthModeX509
+		}
+	}
+
 	bootstrapContainer := core.Container{
 		Name:            InitBootstrapContainerName,
 		Image:           mongodbVersion.Spec.DB.Image,
@@ -348,11 +376,11 @@ func mongosInitContainer(
 			},
 			{
 				Name:  "SSL_MODE",
-				Value: string(mongodb.Spec.SSLMode),
+				Value: string(sslMode),
 			},
 			{
 				Name:  "CLUSTER_AUTH_MODE",
-				Value: string(mongodb.Spec.ClusterAuthMode),
+				Value: string(clusterAuth),
 			},
 			{
 				Name: "MONGO_INITDB_ROOT_USERNAME",

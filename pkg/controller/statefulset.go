@@ -112,6 +112,20 @@ func (c *Controller) ensureShardNode(mongodb *api.MongoDB) (kutil.VerbType, erro
 			return kutil.VerbUnchanged, err
 		}
 
+		// mongodb.Spec.SSLMode & mongodb.Spec.ClusterAuthMode can be empty if upgraded operator from
+		// previous version. But, eventually it will be defaulted. TODO: delete in future.
+		sslMode := mongodb.Spec.SSLMode
+		if sslMode == "" {
+			sslMode = api.SSLModeDisabled
+		}
+		clusterAuth := mongodb.Spec.ClusterAuthMode
+		if clusterAuth == "" {
+			clusterAuth = api.ClusterAuthModeKeyFile
+			if sslMode != api.SSLModeDisabled {
+				clusterAuth = api.ClusterAuthModeX509
+			}
+		}
+
 		args := []string{
 			"--dbpath=" + dataDirectoryPath,
 			"--auth",
@@ -119,12 +133,12 @@ func (c *Controller) ensureShardNode(mongodb *api.MongoDB) (kutil.VerbType, erro
 			"--port=" + strconv.Itoa(MongoDBPort),
 			"--shardsvr",
 			"--replSet=" + mongodb.ShardRepSetName(nodeNum),
-			"--clusterAuthMode=" + string(mongodb.Spec.ClusterAuthMode),
-			"--sslMode=" + string(mongodb.Spec.SSLMode),
+			"--clusterAuthMode=" + string(clusterAuth),
+			"--sslMode=" + string(sslMode),
 			"--keyFile=" + configDirectoryPath + "/" + KeyForKeyFile,
 		}
 
-		if mongodb.Spec.SSLMode != api.SSLModeDisabled {
+		if sslMode != api.SSLModeDisabled {
 			args = append(args, []string{
 				fmt.Sprintf("--sslCAFile=/data/configdb/%v", TLSCert),
 				fmt.Sprintf("--sslPEMKeyFile=/data/configdb/%v", MongoServerPem),
@@ -191,6 +205,20 @@ func (c *Controller) ensureConfigNode(mongodb *api.MongoDB) (kutil.VerbType, err
 		return kutil.VerbUnchanged, err
 	}
 
+	// mongodb.Spec.SSLMode & mongodb.Spec.ClusterAuthMode can be empty if upgraded operator from
+	// previous version. But, eventually it will be defaulted. TODO: delete in future.
+	sslMode := mongodb.Spec.SSLMode
+	if sslMode == "" {
+		sslMode = api.SSLModeDisabled
+	}
+	clusterAuth := mongodb.Spec.ClusterAuthMode
+	if clusterAuth == "" {
+		clusterAuth = api.ClusterAuthModeKeyFile
+		if sslMode != api.SSLModeDisabled {
+			clusterAuth = api.ClusterAuthModeX509
+		}
+	}
+
 	args := []string{
 		"--dbpath=" + dataDirectoryPath,
 		"--auth",
@@ -198,12 +226,12 @@ func (c *Controller) ensureConfigNode(mongodb *api.MongoDB) (kutil.VerbType, err
 		"--port=" + strconv.Itoa(MongoDBPort),
 		"--configsvr",
 		"--replSet=" + mongodb.ConfigSvrRepSetName(),
-		"--clusterAuthMode=" + string(mongodb.Spec.ClusterAuthMode),
+		"--clusterAuthMode=" + string(clusterAuth),
 		"--keyFile=" + configDirectoryPath + "/" + KeyForKeyFile,
-		"--sslMode=" + string(mongodb.Spec.SSLMode),
+		"--sslMode=" + string(sslMode),
 	}
 
-	if mongodb.Spec.SSLMode != api.SSLModeDisabled {
+	if sslMode != api.SSLModeDisabled {
 		args = append(args, []string{
 			fmt.Sprintf("--sslCAFile=/data/configdb/%v", TLSCert),
 			fmt.Sprintf("--sslPEMKeyFile=/data/configdb/%v", MongoServerPem),
@@ -261,15 +289,29 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 		return kutil.VerbUnchanged, err
 	}
 
+	// mongodb.Spec.SSLMode & mongodb.Spec.ClusterAuthMode can be empty if upgraded operator from
+	// previous version. But, eventually it will be defaulted. TODO: delete in future.
+	sslMode := mongodb.Spec.SSLMode
+	if sslMode == "" {
+		sslMode = api.SSLModeDisabled
+	}
+	clusterAuth := mongodb.Spec.ClusterAuthMode
+	if clusterAuth == "" {
+		clusterAuth = api.ClusterAuthModeKeyFile
+		if sslMode != api.SSLModeDisabled {
+			clusterAuth = api.ClusterAuthModeX509
+		}
+	}
+
 	args := []string{
 		"--dbpath=" + dataDirectoryPath,
 		"--auth",
 		"--bind_ip=0.0.0.0",
 		"--port=" + strconv.Itoa(MongoDBPort),
-		"--sslMode=" + string(mongodb.Spec.SSLMode),
+		"--sslMode=" + string(sslMode),
 	}
 
-	if mongodb.Spec.SSLMode != api.SSLModeDisabled {
+	if sslMode != api.SSLModeDisabled {
 		// ensure certificate for ssl
 		if err := c.ensureCertSecret(mongodb); err != nil {
 			return kutil.VerbUnchanged, err
@@ -315,7 +357,7 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 		args = meta_util.UpsertArgumentList(args, []string{
 			"--replSet=" + mongodb.RepSetName(),
 			"--keyFile=" + configDirectoryPath + "/" + KeyForKeyFile,
-			"--clusterAuthMode=" + string(mongodb.Spec.ClusterAuthMode),
+			"--clusterAuthMode=" + string(clusterAuth),
 		})
 		bootstrpContnr, bootstrpVol := topologyInitContainer(
 			mongodb,
@@ -591,7 +633,13 @@ func installInitContainer(
 		},
 	}}
 
-	if mongodb.Spec.SSLMode != api.SSLModeDisabled || mongodb.Spec.ReplicaSet != nil || mongodb.Spec.ShardTopology != nil {
+	// mongodb.Spec.SSLMode can be empty if upgraded operator from previous version.
+	// But, eventually it will be defaulted. TODO: delete `mongodb.Spec.SSLMode != ""` in future.
+	sslMode := mongodb.Spec.SSLMode
+	if sslMode == "" {
+		sslMode = api.SSLModeDisabled
+	}
+	if sslMode != api.SSLModeDisabled || mongodb.Spec.ReplicaSet != nil || mongodb.Spec.ShardTopology != nil {
 		installContainer.VolumeMounts = core_util.UpsertVolumeMount(
 			installContainer.VolumeMounts,
 			core.VolumeMount{
