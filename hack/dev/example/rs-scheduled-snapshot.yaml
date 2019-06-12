@@ -4,7 +4,7 @@ metadata:
   name: mgo-scheduled-rs
   namespace: demo
 spec:
-  version: "3.6-v3"
+  version: "3.6-v4"
   replicas: 3
   replicaSet:
     name: rs0

@@ -4,7 +4,7 @@ metadata:
   name: mgo-recovered-sh
   namespace: demo
 spec:
-  version: 3.6-v3
+  version: 3.6-v4
   replicas: 1
   shardTopology:
     configServer:

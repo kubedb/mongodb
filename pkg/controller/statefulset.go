@@ -76,11 +76,6 @@ func (c *Controller) ensureMongoDBNode(mongodb *api.MongoDB) (kutil.VerbType, er
 }
 
 func (c *Controller) ensureTopologyCluster(mongodb *api.MongoDB) (kutil.VerbType, error) {
-	// ensure certificate or keyfile for cluster
-	if err := c.ensureCertSecret(mongodb); err != nil {
-		return kutil.VerbUnchanged, err
-	}
-
 	vt1, err := c.ensureConfigNode(mongodb)
 	if err != nil {
 		return vt1, err
@@ -312,11 +307,6 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 	}
 
 	if sslMode != api.SSLModeDisabled {
-		// ensure certificate for ssl
-		if err := c.ensureCertSecret(mongodb); err != nil {
-			return kutil.VerbUnchanged, err
-		}
-
 		args = append(args, []string{
 			fmt.Sprintf("--sslCAFile=/data/configdb/%v", TLSCert),
 			fmt.Sprintf("--sslPEMKeyFile=/data/configdb/%v", MongoServerPem),
@@ -348,11 +338,6 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 	}
 
 	if mongodb.Spec.ReplicaSet != nil {
-		// ensure certificate or keyfile for cluster
-		if err := c.ensureCertSecret(mongodb); err != nil {
-			return kutil.VerbUnchanged, err
-		}
-
 		cmds = []string{"mongod"}
 		args = meta_util.UpsertArgumentList(args, []string{
 			"--replSet=" + mongodb.RepSetName(),

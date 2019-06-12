@@ -75,6 +75,15 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 		return err
 	}
 
+	// ensure certificate or keyfile for cluster
+	sslMode := mongodb.Spec.SSLMode
+	if (sslMode != api.SSLModeDisabled && sslMode != "") ||
+		mongodb.Spec.ReplicaSet != nil || mongodb.Spec.ShardTopology != nil {
+		if err := c.ensureCertSecret(mongodb); err != nil {
+			return err
+		}
+	}
+
 	// ensure database StatefulSet
 	vt2, err := c.ensureMongoDBNode(mongodb)
 	if err != nil {

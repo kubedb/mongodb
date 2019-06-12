@@ -32,5 +32,5 @@ spec:
         storageClassName: standard
   updateStrategy:
     type: RollingUpdate
-  version: 3.6-v3
+  version: 3.6-v4
   terminationPolicy: WipeOut
