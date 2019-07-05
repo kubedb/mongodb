@@ -206,7 +206,7 @@ func setDefaultsFromDormantDB(extClient cs.Interface, mongodb *api.MongoDB, op a
 
 	if _, err := meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized); err == kutil.ErrNotFound &&
 		mongodb.Spec.Init != nil &&
-		mongodb.Spec.Init.SnapshotSource != nil {
+		(mongodb.Spec.Init.SnapshotSource != nil || mongodb.Spec.Init.StashRestoreSession != nil) {
 		mongodb.Annotations = core_util.UpsertMap(mongodb.Annotations, map[string]string{
 			api.AnnotationInitialized: "",
 		})

@@ -42,7 +42,7 @@ func (c *Controller) UpsertDatabaseAnnotation(meta metav1.ObjectMeta, annotation
 	}
 
 	_, _, err = util.PatchMongoDB(c.ExtClient.KubedbV1alpha1(), mongodb, func(in *api.MongoDB) *api.MongoDB {
-		in.Annotations = core_util.UpsertMap(mongodb.Annotations, annotation)
+		in.Annotations = core_util.UpsertMap(in.Annotations, annotation)
 		return in
 	})
 	return err
