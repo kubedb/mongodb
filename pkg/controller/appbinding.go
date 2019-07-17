@@ -49,7 +49,7 @@ func (c *Controller) ensureAppBinding(db *api.MongoDB) (kutil.VerbType, error) {
 			ReplicaSets:  replicaHosts,
 		}
 		if jsonBytes, err = json.Marshal(parameter); err != nil {
-			return kutil.VerbUnchanged, fmt.Errorf("unable to do json marshal on appbinding spec.Parameters. reason: %v", err)
+			return kutil.VerbUnchanged, fmt.Errorf("fail to serialize appbinding spec.Parameters. reason: %v", err)
 		}
 	}
 
