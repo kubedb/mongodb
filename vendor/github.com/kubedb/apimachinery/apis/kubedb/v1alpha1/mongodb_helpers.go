@@ -359,6 +359,18 @@ func (m *MongoDBSpec) SetDefaults() {
 		}
 	}
 
+	if m.SSLMode == "" {
+		m.SSLMode = SSLModeDisabled
+	}
+
+	if (m.ReplicaSet != nil || m.ShardTopology != nil) && m.ClusterAuthMode == "" {
+		if m.SSLMode == SSLModeDisabled {
+			m.ClusterAuthMode = ClusterAuthModeKeyFile
+		} else {
+			m.ClusterAuthMode = ClusterAuthModeX509
+		}
+	}
+
 	// required to upgrade operator from 0.11.0 to 0.12.0
 	if m.ReplicaSet != nil && m.ReplicaSet.KeyFile != nil {
 		if m.CertificateSecret == nil {
@@ -387,6 +399,7 @@ func (m *MongoDBSpec) SetDefaults() {
 		// set default probes
 		m.setDefaultProbes(m.PodTemplate)
 	}
+
 }
 
 // setDefaultProbes sets defaults only when probe fields are nil.
@@ -400,9 +413,19 @@ func (m *MongoDBSpec) setDefaultProbes(podTemplate *ofst.PodTemplateSpec) {
 
 	cmd := []string{
 		"mongo",
+		"--host=localhost",
 		"--eval",
 		"db.adminCommand('ping')",
 	}
+
+	if m.SSLMode == SSLModeRequireSSL {
+		cmd = append(cmd, []string{
+			"--ssl",
+			"--sslCAFile=/data/configdb/tls.crt",
+			"--sslPEMKeyFile=/data/configdb/mongo.pem",
+		}...)
+	}
+
 	if podTemplate.Spec.LivenessProbe == nil {
 		podTemplate.Spec.LivenessProbe = &core.Probe{
 			Handler: core.Handler{

@@ -7,23 +7,16 @@ import (
 	"github.com/kubedb/apimachinery/pkg/controller"
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
-	rbac "k8s.io/api/rbac/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	core_util "kmodules.xyz/client-go/core/v1"
-	rbac_util "kmodules.xyz/client-go/rbac/v1beta1"
 	v1alpha13 "kmodules.xyz/custom-resources/apis/appcatalog/v1alpha1"
-	ofst "kmodules.xyz/offshoot-api/api/v1"
 	"stash.appscode.dev/stash/apis/stash/v1alpha1"
 	stashV1alpha1 "stash.appscode.dev/stash/apis/stash/v1alpha1"
 	"stash.appscode.dev/stash/apis/stash/v1beta1"
 )
 
 var (
-	StashMgBackupTask  = "mongo-backup-task"
-	StashMgRestoreTask = "mongo-restore-task"
-	StashMgClusterRole = "mongo-backup-restore"
-	StashMgSA          = "mongo-backup-restore"
-	StashMgRoleBinding = "mongo-backup-restore"
+	StashMgBackupTask  = "mg-backup-3.6"
+	StashMgRestoreTask = "mg-restore-3.6"
 )
 
 func (f *Framework) FoundStashCRDs() bool {
@@ -37,11 +30,6 @@ func (i *Invocation) BackupConfiguration(meta metav1.ObjectMeta) *v1beta1.Backup
 			Namespace: i.namespace,
 		},
 		Spec: v1beta1.BackupConfigurationSpec{
-			RuntimeSettings: ofst.RuntimeSettings{
-				Pod: &ofst.PodRuntimeSettings{
-					ServiceAccountName: StashMgSA,
-				},
-			},
 			Task: v1beta1.TaskRef{
 				Name: StashMgBackupTask,
 			},
@@ -138,11 +126,6 @@ func (i *Invocation) RestoreSession(meta, oldMeta metav1.ObjectMeta) *v1beta1.Re
 			},
 		},
 		Spec: v1beta1.RestoreSessionSpec{
-			RuntimeSettings: ofst.RuntimeSettings{
-				Pod: &ofst.PodRuntimeSettings{
-					ServiceAccountName: StashMgSA,
-				},
-			},
 			Task: v1beta1.TaskRef{
 				Name: StashMgRestoreTask,
 			},
@@ -184,66 +167,4 @@ func (f *Framework) EventuallyRestoreSessionPhase(meta metav1.ObjectMeta) Gomega
 		time.Minute*7,
 		time.Second*7,
 	)
-}
-
-func (f *Framework) EnsureStashMgRBAC(meta metav1.ObjectMeta) error {
-	if err := f.CreateStashMgServiceAccount(meta); err != nil {
-		return err
-	}
-	if err := f.CreateStashMgRoleBinding(meta); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (f *Framework) DeleteStashMgRBAC(meta metav1.ObjectMeta) error {
-	if err := f.kubeClient.CoreV1().ServiceAccounts(meta.Namespace).Delete(StashMgSA, deleteInForeground()); err != nil {
-		return err
-	}
-	if err := f.kubeClient.RbacV1().RoleBindings(meta.Namespace).Delete(StashMgRoleBinding, deleteInForeground()); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (f *Framework) CreateStashMgServiceAccount(meta metav1.ObjectMeta) error {
-	// Create new ServiceAccount
-	_, _, err := core_util.CreateOrPatchServiceAccount(
-		f.kubeClient,
-		metav1.ObjectMeta{
-			Name:      StashMgSA,
-			Namespace: meta.Namespace,
-		},
-		func(in *core.ServiceAccount) *core.ServiceAccount {
-			return in
-		},
-	)
-	return err
-}
-
-func (f *Framework) CreateStashMgRoleBinding(meta metav1.ObjectMeta) error {
-	// Ensure new RoleBindings
-	_, _, err := rbac_util.CreateOrPatchRoleBinding(
-		f.kubeClient,
-		metav1.ObjectMeta{
-			Name:      StashMgRoleBinding,
-			Namespace: meta.Namespace,
-		},
-		func(in *rbac.RoleBinding) *rbac.RoleBinding {
-			in.RoleRef = rbac.RoleRef{
-				APIGroup: rbac.GroupName,
-				Kind:     "ClusterRole",
-				Name:     StashMgClusterRole,
-			}
-			in.Subjects = []rbac.Subject{
-				{
-					Kind:      rbac.ServiceAccountKind,
-					Name:      StashMgSA,
-					Namespace: meta.Namespace,
-				},
-			}
-			return in
-		},
-	)
-	return err
 }

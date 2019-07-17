@@ -23,6 +23,7 @@ package v1alpha1
 import (
 	v1 "k8s.io/api/core/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
+	intstr "k8s.io/apimachinery/pkg/util/intstr"
 	apiv1 "kmodules.xyz/monitoring-agent-api/api/v1"
 	objectstoreapiapiv1 "kmodules.xyz/objectstore-api/api/v1"
 	offshootapiapiv1 "kmodules.xyz/offshoot-api/api/v1"
@@ -256,6 +257,11 @@ func (in *ElasticsearchNode) DeepCopyInto(out *ElasticsearchNode) {
 		(*in).DeepCopyInto(*out)
 	}
 	in.Resources.DeepCopyInto(&out.Resources)
+	if in.MaxUnavailable != nil {
+		in, out := &in.MaxUnavailable, &out.MaxUnavailable
+		*out = new(intstr.IntOrString)
+		**out = **in
+	}
 	return
 }
 
@@ -319,6 +325,11 @@ func (in *ElasticsearchSpec) DeepCopyInto(out *ElasticsearchSpec) {
 	}
 	in.PodTemplate.DeepCopyInto(&out.PodTemplate)
 	in.ServiceTemplate.DeepCopyInto(&out.ServiceTemplate)
+	if in.MaxUnavailable != nil {
+		in, out := &in.MaxUnavailable, &out.MaxUnavailable
+		*out = new(intstr.IntOrString)
+		**out = **in
+	}
 	in.UpdateStrategy.DeepCopyInto(&out.UpdateStrategy)
 	return
 }
@@ -1305,6 +1316,16 @@ func (in *OriginSpec) DeepCopyInto(out *OriginSpec) {
 	if in.MySQL != nil {
 		in, out := &in.MySQL, &out.MySQL
 		*out = new(MySQLSpec)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.Percona != nil {
+		in, out := &in.Percona, &out.Percona
+		*out = new(PerconaSpec)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.MariaDB != nil {
+		in, out := &in.MariaDB, &out.MariaDB
+		*out = new(MariaDBSpec)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.MongoDB != nil {

@@ -136,8 +136,12 @@ func (c *Client) Ping(ctx context.Context, rp *readpref.ReadPref) error {
 		rp = c.readPreference
 	}
 
-	_, err := c.topology.SelectServer(ctx, description.ReadPrefSelector(rp))
-	return replaceErrors(err)
+	db := c.Database("admin")
+	res := db.RunCommand(ctx, bson.D{
+		{"ping", 1},
+	})
+
+	return replaceErrors(res.Err())
 }
 
 // StartSession starts a new session.
@@ -230,7 +234,9 @@ func (c *Client) configure(opts *options.ClientOptions) error {
 		))
 	}
 	// Handshaker
-	var handshaker connection.Handshaker = &command.Handshake{Client: command.ClientDoc(appName), Compressors: comps}
+	var handshaker = func(connection.Handshaker) connection.Handshaker {
+		return &command.Handshake{Client: command.ClientDoc(appName), Compressors: comps}
+	}
 	// Auth & Database & Password & Username
 	if opts.Auth != nil {
 		cred := &auth.Cred{
@@ -272,11 +278,11 @@ func (c *Client) configure(opts *options.ClientOptions) error {
 			}
 		}
 
-		handshaker = auth.Handshaker(nil, handshakeOpts)
+		handshaker = func(connection.Handshaker) connection.Handshaker {
+			return auth.Handshaker(nil, handshakeOpts)
+		}
 	}
-	connOpts = append(connOpts, connection.WithHandshaker(
-		func(connection.Handshaker) connection.Handshaker { return handshaker },
-	))
+	connOpts = append(connOpts, connection.WithHandshaker(handshaker))
 	// ConnectTimeout
 	if opts.ConnectTimeout != nil {
 		serverOpts = append(serverOpts, topology.WithHeartbeatTimeout(
@@ -529,6 +535,9 @@ func (c *Client) UseSessionWithOptions(ctx context.Context, opts *options.Sessio
 // The client must have read concern majority or no read concern for a change stream to be created successfully.
 func (c *Client) Watch(ctx context.Context, pipeline interface{},
 	opts ...*options.ChangeStreamOptions) (*ChangeStream, error) {
+	if c.topology.SessionPool == nil {
+		return nil, ErrClientDisconnected
+	}
 
 	return newClientChangeStream(ctx, c, pipeline, opts...)
 }
