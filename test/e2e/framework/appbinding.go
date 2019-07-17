@@ -51,6 +51,8 @@ func (f *Framework) CheckAppBindingSpec(meta metav1.ObjectMeta) error {
 	return nil
 }
 
+// EnsureCustomAppBinding creates custom Appbinding for mongodb. In this custom appbinding,
+// all fields are similar to actual appbinding object, except Spec.Parameters.
 func (f *Framework) EnsureCustomAppBinding(db *api.MongoDB, customAppBindingName string) error {
 	appmeta := db.AppBindingMeta()
 	// get app binding
@@ -82,6 +84,7 @@ func (f *Framework) EnsureCustomAppBinding(db *api.MongoDB, customAppBindingName
 	return nil
 }
 
+// DeleteAppBinding deletes the custom appBinding that is created in test
 func (f *Framework) DeleteAppBinding(meta metav1.ObjectMeta) error {
 	return f.appCatalogClient.AppBindings(meta.Namespace).Delete(meta.Name, deleteInForeground())
 }

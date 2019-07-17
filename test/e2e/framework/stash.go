@@ -15,7 +15,9 @@ import (
 )
 
 var (
-	StashMgBackupTask  = "mg-backup-3.6"
+	// StashMgBackupTask is the task name for mongodb-stash backup task
+	StashMgBackupTask = "mg-backup-3.6"
+	// StashMgRestoreTask is the task name for mongodb-stash restore task
 	StashMgRestoreTask = "mg-restore-3.6"
 )
 
