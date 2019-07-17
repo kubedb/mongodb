@@ -12,7 +12,7 @@ import (
 	cs "github.com/kubedb/apimachinery/client/clientset/versioned"
 	"github.com/kubedb/apimachinery/pkg/eventer"
 	cmap "github.com/orcaman/concurrent-map"
-	cron "gopkg.in/robfig/cron.v2"
+	cron "github.com/robfig/cron/v3"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

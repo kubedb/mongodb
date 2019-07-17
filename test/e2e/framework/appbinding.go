@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"time"
 
+	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/mongodb/pkg/controller"
 	. "github.com/onsi/gomega"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	appcat "kmodules.xyz/custom-resources/apis/appcatalog/v1alpha1"
+	appcat_util "kmodules.xyz/custom-resources/client/clientset/versioned/typed/appcatalog/v1alpha1/util"
 )
 
 func (f *Framework) EventuallyAppBinding(meta metav1.ObjectMeta) GomegaAsyncAssertion {
@@ -46,4 +49,42 @@ func (f *Framework) CheckAppBindingSpec(meta metav1.ObjectMeta) error {
 		return fmt.Errorf("appbinding %v/%v contains invalid data", appBinding.Namespace, appBinding.Name)
 	}
 	return nil
+}
+
+// EnsureCustomAppBinding creates custom Appbinding for mongodb. In this custom appbinding,
+// all fields are similar to actual appbinding object, except Spec.Parameters.
+func (f *Framework) EnsureCustomAppBinding(db *api.MongoDB, customAppBindingName string) error {
+	appmeta := db.AppBindingMeta()
+	// get app binding
+	appBinding, err := f.appCatalogClient.AppBindings(db.Namespace).Get(appmeta.Name(), metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	meta := metav1.ObjectMeta{
+		Name:      customAppBindingName,
+		Namespace: db.Namespace,
+	}
+
+	if _, _, err := appcat_util.CreateOrPatchAppBinding(f.appCatalogClient, meta, func(in *appcat.AppBinding) *appcat.AppBinding {
+		in.Labels = appBinding.Labels
+		in.Annotations = appBinding.Annotations
+
+		in.Spec.Type = appBinding.Spec.Type
+		in.Spec.ClientConfig.Service = appBinding.Spec.ClientConfig.Service
+		in.Spec.ClientConfig.InsecureSkipTLSVerify = appBinding.Spec.ClientConfig.InsecureSkipTLSVerify
+		in.Spec.Secret = appBinding.Spec.Secret
+		// ignore appBinding.Spec.Parameters
+
+		return in
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DeleteAppBinding deletes the custom appBinding that is created in test
+func (f *Framework) DeleteAppBinding(meta metav1.ObjectMeta) error {
+	return f.appCatalogClient.AppBindings(meta.Namespace).Delete(meta.Name, deleteInForeground())
 }
