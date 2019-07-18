@@ -15,7 +15,7 @@ require (
 	github.com/go-openapi/swag v0.19.4 // indirect
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/graymeta/stow v0.1.0
-	github.com/kubedb/apimachinery v0.0.0-20190716040713-7346211253ec
+	github.com/kubedb/apimachinery v0.0.0-20190717113657-337d6f57fe28
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/pkg/errors v0.8.1
@@ -27,6 +27,7 @@ require (
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4 // indirect
 	golang.org/x/net v0.0.0-20190628185345-da137c7871d7 // indirect
 	golang.org/x/sys v0.0.0-20190712062909-fae7ac547cb7 // indirect
+	gomodules.xyz/cert v1.0.0
 	google.golang.org/appengine v1.6.1 // indirect
 	k8s.io/api v0.0.0-20190503110853-61630f889b3c
 	k8s.io/apiextensions-apiserver v0.0.0-20190508224317-421cff06bf05

@@ -7,8 +7,10 @@ import (
 	"time"
 
 	"github.com/appscode/go/log"
+	"github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,7 +37,7 @@ func (f *Framework) ForwardPort(meta metav1.ObjectMeta, clientPodName string) (*
 	return tunnel, nil
 }
 
-func (f *Framework) GetMongoDBClient(meta metav1.ObjectMeta, tunnel *portforward.Tunnel, isReplSet bool) (*options.ClientOptions, error) {
+func (f *Framework) GetMongoDBClient(meta metav1.ObjectMeta, tunnel *portforward.Tunnel, isReplSet ...bool) (*options.ClientOptions, error) {
 	mongodb, err := f.GetMongoDB(meta)
 	if err != nil {
 		return nil, err
@@ -43,21 +45,31 @@ func (f *Framework) GetMongoDBClient(meta metav1.ObjectMeta, tunnel *portforward
 
 	user := "root"
 	pass, err := f.GetMongoDBRootPassword(mongodb)
+	if err != nil {
+		return nil, err
+	}
 
 	clientOpts := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%s@127.0.0.1:%v", user, pass, tunnel.Local))
-	if isReplSet {
+	if mongodb.Spec.SSLMode == v1alpha1.SSLModeRequireSSL {
+		if err := f.GetSSLCertificate(meta); err != nil {
+			return nil, err
+		}
+		clientOpts = options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%s@localhost:%v/?ssl=true&sslclientcertificatekeyfile=/tmp/mongodb/client.pem&&sslcertificateauthorityfile=/tmp/mongodb/tls.crt", user, pass, tunnel.Local))
+	}
+
+	if (len(isReplSet) > 0 && isReplSet[0]) || IsRepSet(mongodb) {
 		clientOpts.SetDirect(true)
 	}
 	return clientOpts, nil
 }
 
-func (f *Framework) ConnectAndPing(meta metav1.ObjectMeta, clientPodName string, isReplSet bool) (*mongo.Client, *portforward.Tunnel, error) {
+func (f *Framework) ConnectAndPing(meta metav1.ObjectMeta, clientPodName string, isReplSet ...bool) (*mongo.Client, *portforward.Tunnel, error) {
 	tunnel, err := f.ForwardPort(meta, clientPodName)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	clientOpts, err := f.GetMongoDBClient(meta, tunnel, isReplSet)
+	clientOpts, err := f.GetMongoDBClient(meta, tunnel, isReplSet...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -123,7 +135,7 @@ func (f *Framework) GetReplicaMasterNode(meta metav1.ObjectMeta, nodeName string
 	return "", fmt.Errorf("no primary node")
 }
 
-func (f *Framework) GetPrimaryInstance(meta metav1.ObjectMeta, isReplSet bool) (string, error) {
+func (f *Framework) GetPrimaryInstance(meta metav1.ObjectMeta) (string, error) {
 	mongodb, err := f.GetMongoDB(meta)
 	if err != nil {
 		return "", err
@@ -140,16 +152,16 @@ func (f *Framework) GetPrimaryInstance(meta metav1.ObjectMeta, isReplSet bool) (
 	return f.GetReplicaMasterNode(meta, mongodb.RepSetName(), mongodb.Spec.Replicas)
 }
 
-func (f *Framework) EventuallyInsertDocument(meta metav1.ObjectMeta, dbName string, isRepset bool, collectionCount int) GomegaAsyncAssertion {
+func (f *Framework) EventuallyInsertDocument(meta metav1.ObjectMeta, dbName string, collectionCount int) GomegaAsyncAssertion {
 	return Eventually(
 		func() (bool, error) {
-			podName, err := f.GetPrimaryInstance(meta, isRepset)
+			podName, err := f.GetPrimaryInstance(meta)
 			if err != nil {
 				log.Errorln("GetPrimaryInstance error:", err)
 				return false, err
 			}
 
-			client, tunnel, err := f.ConnectAndPing(meta, podName, isRepset)
+			client, tunnel, err := f.ConnectAndPing(meta, podName)
 			if err != nil {
 				log.Errorln("Failed to ConnectAndPing. Reason: ", err)
 				return false, err
@@ -187,16 +199,16 @@ func (f *Framework) EventuallyInsertDocument(meta metav1.ObjectMeta, dbName stri
 	)
 }
 
-func (f *Framework) EventuallyDocumentExists(meta metav1.ObjectMeta, dbName string, isReplSet bool, collectionCount int) GomegaAsyncAssertion {
+func (f *Framework) EventuallyDocumentExists(meta metav1.ObjectMeta, dbName string, collectionCount int) GomegaAsyncAssertion {
 	return Eventually(
 		func() (bool, error) {
-			podName, err := f.GetPrimaryInstance(meta, isReplSet)
+			podName, err := f.GetPrimaryInstance(meta)
 			if err != nil {
 				log.Errorln("GetPrimaryInstance error:", err)
 				return false, err
 			}
 
-			client, tunnel, err := f.ConnectAndPing(meta, podName, isReplSet)
+			client, tunnel, err := f.ConnectAndPing(meta, podName)
 			if err != nil {
 				log.Errorln("Failed to ConnectAndPing. Reason: ", err)
 				return false, err
@@ -238,7 +250,7 @@ func (f *Framework) EventuallyDocumentExists(meta metav1.ObjectMeta, dbName stri
 func (f *Framework) EventuallyEnableSharding(meta metav1.ObjectMeta, dbName string) GomegaAsyncAssertion {
 	return Eventually(
 		func() (bool, error) {
-			podName, err := f.GetPrimaryInstance(meta, false)
+			podName, err := f.GetPrimaryInstance(meta)
 			if err != nil {
 				log.Errorln("GetPrimaryInstance error:", err)
 				return false, err
@@ -275,7 +287,7 @@ func (f *Framework) EventuallyEnableSharding(meta metav1.ObjectMeta, dbName stri
 func (f *Framework) EventuallyCollectionPartitioned(meta metav1.ObjectMeta, dbName string) GomegaAsyncAssertion {
 	return Eventually(
 		func() (bool, error) {
-			podName, err := f.GetPrimaryInstance(meta, false)
+			podName, err := f.GetPrimaryInstance(meta)
 			if err != nil {
 				log.Errorln("GetPrimaryInstance error:", err)
 				return false, err
@@ -351,7 +363,7 @@ func (f *Framework) EventuallyMaxIncomingConnections(meta metav1.ObjectMeta) Gom
 				return 0, err
 			}
 			if mongodb.Spec.ShardTopology == nil {
-				podName, err := f.GetPrimaryInstance(meta, IsRepSet(mongodb))
+				podName, err := f.GetPrimaryInstance(meta)
 				if err != nil {
 					log.Errorln("GetPrimaryInstance error:", err)
 					return 0, err
@@ -412,6 +424,112 @@ func (f *Framework) EventuallyMaxIncomingConnections(meta metav1.ObjectMeta) Gom
 			}
 		},
 		time.Minute*5,
+		time.Second*5,
+	)
+}
+
+func (f *Framework) getClusterAuthModeFromDB(meta metav1.ObjectMeta) (string, error) {
+	podName, err := f.GetPrimaryInstance(meta)
+	if err != nil {
+		log.Errorln("GetPrimaryInstance error:", err)
+		return "", err
+	}
+
+	client, tunnel, err := f.ConnectAndPing(meta, podName, true)
+	if err != nil {
+		return "", fmt.Errorf("failed to ConnectAndPing. Reason: %v", err)
+	}
+	defer tunnel.Close()
+
+	res := make(map[string]interface{})
+	err = client.Database("admin").
+		RunCommand(context.Background(), bson.D{
+			primitive.E{Key: "getParameter", Value: 1},
+			primitive.E{Key: "clusterAuthMode", Value: 1},
+		}).Decode(&res)
+	if err != nil {
+		log.Errorln("RunCommand getCmdLineOpts error:", err)
+		return "", err
+	}
+
+	val, ok := res["clusterAuthMode"]
+	if !ok {
+		return "", fmt.Errorf("clusterAuthMode not found")
+	}
+
+	return val.(string), nil
+}
+
+func (f *Framework) getSSLModeFromDB(meta metav1.ObjectMeta) (string, error) {
+	podName, err := f.GetPrimaryInstance(meta)
+	if err != nil {
+		log.Errorln("GetPrimaryInstance error:", err)
+		return "", err
+	}
+
+	client, tunnel, err := f.ConnectAndPing(meta, podName, true)
+	if err != nil {
+		return "", fmt.Errorf("failed to ConnectAndPing. Reason: %v", err)
+	}
+	defer tunnel.Close()
+
+	res := make(map[string]interface{})
+	err = client.Database("admin").
+		RunCommand(context.Background(), bson.D{
+			primitive.E{Key: "getParameter", Value: 1},
+			primitive.E{Key: "sslMode", Value: 1},
+		}).Decode(&res)
+	if err != nil {
+		log.Errorln("RunCommand getCmdLineOpts error:", err)
+		return "", err
+	}
+
+	val, ok := res["sslMode"]
+	if !ok {
+		return "", fmt.Errorf("sslMode not found")
+	}
+
+	return val.(string), nil
+}
+
+func (f *Framework) EventuallyUserSSLSettings(meta metav1.ObjectMeta, clusterAuthMode *v1alpha1.ClusterAuthMode, sslMode *v1alpha1.SSLMode) GomegaAsyncAssertion {
+	return Eventually(
+		func() (bool, error) {
+			mongodb, err := f.GetMongoDB(meta)
+			if err != nil {
+				return false, err
+			}
+
+			clusterAuth := mongodb.Spec.ClusterAuthMode
+			if clusterAuthMode != nil {
+				clusterAuth = *clusterAuthMode
+			}
+			if clusterAuth != "" {
+				val, err := f.getClusterAuthModeFromDB(meta)
+				if err != nil {
+					return false, err
+				}
+				if val != string(clusterAuth) {
+					return false, fmt.Errorf("expected clusterAuthMode %v, but got %v", clusterAuth, val)
+				}
+			}
+
+			sm := mongodb.Spec.SSLMode
+			if sslMode != nil {
+				sm = *sslMode
+			}
+			if sm != "" {
+				val, err := f.getSSLModeFromDB(meta)
+				if err != nil {
+					return false, err
+				}
+				if val != string(sm) {
+					return false, fmt.Errorf("expected SSLMode %v, but got %v", sm, val)
+				}
+			}
+			return true, nil
+		},
+		time.Minute*10,
 		time.Second*5,
 	)
 }

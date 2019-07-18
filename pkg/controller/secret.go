@@ -7,10 +7,10 @@ import (
 	"github.com/appscode/go/crypto/rand"
 	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
+	"gomodules.xyz/cert"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	core_util "kmodules.xyz/client-go/core/v1"
 )
 
 const (
@@ -20,8 +20,8 @@ const (
 	KeyMongoDBPassword = "password"
 	KeyForKeyFile      = "key.txt"
 
-	DatabaseSecretSuffix = "-auth"
-	KeyFileSecretSuffix  = "-keyfile"
+	DatabaseSecretSuffix    = "-auth"
+	CertificateSecretSuffix = "-cert"
 )
 
 func (c *Controller) ensureDatabaseSecret(mongodb *api.MongoDB) error {
@@ -39,15 +39,15 @@ func (c *Controller) ensureDatabaseSecret(mongodb *api.MongoDB) error {
 			return err
 		}
 		mongodb.Spec.DatabaseSecret = ms.Spec.DatabaseSecret
-	} else if err := c.upgradeDatabaseSecret(mongodb); err != nil {
-		return err
 	}
 
-	// Certificate Secret for mongodb replication
-	if (mongodb.Spec.ReplicaSet != nil || mongodb.Spec.ShardTopology != nil) &&
-		mongodb.Spec.CertificateSecret == nil {
+	return nil
+}
 
-		secretVolumeSource, err := c.createKeyFileSecret(mongodb)
+func (c *Controller) ensureCertSecret(mongodb *api.MongoDB) error {
+	certSecretVolumeSource := mongodb.Spec.CertificateSecret
+	if certSecretVolumeSource == nil {
+		secretVolumeSource, err := c.createCertificateSecret(mongodb)
 		if err != nil {
 			return err
 		}
@@ -61,7 +61,6 @@ func (c *Controller) ensureDatabaseSecret(mongodb *api.MongoDB) error {
 		}
 		mongodb.Spec.CertificateSecret = ms.Spec.CertificateSecret
 	}
-
 	return nil
 }
 
@@ -99,27 +98,8 @@ func (c *Controller) createDatabaseSecret(mongodb *api.MongoDB) (*core.SecretVol
 	}, nil
 }
 
-// This is done to fix 0.8.0 -> 0.9.0 upgrade due to
-// https://github.com/kubedb/mongodb/pull/118/files#diff-10ddaf307bbebafda149db10a28b9c24R18 commit
-func (c *Controller) upgradeDatabaseSecret(mongodb *api.MongoDB) error {
-	meta := metav1.ObjectMeta{
-		Name:      mongodb.Spec.DatabaseSecret.SecretName,
-		Namespace: mongodb.Namespace,
-	}
-
-	_, _, err := core_util.CreateOrPatchSecret(c.Client, meta, func(in *core.Secret) *core.Secret {
-		if _, ok := in.Data[KeyMongoDBUser]; !ok {
-			if val, ok2 := in.Data["user"]; ok2 {
-				in.StringData = map[string]string{KeyMongoDBUser: string(val)}
-			}
-		}
-		return in
-	})
-	return err
-}
-
-func (c *Controller) createKeyFileSecret(mongodb *api.MongoDB) (*core.SecretVolumeSource, error) {
-	tokenSecretName := mongodb.Name + KeyFileSecretSuffix
+func (c *Controller) createCertificateSecret(mongodb *api.MongoDB) (*core.SecretVolumeSource, error) {
+	tokenSecretName := mongodb.Name + CertificateSecretSuffix
 
 	sc, err := c.checkSecret(tokenSecretName, mongodb)
 	if err != nil {
@@ -128,6 +108,19 @@ func (c *Controller) createKeyFileSecret(mongodb *api.MongoDB) (*core.SecretVolu
 	if sc == nil {
 		randToken := rand.GenerateTokenWithLength(756)
 		base64Token := base64.StdEncoding.EncodeToString([]byte(randToken))
+
+		caKey, caCert, err := createCaCertificate()
+		if err != nil {
+			return nil, err
+		}
+		svrPem, err := createPEMCertificate(mongodb, caKey, caCert)
+		if err != nil {
+			return nil, err
+		}
+		clientPem, err := createPEMCertificate(mongodb, caKey, caCert)
+		if err != nil {
+			return nil, err
+		}
 
 		secret := &core.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -138,7 +131,19 @@ func (c *Controller) createKeyFileSecret(mongodb *api.MongoDB) (*core.SecretVolu
 			StringData: map[string]string{
 				KeyForKeyFile: base64Token,
 			},
+			Data: map[string][]byte{
+				string(TLSKey):         cert.EncodePrivateKeyPEM(caKey),
+				string(TLSCert):        cert.EncodeCertPEM(caCert),
+				string(MongoClientPem): clientPem,
+			},
 		}
+
+		// add mongo.pem (for standalone) in secret, only if the db id standalone
+		if mongodb.Spec.ReplicaSet == nil &&
+			mongodb.Spec.ShardTopology == nil {
+			secret.Data[string(MongoServerPem)] = svrPem
+		}
+
 		if _, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Create(secret); err != nil {
 			return nil, err
 		}

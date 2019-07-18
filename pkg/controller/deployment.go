@@ -211,13 +211,35 @@ func (c *Controller) ensureMongosNode(mongodb *api.MongoDB) (kutil.VerbType, err
 		return kutil.VerbUnchanged, err
 	}
 
+	// mongodb.Spec.SSLMode & mongodb.Spec.ClusterAuthMode can be empty if upgraded operator from
+	// previous version. But, eventually it will be defaulted. TODO: delete in future.
+	sslMode := mongodb.Spec.SSLMode
+	if sslMode == "" {
+		sslMode = api.SSLModeDisabled
+	}
+	clusterAuth := mongodb.Spec.ClusterAuthMode
+	if clusterAuth == "" {
+		clusterAuth = api.ClusterAuthModeKeyFile
+		if sslMode != api.SSLModeDisabled {
+			clusterAuth = api.ClusterAuthModeX509
+		}
+	}
+
 	cmds := []string{"mongos"}
 	args := []string{
 		"--bind_ip=0.0.0.0",
 		"--port=" + strconv.Itoa(MongoDBPort),
 		"--configdb=$(CONFIGDB_REPSET)",
-		"--clusterAuthMode=keyFile",
+		"--clusterAuthMode=" + string(clusterAuth),
+		"--sslMode=" + string(sslMode),
 		"--keyFile=" + configDirectoryPath + "/" + KeyForKeyFile,
+	}
+
+	if sslMode != api.SSLModeDisabled {
+		args = append(args, []string{
+			fmt.Sprintf("--sslCAFile=/data/configdb/%v", TLSCert),
+			fmt.Sprintf("--sslPEMKeyFile=/data/configdb/%v", MongoServerPem),
+		}...)
 	}
 
 	// shardDsn List, separated by space ' '
@@ -238,6 +260,10 @@ func (c *Controller) ensureMongosNode(mongodb *api.MongoDB) (kutil.VerbType, err
 			Name:  "SHARD_REPSETS",
 			Value: shardDsn,
 		},
+		{
+			Name:  "SERVICE_NAME",
+			Value: mongodb.ServiceName(),
+		},
 	}
 
 	initContnr, initvolumes := installInitContainer(
@@ -257,10 +283,10 @@ func (c *Controller) ensureMongosNode(mongodb *api.MongoDB) (kutil.VerbType, err
 	}
 
 	initContainers = append(initContainers, initContnr)
-	volumes = append(volumes, initvolumes)
+	volumes = core_util.UpsertVolume(volumes, initvolumes...)
 
 	if mongodb.Spec.Init != nil && mongodb.Spec.Init.ScriptSource != nil {
-		volumes = append(volumes, core.Volume{
+		volumes = core_util.UpsertVolume(volumes, core.Volume{
 			Name:         "initial-script",
 			VolumeSource: mongodb.Spec.Init.ScriptSource.VolumeSource,
 		})
@@ -284,7 +310,7 @@ func (c *Controller) ensureMongosNode(mongodb *api.MongoDB) (kutil.VerbType, err
 		"mongos.sh",
 	)
 	initContainers = append(initContainers, bootstrpContnr)
-	volumes = append(volumes, bootstrpVol...)
+	volumes = core_util.UpsertVolume(volumes, bootstrpVol...)
 
 	opts := workloadOptions{
 		stsName:        mongodb.MongosNodeName(),
@@ -320,6 +346,20 @@ func mongosInitContainer(
 
 	envList = core_util.UpsertEnvVars(envList, podTemplate.Spec.Env...)
 
+	// mongodb.Spec.SSLMode & mongodb.Spec.ClusterAuthMode can be empty if upgraded operator from
+	// previous version. But, eventually it will be defaulted. TODO: delete in future.
+	sslMode := mongodb.Spec.SSLMode
+	if sslMode == "" {
+		sslMode = api.SSLModeDisabled
+	}
+	clusterAuth := mongodb.Spec.ClusterAuthMode
+	if clusterAuth == "" {
+		clusterAuth = api.ClusterAuthModeKeyFile
+		if sslMode != api.SSLModeDisabled {
+			clusterAuth = api.ClusterAuthModeX509
+		}
+	}
+
 	bootstrapContainer := core.Container{
 		Name:            InitBootstrapContainerName,
 		Image:           mongodbVersion.Spec.DB.Image,
@@ -333,6 +373,14 @@ func mongosInitContainer(
 			{
 				Name:  "AUTH",
 				Value: "true",
+			},
+			{
+				Name:  "SSL_MODE",
+				Value: string(sslMode),
+			},
+			{
+				Name:  "CLUSTER_AUTH_MODE",
+				Value: string(clusterAuth),
 			},
 			{
 				Name: "MONGO_INITDB_ROOT_USERNAME",
