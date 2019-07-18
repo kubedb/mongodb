@@ -16,6 +16,7 @@ import (
 	rbac "k8s.io/api/rbac/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	meta_util "kmodules.xyz/client-go/meta"
 	store "kmodules.xyz/objectstore-api/api/v1"
 	ofst "kmodules.xyz/offshoot-api/api/v1"
@@ -1426,10 +1427,19 @@ var _ = Describe("MongoDB", func() {
 				var rs *stashV1beta1.RestoreSession
 				var repo *stashV1alpha1.Repository
 
+				var anotherMongoDB *api.MongoDB
+
 				BeforeEach(func() {
-					skipSnapshotDataChecking = true
 					if !f.FoundStashCRDs() {
 						Skip("Skipping tests for stash integration. reason: stash operator is not running.")
+					}
+					skipSnapshotDataChecking = true
+					anotherMongoDB = f.MongoDBStandalone()
+					anotherMongoDB.Spec.Init = &api.InitSpec{
+						SnapshotSource: &api.SnapshotSourceSpec{
+							Namespace: snapshot.Namespace,
+							Name:      snapshot.Name,
+						},
 					}
 				})
 
@@ -1448,10 +1458,6 @@ var _ = Describe("MongoDB", func() {
 
 					By("Deleting Repository")
 					err = f.DeleteRepository(repo.ObjectMeta)
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Deleting Stash RBACs")
-					err = f.DeleteStashMgRBAC(mongodb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 				})
 
@@ -1472,18 +1478,23 @@ var _ = Describe("MongoDB", func() {
 				}
 
 				var shouldInitializeFromStash = func() {
-					By("Ensuring Stash RBACs")
-					err := f.EnsureStashMgRBAC(mongodb.ObjectMeta)
-					Expect(err).NotTo(HaveOccurred())
-
 					// Create and wait for running MongoDB
 					createAndWaitForRunning()
 
+					if enableSharding {
+						By("Enable sharding for db:" + dbName)
+						f.EventuallyEnableSharding(mongodb.ObjectMeta, dbName).Should(BeTrue())
+					}
+					if verifySharding {
+						By("Check if db " + dbName + " is set to partitioned")
+						f.EventuallyCollectionPartitioned(mongodb.ObjectMeta, dbName).Should(Equal(enableSharding))
+					}
+
 					By("Insert Document Inside DB")
-					f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName, 3).Should(BeTrue())
+					f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 50).Should(BeTrue())
 
 					By("Checking Inserted Document")
-					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 3).Should(BeTrue())
+					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 50).Should(BeTrue())
 
 					By("Create Secret")
 					err = f.CreateSecret(secret)
@@ -1511,7 +1522,7 @@ var _ = Describe("MongoDB", func() {
 					garbageMongoDB.Items = append(garbageMongoDB.Items, *oldMongoDB)
 
 					By("Create mongodb from stash")
-					*mongodb = *f.MongoDBStandalone()
+					mongodb = anotherMongoDB // without value?
 					rs = f.RestoreSession(mongodb.ObjectMeta, oldMongoDB.ObjectMeta)
 					mongodb.Spec.DatabaseSecret = oldMongoDB.Spec.DatabaseSecret
 					mongodb.Spec.Init = &api.InitSpec{
@@ -1534,8 +1545,13 @@ var _ = Describe("MongoDB", func() {
 					By("Wait for Running mongodb")
 					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
 
-					By("Checking Inserted Document")
-					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 3).Should(BeTrue())
+					if verifySharding && mongodb.Spec.ShardTopology != nil {
+						By("Check if db " + dbName + " is set to partitioned")
+						f.EventuallyCollectionPartitioned(mongodb.ObjectMeta, dbName).Should(Equal(enableSharding))
+					}
+
+					By("Checking previously Inserted Document")
+					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 50).Should(BeTrue())
 				}
 
 				Context("From GCS backend", func() {
@@ -1557,8 +1573,171 @@ var _ = Describe("MongoDB", func() {
 					})
 
 					It("should run successfully", shouldInitializeFromStash)
-				})
 
+					Context("With Replica Set", func() {
+						BeforeEach(func() {
+							mongodb = f.MongoDBRS()
+							anotherMongoDB = f.MongoDBRS()
+							secret = f.SecretForGCSBackend()
+							secret = f.PatchSecretForRestic(secret)
+							bc = f.BackupConfiguration(mongodb.ObjectMeta)
+							bs = f.BackupSession(mongodb.ObjectMeta)
+							repo = f.Repository(mongodb.ObjectMeta, secret.Name)
+
+							repo.Spec.Backend = store.Backend{
+								GCS: &store.GCSSpec{
+									Bucket: os.Getenv("GCS_BUCKET_NAME"),
+									Prefix: fmt.Sprintf("stash/%v/%v", mongodb.Namespace, mongodb.Name),
+								},
+								StorageSecretName: secret.Name,
+							}
+						})
+						It("should take Snapshot successfully", shouldInitializeFromStash)
+					})
+
+					Context("With Sharding", func() {
+						BeforeEach(func() {
+							verifySharding = true
+							anotherMongoDB = f.MongoDBShard()
+							mongodb = f.MongoDBShard()
+							secret = f.SecretForGCSBackend()
+							secret = f.PatchSecretForRestic(secret)
+							bc = f.BackupConfiguration(mongodb.ObjectMeta)
+							bs = f.BackupSession(mongodb.ObjectMeta)
+							repo = f.Repository(mongodb.ObjectMeta, secret.Name)
+
+							repo.Spec.Backend = store.Backend{
+								GCS: &store.GCSSpec{
+									Bucket: os.Getenv("GCS_BUCKET_NAME"),
+									Prefix: fmt.Sprintf("stash/%v/%v", mongodb.Namespace, mongodb.Name),
+								},
+								StorageSecretName: secret.Name,
+							}
+						})
+						Context("With Sharding disabled database", func() {
+							BeforeEach(func() {
+								enableSharding = false
+							})
+							It("should initialize database successfully", shouldInitializeFromStash)
+						})
+
+						Context("With Sharding Enabled database", func() {
+							BeforeEach(func() {
+								enableSharding = true
+							})
+							It("should initialize database successfully", shouldInitializeFromStash)
+						})
+					})
+
+					Context("From Sharding to standalone", func() {
+						var customAppBindingName string
+						BeforeEach(func() {
+							enableSharding = true
+							mongodb = f.MongoDBShard()
+							anotherMongoDB = f.MongoDBStandalone()
+							customAppBindingName = mongodb.Name + "custom"
+							bc = f.BackupConfiguration(mongodb.ObjectMeta)
+							bs = f.BackupSession(mongodb.ObjectMeta)
+							repo = f.Repository(mongodb.ObjectMeta, secret.Name)
+
+							repo.Spec.Backend = store.Backend{
+								GCS: &store.GCSSpec{
+									Bucket: os.Getenv("GCS_BUCKET_NAME"),
+									Prefix: fmt.Sprintf("stash/%v/%v", mongodb.Namespace, mongodb.Name),
+								},
+								StorageSecretName: secret.Name,
+							}
+						})
+
+						AfterEach(func() {
+							By("Deleting custom AppBindig")
+							err = f.DeleteAppBinding(metav1.ObjectMeta{Name: customAppBindingName, Namespace: mongodb.Namespace})
+							Expect(err).NotTo(HaveOccurred())
+						})
+
+						It("should take Snapshot successfully", func() {
+							// Create and wait for running MongoDB
+							createAndWaitForRunning()
+
+							if enableSharding {
+								By("Enable sharding for db:" + dbName)
+								f.EventuallyEnableSharding(mongodb.ObjectMeta, dbName).Should(BeTrue())
+							}
+							if verifySharding {
+								By("Check if db " + dbName + " is set to partitioned")
+								f.EventuallyCollectionPartitioned(mongodb.ObjectMeta, dbName).Should(Equal(enableSharding))
+							}
+
+							By("Insert Document Inside DB")
+							f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 50).Should(BeTrue())
+
+							By("Checking Inserted Document")
+							f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 50).Should(BeTrue())
+
+							err = f.EnsureCustomAppBinding(mongodb, customAppBindingName)
+							Expect(err).NotTo(HaveOccurred())
+
+							By("Create Secret")
+							err = f.CreateSecret(secret)
+							Expect(err).NotTo(HaveOccurred())
+
+							By("Create Repositories")
+							err = f.CreateRepository(repo)
+							Expect(err).NotTo(HaveOccurred())
+
+							bc.Spec.Target.Ref.Name = customAppBindingName
+
+							By("Create BackupConfiguration")
+							err = f.CreateBackupConfiguration(bc)
+							Expect(err).NotTo(HaveOccurred())
+
+							By("Create BackupSession")
+							err = f.CreateBackupSession(bs)
+							Expect(err).NotTo(HaveOccurred())
+
+							// eventually backupsession succeeded
+							By("Check for Succeeded backupsession")
+							f.EventuallyBackupSessionPhase(bs.ObjectMeta).Should(Equal(stashV1beta1.BackupSessionSucceeded))
+
+							oldMongoDB, err := f.GetMongoDB(mongodb.ObjectMeta)
+							Expect(err).NotTo(HaveOccurred())
+
+							garbageMongoDB.Items = append(garbageMongoDB.Items, *oldMongoDB)
+
+							By("Create mongodb from stash")
+							mongodb = anotherMongoDB // without value?
+							rs = f.RestoreSession(mongodb.ObjectMeta, oldMongoDB.ObjectMeta)
+							mongodb.Spec.DatabaseSecret = oldMongoDB.Spec.DatabaseSecret
+							mongodb.Spec.Init = &api.InitSpec{
+								StashRestoreSession: &core.LocalObjectReference{
+									Name: rs.Name,
+								},
+							}
+
+							// Create and wait for running MongoDB
+							createAndWaitForInitializing()
+
+							By("Create RestoreSession")
+							err = f.CreateRestoreSession(rs)
+							Expect(err).NotTo(HaveOccurred())
+
+							// eventually backupsession succeeded
+							By("Check for Succeeded restoreSession")
+							f.EventuallyRestoreSessionPhase(rs.ObjectMeta).Should(Equal(stashV1beta1.RestoreSessionSucceeded))
+
+							By("Wait for Running mongodb")
+							f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+
+							if verifySharding && mongodb.Spec.ShardTopology != nil {
+								By("Check if db " + dbName + " is set to partitioned")
+								f.EventuallyCollectionPartitioned(mongodb.ObjectMeta, dbName).Should(Equal(enableSharding))
+							}
+
+							By("Checking previously Inserted Document")
+							f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 50).Should(BeTrue())
+						})
+					})
+				})
 			})
 		})
 

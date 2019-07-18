@@ -90,6 +90,7 @@ func BulkWrite(
 		WriteErrors: make([]BulkWriteError, 0),
 	}
 
+	var lastErr error
 	var opIndex int64 // the operation index for the upsertedIDs map
 	continueOnError := !ordered
 	for _, batch := range batches {
@@ -109,16 +110,26 @@ func BulkWrite(
 
 		if !continueOnError && (err != nil || len(batchErr.WriteErrors) > 0 || batchErr.WriteConcernError != nil) {
 			if err != nil {
-				return result.BulkWrite{}, err
+				return bwRes, err
 			}
 
-			return result.BulkWrite{}, bwErr
+			return bwRes, bwErr
+		}
+
+		if err != nil {
+			lastErr = err
 		}
 
 		opIndex += int64(len(batch.models))
 	}
 
 	bwRes.MatchedCount -= bwRes.UpsertedCount
+	if lastErr != nil {
+		return bwRes, lastErr
+	}
+	if len(bwErr.WriteErrors) > 0 || bwErr.WriteConcernError != nil {
+		return bwRes, bwErr
+	}
 	return bwRes, nil
 }
 
@@ -153,6 +164,7 @@ func runBatch(
 
 		batchRes.InsertedCount = int64(res.N)
 		writeErrors = res.WriteErrors
+		batchErr.WriteConcernError = res.WriteConcernError
 	case DeleteOneModel, DeleteManyModel:
 		res, err := runDelete(ctx, ns, topo, selector, ss, sess, clock, wc, retryWrite, batch, continueOnError, registry)
 		if err != nil {
@@ -161,6 +173,7 @@ func runBatch(
 
 		batchRes.DeletedCount = int64(res.N)
 		writeErrors = res.WriteErrors
+		batchErr.WriteConcernError = res.WriteConcernError
 	case ReplaceOneModel, UpdateOneModel, UpdateManyModel:
 		res, err := runUpdate(ctx, ns, topo, selector, ss, sess, clock, wc, retryWrite, batch, bypassDocValidation,
 			continueOnError, registry)
@@ -172,6 +185,7 @@ func runBatch(
 		batchRes.ModifiedCount = res.ModifiedCount
 		batchRes.UpsertedCount = int64(len(res.Upserted))
 		writeErrors = res.WriteErrors
+		batchErr.WriteConcernError = res.WriteConcernError
 		for _, upsert := range res.Upserted {
 			batchRes.UpsertedIDs[upsert.Index] = upsert.ID
 		}
@@ -225,8 +239,9 @@ func runInsert(
 		WriteConcern:    wc,
 	}
 
+	cmd.Opts = []bsonx.Elem{{"ordered", bsonx.Boolean(!continueOnError)}}
 	if bypassDocValidation != nil {
-		cmd.Opts = []bsonx.Elem{{"bypassDocumentValidation", bsonx.Boolean(*bypassDocValidation)}}
+		cmd.Opts = append(cmd.Opts, bsonx.Elem{"bypassDocumentValidation", bsonx.Boolean(*bypassDocValidation)})
 	}
 
 	if !retrySupported(topo, ss.Description(), cmd.Session, cmd.WriteConcern) || !retryWrite || !batch.canRetry {
@@ -295,6 +310,7 @@ func runDelete(
 		Clock:           clock,
 		WriteConcern:    wc,
 	}
+	cmd.Opts = []bsonx.Elem{{"ordered", bsonx.Boolean(!continueOnError)}}
 
 	if !retrySupported(topo, ss.Description(), cmd.Session, cmd.WriteConcern) || !retryWrite || !batch.canRetry {
 		if cmd.Session != nil {
@@ -366,9 +382,11 @@ func runUpdate(
 		Clock:           clock,
 		WriteConcern:    wc,
 	}
+
+	cmd.Opts = []bsonx.Elem{{"ordered", bsonx.Boolean(!continueOnError)}}
 	if bypassDocValidation != nil {
 		// TODO this is temporary!
-		cmd.Opts = []bsonx.Elem{{"bypassDocumentValidation", bsonx.Boolean(*bypassDocValidation)}}
+		cmd.Opts = append(cmd.Opts, bsonx.Elem{"bypassDocumentValidation", bsonx.Boolean(*bypassDocValidation)})
 		//cmd.Opts = []option.UpdateOptioner{option.OptBypassDocumentValidation(bypassDocValidation)}
 	}
 

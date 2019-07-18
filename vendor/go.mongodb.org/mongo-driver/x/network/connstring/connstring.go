@@ -26,7 +26,7 @@ func Parse(s string) (ConnString, error) {
 	var p parser
 	err := p.parse(s)
 	if err != nil {
-		err = internal.WrapErrorf(err, "error parsing uri (%s)", s)
+		err = internal.WrapErrorf(err, "error parsing uri")
 	}
 	return p.ConnString, err
 }
@@ -309,7 +309,7 @@ func (p *parser) setDefaultAuthParams(dbName string) error {
 			}
 		}
 	case "":
-		if p.AuthSource == "" {
+		if p.AuthSource == "" && (p.AuthMechanismProperties != nil || p.Username != "" || p.PasswordSet) {
 			p.AuthSource = dbName
 			if p.AuthSource == "" {
 				p.AuthSource = "admin"
@@ -380,6 +380,9 @@ func (p *parser) validateAuth() error {
 			return fmt.Errorf("SCRAM-SHA-256 cannot have mechanism properties")
 		}
 	case "":
+		if p.Username == "" && p.AuthSource != "" {
+			return fmt.Errorf("authsource without username is invalid")
+		}
 	default:
 		return fmt.Errorf("invalid auth mechanism")
 	}
@@ -546,6 +549,11 @@ func (p *parser) addOption(pair string) error {
 	case "readpreference":
 		p.ReadPreference = value
 	case "readpreferencetags":
+		if value == "" {
+			// for when readPreferenceTags= at end of URI
+			break
+		}
+
 		tags := make(map[string]string)
 		items := strings.Split(value, ",")
 		for _, item := range items {

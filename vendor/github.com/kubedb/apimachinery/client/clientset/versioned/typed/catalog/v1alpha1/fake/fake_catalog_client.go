@@ -48,6 +48,10 @@ func (c *FakeCatalogV1alpha1) MySQLVersions() v1alpha1.MySQLVersionInterface {
 	return &FakeMySQLVersions{c}
 }
 
+func (c *FakeCatalogV1alpha1) PerconaVersions() v1alpha1.PerconaVersionInterface {
+	return &FakePerconaVersions{c}
+}
+
 func (c *FakeCatalogV1alpha1) PostgresVersions() v1alpha1.PostgresVersionInterface {
 	return &FakePostgresVersions{c}
 }

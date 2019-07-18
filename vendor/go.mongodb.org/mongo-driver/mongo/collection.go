@@ -187,26 +187,16 @@ func (coll *Collection) BulkWrite(ctx context.Context, models []WriteModel,
 		coll.registry,
 		opts...,
 	)
-
-	if err != nil {
-		if conv, ok := err.(driver.BulkWriteException); ok {
-			return &BulkWriteResult{}, BulkWriteException{
-				WriteConcernError: convertWriteConcernError(conv.WriteConcernError),
-				WriteErrors:       convertBulkWriteErrors(conv.WriteErrors),
-			}
-		}
-
-		return &BulkWriteResult{}, replaceErrors(err)
-	}
-
-	return &BulkWriteResult{
+	result := BulkWriteResult{
 		InsertedCount: res.InsertedCount,
 		MatchedCount:  res.MatchedCount,
 		ModifiedCount: res.ModifiedCount,
 		DeletedCount:  res.DeletedCount,
 		UpsertedCount: res.UpsertedCount,
 		UpsertedIDs:   res.UpsertedIDs,
-	}, nil
+	}
+
+	return &result, replaceErrors(err)
 }
 
 // InsertOne inserts a single document into the collection.
@@ -1001,6 +991,9 @@ func (coll *Collection) FindOne(ctx context.Context, filter interface{},
 			Sort:                opt.Sort,
 		}
 	}
+	// Unconditionally send a limit to make sure only one document is returned and the cursor is not kept open
+	// by the server.
+	findOpts = append(findOpts, options.Find().SetLimit(-1))
 
 	batchCursor, err := driver.Find(
 		ctx, cmd,
