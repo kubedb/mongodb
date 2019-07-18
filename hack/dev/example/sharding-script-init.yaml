@@ -8,7 +8,7 @@ spec:
     scriptSource:
       gitRepo:
         directory: .
-        repository: https://github.com/kubedb/mongodb-init-scripts.git
+        repository: https://kubedb.dev/mongodb-init-scripts.git
   storageType: Durable
   shardTopology:
     configServer:

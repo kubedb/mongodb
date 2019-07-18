@@ -6,10 +6,6 @@ import (
 
 	types2 "github.com/appscode/go/encoding/json/types"
 	"github.com/appscode/go/types"
-	catalog "github.com/kubedb/apimachinery/apis/catalog/v1alpha1"
-	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
-	extFake "github.com/kubedb/apimachinery/client/clientset/versioned/fake"
-	"github.com/kubedb/apimachinery/client/clientset/versioned/scheme"
 	admission "k8s.io/api/admission/v1beta1"
 	apps "k8s.io/api/apps/v1"
 	authenticationV1 "k8s.io/api/authentication/v1"
@@ -23,6 +19,10 @@ import (
 	clientSetScheme "k8s.io/client-go/kubernetes/scheme"
 	"kmodules.xyz/client-go/meta"
 	mona "kmodules.xyz/monitoring-agent-api/api/v1"
+	catalog "kubedb.dev/apimachinery/apis/catalog/v1alpha1"
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+	extFake "kubedb.dev/apimachinery/client/clientset/versioned/fake"
+	"kubedb.dev/apimachinery/client/clientset/versioned/scheme"
 )
 
 func init() {
@@ -282,7 +282,7 @@ func sampleMongoDB() api.MongoDB {
 				ScriptSource: &api.ScriptSourceSpec{
 					VolumeSource: core.VolumeSource{
 						GitRepo: &core.GitRepoVolumeSource{
-							Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+							Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 							Directory:  ".",
 						},
 					},

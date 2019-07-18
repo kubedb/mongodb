@@ -6,10 +6,6 @@ import (
 
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
-	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
-	"github.com/kubedb/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
-	"github.com/kubedb/mongodb/test/e2e/framework"
-	"github.com/kubedb/mongodb/test/e2e/matcher"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
@@ -20,6 +16,10 @@ import (
 	meta_util "kmodules.xyz/client-go/meta"
 	store "kmodules.xyz/objectstore-api/api/v1"
 	ofst "kmodules.xyz/offshoot-api/api/v1"
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
+	"kubedb.dev/mongodb/test/e2e/framework"
+	"kubedb.dev/mongodb/test/e2e/matcher"
 	stashV1alpha1 "stash.appscode.dev/stash/apis/stash/v1alpha1"
 	stashV1beta1 "stash.appscode.dev/stash/apis/stash/v1beta1"
 )
@@ -732,7 +732,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -821,7 +821,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -893,7 +893,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -1152,7 +1152,7 @@ var _ = Describe("MongoDB", func() {
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
-									Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+									Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 									Directory:  ".",
 								},
 							},
@@ -1176,7 +1176,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -1199,7 +1199,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -1420,7 +1420,7 @@ var _ = Describe("MongoDB", func() {
 			// To run this test,
 			// 1st: Deploy stash latest operator
 			// 2nd: create mongodb related tasks and functions from
-			// `github.com/kubedb/mongodb/hack/dev/examples/stash01_config.yaml`
+			// `kubedb.dev/mongodb/hack/dev/examples/stash01_config.yaml`
 			Context("With Stash/Restic", func() {
 				var bc *stashV1beta1.BackupConfiguration
 				var bs *stashV1beta1.BackupSession
@@ -1860,7 +1860,7 @@ var _ = Describe("MongoDB", func() {
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
-									Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+									Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 									Directory:  ".",
 								},
 							},
@@ -1916,7 +1916,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -1933,7 +1933,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -2060,7 +2060,7 @@ var _ = Describe("MongoDB", func() {
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
-									Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+									Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 									Directory:  ".",
 								},
 							},
@@ -2118,7 +2118,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -2135,7 +2135,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -2700,7 +2700,7 @@ var _ = Describe("MongoDB", func() {
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
-									Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+									Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 									Directory:  ".",
 								},
 							},
@@ -2744,7 +2744,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -2761,7 +2761,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -2843,7 +2843,7 @@ var _ = Describe("MongoDB", func() {
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
-									Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+									Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 									Directory:  ".",
 								},
 							},
@@ -2910,7 +2910,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -2928,7 +2928,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},

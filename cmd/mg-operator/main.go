@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
-	"github.com/kubedb/mongodb/pkg/cmds"
 	"kmodules.xyz/client-go/logs"
+	"kubedb.dev/mongodb/pkg/cmds"
 )
 
 func main() {

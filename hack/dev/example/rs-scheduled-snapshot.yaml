@@ -18,7 +18,7 @@ spec:
   init:
     scriptSource:
       gitRepo:
-        repository: "https://github.com/kubedb/mongodb-init-scripts.git"
+        repository: "https://kubedb.dev/mongodb-init-scripts.git"
         directory: .
   backupSchedule:
     cronExpression: "@every 1m"

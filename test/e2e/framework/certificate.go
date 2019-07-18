@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 
 	"github.com/appscode/go/ioutil"
-	"github.com/kubedb/mongodb/pkg/controller"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"kubedb.dev/mongodb/pkg/controller"
 )
 
 const (
