@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"os"
 
-	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
-	"github.com/kubedb/mongodb/test/e2e/framework"
-	"github.com/kubedb/mongodb/test/e2e/matcher"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	store "kmodules.xyz/objectstore-api/api/v1"
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+	"kubedb.dev/mongodb/test/e2e/framework"
+	"kubedb.dev/mongodb/test/e2e/matcher"
 )
 
 var _ = Describe("MongoDB SSL", func() {
@@ -469,7 +469,7 @@ var _ = Describe("MongoDB SSL", func() {
 								ScriptSource: &api.ScriptSourceSpec{
 									VolumeSource: core.VolumeSource{
 										GitRepo: &core.GitRepoVolumeSource{
-											Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+											Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 											Directory:  ".",
 										},
 									},
@@ -519,7 +519,7 @@ var _ = Describe("MongoDB SSL", func() {
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+												Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 												Directory:  ".",
 											},
 										},
@@ -570,7 +570,7 @@ var _ = Describe("MongoDB SSL", func() {
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+												Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 												Directory:  ".",
 											},
 										},
@@ -638,7 +638,7 @@ var _ = Describe("MongoDB SSL", func() {
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+												Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 												Directory:  ".",
 											},
 										},
@@ -689,7 +689,7 @@ var _ = Describe("MongoDB SSL", func() {
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+												Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 												Directory:  ".",
 											},
 										},
@@ -740,7 +740,7 @@ var _ = Describe("MongoDB SSL", func() {
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+												Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 												Directory:  ".",
 											},
 										},
@@ -791,7 +791,7 @@ var _ = Describe("MongoDB SSL", func() {
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+												Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 												Directory:  ".",
 											},
 										},
@@ -842,7 +842,7 @@ var _ = Describe("MongoDB SSL", func() {
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+												Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 												Directory:  ".",
 											},
 										},
@@ -893,7 +893,7 @@ var _ = Describe("MongoDB SSL", func() {
 								ScriptSource: &api.ScriptSourceSpec{
 									VolumeSource: core.VolumeSource{
 										GitRepo: &core.GitRepoVolumeSource{
-											Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+											Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 											Directory:  ".",
 										},
 									},
@@ -943,7 +943,7 @@ var _ = Describe("MongoDB SSL", func() {
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+												Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 												Directory:  ".",
 											},
 										},
@@ -994,7 +994,7 @@ var _ = Describe("MongoDB SSL", func() {
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+												Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 												Directory:  ".",
 											},
 										},
@@ -1077,7 +1077,7 @@ var _ = Describe("MongoDB SSL", func() {
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+												Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 												Directory:  ".",
 											},
 										},
@@ -1128,7 +1128,7 @@ var _ = Describe("MongoDB SSL", func() {
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+												Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 												Directory:  ".",
 											},
 										},
@@ -1211,7 +1211,7 @@ var _ = Describe("MongoDB SSL", func() {
 								ScriptSource: &api.ScriptSourceSpec{
 									VolumeSource: core.VolumeSource{
 										GitRepo: &core.GitRepoVolumeSource{
-											Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+											Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 											Directory:  ".",
 										},
 									},
@@ -1261,7 +1261,7 @@ var _ = Describe("MongoDB SSL", func() {
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+												Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 												Directory:  ".",
 											},
 										},
@@ -1312,7 +1312,7 @@ var _ = Describe("MongoDB SSL", func() {
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
+												Repository: "https://kubedb.dev/mongodb-init-scripts.git",
 												Directory:  ".",
 											},
 										},

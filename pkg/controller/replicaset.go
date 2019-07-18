@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	"github.com/appscode/go/types"
-	catalog "github.com/kubedb/apimachinery/apis/catalog/v1alpha1"
-	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	core "k8s.io/api/core/v1"
 	core_util "kmodules.xyz/client-go/core/v1"
 	ofst "kmodules.xyz/offshoot-api/api/v1"
+	catalog "kubedb.dev/apimachinery/apis/catalog/v1alpha1"
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 )
 
 func topologyInitContainer(

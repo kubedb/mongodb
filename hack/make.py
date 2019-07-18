@@ -35,7 +35,7 @@ import subprocess
 import sys
 from os.path import expandvars, join, dirname
 
-libbuild.REPO_ROOT = expandvars('$GOPATH') + '/src/github.com/kubedb/mongodb'
+libbuild.REPO_ROOT = expandvars('$GOPATH') + '/src/kubedb.dev/mongodb'
 BUILD_METADATA = libbuild.metadata(libbuild.REPO_ROOT)
 libbuild.BIN_MATRIX = {
     'mg-operator': {

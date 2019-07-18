@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"net"
 
-	api "github.com/kubedb/apimachinery/apis/kubedb/v1alpha1"
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 )
 
 const (

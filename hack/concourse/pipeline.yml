@@ -18,7 +18,7 @@ resources:
   type: git
   tags: [cncf]
   source:
-    uri: https://github.com/kubedb/mongodb
+    uri: https://kubedb.dev/mongodb
     branch: master
 
 - name: repo-status
