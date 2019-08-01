@@ -2,7 +2,7 @@
 # export APPSCODE_ENV=dev
 
 # kubedb/installer branch to checkout for installer script.
-export INSTALLER_BRANCH="master"
+export INSTALLER_BRANCH="mongo"
 
 # provide CUSTOM_OPERATOR_TAG for kubedb installer.
 # if APPSCODE_ENV=dev then git_tag will be used as CUSTOM_OPERATOR_TAG

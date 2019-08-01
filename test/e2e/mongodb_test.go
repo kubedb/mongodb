@@ -1421,9 +1421,11 @@ var _ = Describe("MongoDB", func() {
 			// 1st: Deploy stash latest operator
 			// 2nd: create mongodb related tasks and functions from
 			// `kubedb.dev/mongodb/hack/dev/examples/stash01_config.yaml`
-			Context("With Stash/Restic", func() {
+			// TODO: may be moved to another file?
+			Context("With Stash", func() {
 				var bc *stashV1beta1.BackupConfiguration
 				var bs *stashV1beta1.BackupSession
+				var bs2 *stashV1beta1.BackupSession
 				var rs *stashV1beta1.RestoreSession
 				var repo *stashV1alpha1.Repository
 
@@ -1448,8 +1450,12 @@ var _ = Describe("MongoDB", func() {
 					err := f.DeleteBackupConfiguration(bc.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("Deleting BackupSession")
+					By("Deleting BackupSession:" + bs.Name)
 					err = f.DeleteBackupSession(bs.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Deleting BackupSession:" + bs2.Name)
+					err = f.DeleteBackupSession(bs2.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Deleting RestoreSession")
@@ -1491,10 +1497,10 @@ var _ = Describe("MongoDB", func() {
 					}
 
 					By("Insert Document Inside DB")
-					f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 50).Should(BeTrue())
+					f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName, 25).Should(BeTrue())
 
 					By("Checking Inserted Document")
-					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 50).Should(BeTrue())
+					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 25).Should(BeTrue())
 
 					By("Create Secret")
 					err = f.CreateSecret(secret)
@@ -1515,6 +1521,20 @@ var _ = Describe("MongoDB", func() {
 					// eventually backupsession succeeded
 					By("Check for Succeeded backupsession")
 					f.EventuallyBackupSessionPhase(bs.ObjectMeta).Should(Equal(stashV1beta1.BackupSessionSucceeded))
+
+					//By("Insert Document Inside DB")
+					//f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName, 25).Should(BeTrue())
+					//
+					//By("Checking Inserted Document")
+					//f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 50).Should(BeTrue())
+
+					By("Create BackupSession")
+					err = f.CreateBackupSession(bs2)
+					Expect(err).NotTo(HaveOccurred())
+
+					// eventually backupsession succeeded
+					By("Check for Succeeded backupsession")
+					f.EventuallyBackupSessionPhase(bs2.ObjectMeta).Should(Equal(stashV1beta1.BackupSessionSucceeded))
 
 					oldMongoDB, err := f.GetMongoDB(mongodb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
@@ -1551,7 +1571,7 @@ var _ = Describe("MongoDB", func() {
 					}
 
 					By("Checking previously Inserted Document")
-					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 50).Should(BeTrue())
+					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 25).Should(BeTrue())
 				}
 
 				Context("From GCS backend", func() {
@@ -1561,6 +1581,7 @@ var _ = Describe("MongoDB", func() {
 						secret = f.PatchSecretForRestic(secret)
 						bc = f.BackupConfiguration(mongodb.ObjectMeta)
 						bs = f.BackupSession(mongodb.ObjectMeta)
+						bs2 = f.BackupSession(mongodb.ObjectMeta)
 						repo = f.Repository(mongodb.ObjectMeta, secret.Name)
 
 						repo.Spec.Backend = store.Backend{
@@ -1574,6 +1595,36 @@ var _ = Describe("MongoDB", func() {
 
 					It("should run successfully", shouldInitializeFromStash)
 
+					Context("Standalone with SSL", func() {
+
+						Context("with requireSSL sslMode", func() {
+							BeforeEach(func() {
+								mongodb.Spec.SSLMode = api.SSLModeRequireSSL
+								anotherMongoDB.Spec.SSLMode = api.SSLModeRequireSSL
+							})
+
+							It("should initialize database successfully", shouldInitializeFromStash)
+						})
+
+						Context("with allowSSL sslMode", func() {
+							BeforeEach(func() {
+								mongodb.Spec.SSLMode = api.SSLModeAllowSSL
+								anotherMongoDB.Spec.SSLMode = api.SSLModeAllowSSL
+							})
+
+							It("should initialize database successfully", shouldInitializeFromStash)
+						})
+
+						Context("with preferSSL sslMode", func() {
+							BeforeEach(func() {
+								mongodb.Spec.SSLMode = api.SSLModePreferSSL
+								anotherMongoDB.Spec.SSLMode = api.SSLModePreferSSL
+							})
+
+							It("should initialize database successfully", shouldInitializeFromStash)
+						})
+					})
+
 					Context("With Replica Set", func() {
 						BeforeEach(func() {
 							mongodb = f.MongoDBRS()
@@ -1582,6 +1633,7 @@ var _ = Describe("MongoDB", func() {
 							secret = f.PatchSecretForRestic(secret)
 							bc = f.BackupConfiguration(mongodb.ObjectMeta)
 							bs = f.BackupSession(mongodb.ObjectMeta)
+							bs2 = f.BackupSession(mongodb.ObjectMeta)
 							repo = f.Repository(mongodb.ObjectMeta, secret.Name)
 
 							repo.Spec.Backend = store.Backend{
@@ -1593,6 +1645,45 @@ var _ = Describe("MongoDB", func() {
 							}
 						})
 						It("should take Snapshot successfully", shouldInitializeFromStash)
+
+						Context("with SSL", func() {
+
+							Context("with requireSSL sslMode", func() {
+								BeforeEach(func() {
+									mongodb.Spec.ClusterAuthMode = api.ClusterAuthModeX509
+									mongodb.Spec.SSLMode = api.SSLModeRequireSSL
+
+									anotherMongoDB.Spec.ClusterAuthMode = api.ClusterAuthModeX509
+									anotherMongoDB.Spec.SSLMode = api.SSLModeRequireSSL
+								})
+
+								It("should initialize database successfully", shouldInitializeFromStash)
+							})
+
+							Context("with allowSSL sslMode", func() {
+								BeforeEach(func() {
+									mongodb.Spec.ClusterAuthMode = api.ClusterAuthModeKeyFile
+									mongodb.Spec.SSLMode = api.SSLModeAllowSSL
+
+									anotherMongoDB.Spec.ClusterAuthMode = api.ClusterAuthModeKeyFile
+									anotherMongoDB.Spec.SSLMode = api.SSLModeAllowSSL
+								})
+
+								It("should initialize database successfully", shouldInitializeFromStash)
+							})
+
+							Context("with preferSSL sslMode", func() {
+								BeforeEach(func() {
+									mongodb.Spec.ClusterAuthMode = api.ClusterAuthModeX509
+									mongodb.Spec.SSLMode = api.SSLModePreferSSL
+
+									anotherMongoDB.Spec.ClusterAuthMode = api.ClusterAuthModeX509
+									anotherMongoDB.Spec.SSLMode = api.SSLModePreferSSL
+								})
+
+								It("should initialize database successfully", shouldInitializeFromStash)
+							})
+						})
 					})
 
 					Context("With Sharding", func() {
@@ -1604,6 +1695,7 @@ var _ = Describe("MongoDB", func() {
 							secret = f.PatchSecretForRestic(secret)
 							bc = f.BackupConfiguration(mongodb.ObjectMeta)
 							bs = f.BackupSession(mongodb.ObjectMeta)
+							bs2 = f.BackupSession(mongodb.ObjectMeta)
 							repo = f.Repository(mongodb.ObjectMeta, secret.Name)
 
 							repo.Spec.Backend = store.Backend{
@@ -1618,6 +1710,7 @@ var _ = Describe("MongoDB", func() {
 							BeforeEach(func() {
 								enableSharding = false
 							})
+
 							It("should initialize database successfully", shouldInitializeFromStash)
 						})
 
@@ -1625,7 +1718,50 @@ var _ = Describe("MongoDB", func() {
 							BeforeEach(func() {
 								enableSharding = true
 							})
+
 							It("should initialize database successfully", shouldInitializeFromStash)
+						})
+
+						Context("with SSL", func() {
+							BeforeEach(func() {
+								enableSharding = true
+							})
+
+							FContext("with requireSSL sslMode", func() {
+								BeforeEach(func() {
+									mongodb.Spec.ClusterAuthMode = api.ClusterAuthModeX509
+									mongodb.Spec.SSLMode = api.SSLModeRequireSSL
+
+									anotherMongoDB.Spec.ClusterAuthMode = api.ClusterAuthModeX509
+									anotherMongoDB.Spec.SSLMode = api.SSLModeRequireSSL
+								})
+
+								It("should initialize database successfully", shouldInitializeFromStash)
+							})
+
+							Context("with allowSSL sslMode", func() {
+								BeforeEach(func() {
+									mongodb.Spec.ClusterAuthMode = api.ClusterAuthModeKeyFile
+									mongodb.Spec.SSLMode = api.SSLModeAllowSSL
+
+									anotherMongoDB.Spec.ClusterAuthMode = api.ClusterAuthModeKeyFile
+									anotherMongoDB.Spec.SSLMode = api.SSLModeAllowSSL
+								})
+
+								It("should initialize database successfully", shouldInitializeFromStash)
+							})
+
+							Context("with preferSSL sslMode", func() {
+								BeforeEach(func() {
+									mongodb.Spec.ClusterAuthMode = api.ClusterAuthModeX509
+									mongodb.Spec.SSLMode = api.SSLModePreferSSL
+
+									anotherMongoDB.Spec.ClusterAuthMode = api.ClusterAuthModeX509
+									anotherMongoDB.Spec.SSLMode = api.SSLModePreferSSL
+								})
+
+								It("should initialize database successfully", shouldInitializeFromStash)
+							})
 						})
 					})
 
@@ -1638,6 +1774,7 @@ var _ = Describe("MongoDB", func() {
 							customAppBindingName = mongodb.Name + "custom"
 							bc = f.BackupConfiguration(mongodb.ObjectMeta)
 							bs = f.BackupSession(mongodb.ObjectMeta)
+							bs2 = f.BackupSession(mongodb.ObjectMeta)
 							repo = f.Repository(mongodb.ObjectMeta, secret.Name)
 
 							repo.Spec.Backend = store.Backend{
@@ -1669,10 +1806,10 @@ var _ = Describe("MongoDB", func() {
 							}
 
 							By("Insert Document Inside DB")
-							f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 50).Should(BeTrue())
+							f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName, 50).Should(BeTrue())
 
 							By("Checking Inserted Document")
-							f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 50).Should(BeTrue())
+							f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 50).Should(BeTrue())
 
 							err = f.EnsureCustomAppBinding(mongodb, customAppBindingName)
 							Expect(err).NotTo(HaveOccurred())
@@ -1734,7 +1871,7 @@ var _ = Describe("MongoDB", func() {
 							}
 
 							By("Checking previously Inserted Document")
-							f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, framework.IsRepSet(mongodb), 50).Should(BeTrue())
+							f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 50).Should(BeTrue())
 						})
 					})
 				})

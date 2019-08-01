@@ -135,8 +135,8 @@ func (c *Controller) ensureShardNode(mongodb *api.MongoDB) (kutil.VerbType, erro
 
 		if sslMode != api.SSLModeDisabled {
 			args = append(args, []string{
-				fmt.Sprintf("--sslCAFile=/data/configdb/%v", TLSCert),
-				fmt.Sprintf("--sslPEMKeyFile=/data/configdb/%v", MongoServerPem),
+				fmt.Sprintf("--sslCAFile=/data/configdb/%v", api.MongoTLSCertFileName),
+				fmt.Sprintf("--sslPEMKeyFile=/data/configdb/%v", api.MongoServerPemFileName),
 			}...)
 		}
 
@@ -228,8 +228,8 @@ func (c *Controller) ensureConfigNode(mongodb *api.MongoDB) (kutil.VerbType, err
 
 	if sslMode != api.SSLModeDisabled {
 		args = append(args, []string{
-			fmt.Sprintf("--sslCAFile=/data/configdb/%v", TLSCert),
-			fmt.Sprintf("--sslPEMKeyFile=/data/configdb/%v", MongoServerPem),
+			fmt.Sprintf("--sslCAFile=/data/configdb/%v", api.MongoTLSCertFileName),
+			fmt.Sprintf("--sslPEMKeyFile=/data/configdb/%v", api.MongoServerPemFileName),
 		}...)
 	}
 
@@ -308,8 +308,8 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 
 	if sslMode != api.SSLModeDisabled {
 		args = append(args, []string{
-			fmt.Sprintf("--sslCAFile=/data/configdb/%v", TLSCert),
-			fmt.Sprintf("--sslPEMKeyFile=/data/configdb/%v", MongoServerPem),
+			fmt.Sprintf("--sslCAFile=/data/configdb/%v", api.MongoTLSCertFileName),
+			fmt.Sprintf("--sslPEMKeyFile=/data/configdb/%v", api.MongoServerPemFileName),
 		}...)
 	}
 
@@ -432,7 +432,7 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB, opts workloadOption
 			core.Container{
 				Name:            api.ResourceSingularMongoDB,
 				Image:           mongodbVersion.Spec.DB.Image,
-				ImagePullPolicy: core.PullIfNotPresent,
+				ImagePullPolicy: core.PullAlways, //todo: delete
 				Command:         opts.cmd,
 				Args: meta_util.UpsertArgumentList(
 					opts.args, pt.Spec.Args),
@@ -566,7 +566,7 @@ func installInitContainer(
 	installContainer := core.Container{
 		Name:            InitInstallContainerName,
 		Image:           mongodbVersion.Spec.InitContainer.Image,
-		ImagePullPolicy: core.PullIfNotPresent,
+		ImagePullPolicy: core.PullAlways, //todo: delete
 		Command:         []string{"sh"},
 		Args: []string{
 			"-c",
@@ -582,14 +582,14 @@ func installInitContainer(
   				chmod 600 /data/configdb/key.txt
 			fi
 
-			if [ -f "/keydir-readonly/tls.crt" ]; then
-  				cp /keydir-readonly/tls.crt /data/configdb/tls.crt
-  				chmod 600 /data/configdb/tls.crt
+			if [ -f "/keydir-readonly/ca.cert" ]; then
+				cp /keydir-readonly/ca.cert /data/configdb/ca.cert
+				chmod 600 /data/configdb/ca.cert
 			fi
 
-			if [ -f "/keydir-readonly/tls.key" ]; then
-  				cp /keydir-readonly/tls.key /data/configdb/tls.key
-  				chmod 600 /data/configdb/tls.key
+			if [ -f "/keydir-readonly/ca.key" ]; then
+				cp /keydir-readonly/ca.key /data/configdb/ca.key
+				chmod 600 /data/configdb/ca.key
 			fi
 
 			if [ -f "/keydir-readonly/mongo.pem" ]; then

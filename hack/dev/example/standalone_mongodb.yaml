@@ -4,7 +4,7 @@ metadata:
   name: mgo-quickstart
   namespace: demo
 spec:
-  version: "3.6-v4"
+  version: 3.6-v4
   storage:
     storageClassName: "standard"
     accessModes:
@@ -12,7 +12,5 @@ spec:
     resources:
       requests:
         storage: 1Gi
-  podTemplate:
-    spec:
-      livenessProbe: {}
-      readinessProbe: {}
+  terminationPolicy: WipeOut
+  sslMode: requireSSL

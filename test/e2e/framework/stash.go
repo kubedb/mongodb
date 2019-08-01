@@ -3,6 +3,7 @@ package framework
 import (
 	"time"
 
+	"github.com/appscode/go/crypto/rand"
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -96,7 +97,7 @@ func (f *Framework) DeleteRepository(meta metav1.ObjectMeta) error {
 func (i *Invocation) BackupSession(meta metav1.ObjectMeta) *v1beta1.BackupSession {
 	return &v1beta1.BackupSession{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      meta.Name,
+			Name:      rand.WithUniqSuffix("mg-backup"),
 			Namespace: i.namespace,
 		},
 		Spec: v1beta1.BackupSessionSpec{
@@ -166,7 +167,7 @@ func (f *Framework) EventuallyRestoreSessionPhase(meta metav1.ObjectMeta) Gomega
 		Expect(err).NotTo(HaveOccurred())
 		return restoreSession.Status.Phase
 	},
-		time.Minute*7,
-		time.Second*7,
+		time.Minute*30, // todo: undo
+		time.Second*5,
 	)
 }

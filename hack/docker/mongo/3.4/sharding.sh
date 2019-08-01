@@ -43,8 +43,9 @@ done
 
 # Generate the ca cert
 if [[ ${SSL_MODE} != "disabled" ]]; then
-  ca_crt=/data/configdb/tls.crt
-  ca_key=/data/configdb/tls.key
+  ca_crt=/data/configdb/ca.cert
+  ca_key=/data/configdb/ca.key
+  client_pem=/data/configdb/client.pem
   if [[ ! -f "$ca_crt" ]] || [[ ! -f "$ca_key" ]]; then
     log "ENABLE_SSL is set to true, but $ca_crt or $ca_key file does not exists "
     exit 1
@@ -146,6 +147,13 @@ if mongo "${ssl_args[@]}" --eval "rs.status()" | grep "no replset config has bee
   if [[ "$AUTH" == "true" ]]; then
     log "Creating admin user..."
     mongo admin "${ssl_args[@]}" --eval "db.createUser({user: '$admin_user', pwd: '$admin_password', roles: [{role: 'root', db: 'admin'}]})"
+  fi
+
+  if [[ -f "$client_pem" ]]; then
+    user=$(openssl x509 -in "$client_pem" -inform PEM -subject -nameopt RFC2253 -noout)
+    user=${user#"subject= "}
+    log "Creating root user $user for SSL..." #xref: https://docs.mongodb.com/manual/tutorial/configure-x509-client-authentication/#procedures
+    mongo admin "${admin_creds[@]}" "${ssl_args[@]}" --eval "db.getSiblingDB(\"\$external\").runCommand({createUser: \"$user\",roles:[{role: 'root', db: 'admin'}],})"
   fi
 
   log "Done."

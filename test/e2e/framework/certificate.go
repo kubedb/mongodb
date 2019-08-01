@@ -1,33 +1,21 @@
 package framework
 
 import (
-	"crypto/x509"
-	"encoding/pem"
 	"path/filepath"
 
 	"github.com/appscode/go/ioutil"
 	"github.com/pkg/errors"
-	"gomodules.xyz/cert"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"kubedb.dev/mongodb/pkg/controller"
+	"kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 )
 
 const (
-	certPath   = "/tmp/mongodb/"
-	clientCert = "client.pem"
+	certPath = "/tmp/mongodb/"
 )
 
 // GetSSLCertificate gets ssl certificate of mongodb and creates a client certificate in certPath
+//TODO: use client.pem certificate from secret
 func (f *Framework) GetSSLCertificate(meta v12.ObjectMeta) error {
-	cfg := cert.Config{
-		CommonName:   meta.Name,
-		Organization: []string{"MongoDB Operator"},
-		Usages: []x509.ExtKeyUsage{
-			x509.ExtKeyUsageServerAuth,
-			x509.ExtKeyUsageClientAuth,
-		},
-	}
-
 	mg, err := f.GetMongoDB(meta)
 	if err != nil {
 		return err
@@ -38,40 +26,14 @@ func (f *Framework) GetSSLCertificate(meta v12.ObjectMeta) error {
 		return err
 	}
 
-	caCertBytes := certSecret.Data[string(controller.TLSCert)]
+	caCertBytes := certSecret.Data[string(v1alpha1.MongoTLSCertFileName)]
+	certBytes := certSecret.Data[string(v1alpha1.MongoClientPemFileName)]
 
-	caKeyBlocks, _ := pem.Decode(certSecret.Data[string(controller.TLSKey)])
-	caCertBlocks, _ := pem.Decode(certSecret.Data[string(controller.TLSCert)])
-
-	if !ioutil.WriteString(filepath.Join(certPath, string(controller.TLSCert)), string(caCertBytes)) {
+	if !ioutil.WriteString(filepath.Join(certPath, string(v1alpha1.MongoTLSCertFileName)), string(caCertBytes)) {
 		return errors.New("failed to write client certificate")
 	}
 
-	caKey, err := x509.ParsePKCS1PrivateKey(caKeyBlocks.Bytes)
-	if err != nil {
-		return err
-	}
-
-	caCert, err := x509.ParseCertificate(caCertBlocks.Bytes)
-	if err != nil {
-		return err
-	}
-
-	clientPrivateKey, err := cert.NewPrivateKey()
-	if err != nil {
-		return errors.New("failed to generate key for client certificate")
-	}
-
-	clientCertificate, err := cert.NewSignedCert(cfg, clientPrivateKey, caCert, caKey)
-	if err != nil {
-		return errors.New("failed to sign client certificate")
-	}
-
-	clientKeyByte := cert.EncodePrivateKeyPEM(clientPrivateKey)
-	clientCertByte := cert.EncodeCertPEM(clientCertificate)
-	certBytes := append(clientCertByte, clientKeyByte...)
-
-	if !ioutil.WriteString(filepath.Join(certPath, string(clientCert)), string(certBytes)) {
+	if !ioutil.WriteString(filepath.Join(certPath, string(v1alpha1.MongoClientPemFileName)), string(certBytes)) {
 		return errors.New("failed to write client certificate")
 	}
 
