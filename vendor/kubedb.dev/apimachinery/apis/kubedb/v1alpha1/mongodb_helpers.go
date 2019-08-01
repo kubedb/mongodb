@@ -369,7 +369,7 @@ func (m *MongoDBSpec) SetDefaults() {
 	}
 
 	if (m.ReplicaSet != nil || m.ShardTopology != nil) && m.ClusterAuthMode == "" {
-		if m.SSLMode == SSLModeDisabled {
+		if m.SSLMode == SSLModeDisabled || m.SSLMode == SSLModeAllowSSL {
 			m.ClusterAuthMode = ClusterAuthModeKeyFile
 		} else {
 			m.ClusterAuthMode = ClusterAuthModeX509
