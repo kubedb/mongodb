@@ -76,14 +76,32 @@ func (c *Controller) ensureMongoDBNode(mongodb *api.MongoDB) (kutil.VerbType, er
 }
 
 func (c *Controller) ensureTopologyCluster(mongodb *api.MongoDB) (kutil.VerbType, error) {
-	vt1, err := c.ensureConfigNode(mongodb)
+	st, vt1, err := c.ensureConfigNode(mongodb)
 	if err != nil {
 		return vt1, err
 	}
 
-	vt2, err := c.ensureShardNode(mongodb)
+	sts, vt2, err := c.ensureShardNode(mongodb)
 	if err != nil {
 		return vt2, err
+	}
+
+	// before running mongos, wait for config servers and shard servers to come up
+	sts = append(sts, st)
+	if vt1 != kutil.VerbUnchanged || vt2 != kutil.VerbUnchanged {
+		for _, st := range sts {
+			if err := c.checkStatefulSetPodStatus(st); err != nil {
+				return kutil.VerbUnchanged, err
+			}
+			c.recorder.Eventf(
+				mongodb,
+				core.EventTypeNormal,
+				eventer.EventReasonSuccessful,
+				"Successfully %v StatefulSet %v/%v",
+				vt2, mongodb.Namespace, st.Name,
+			)
+		}
+
 	}
 
 	vt3, err := c.ensureMongosNode(mongodb)
@@ -100,11 +118,11 @@ func (c *Controller) ensureTopologyCluster(mongodb *api.MongoDB) (kutil.VerbType
 	return kutil.VerbUnchanged, nil
 }
 
-func (c *Controller) ensureShardNode(mongodb *api.MongoDB) (kutil.VerbType, error) {
-	shardSts := func(nodeNum int32) (kutil.VerbType, error) {
+func (c *Controller) ensureShardNode(mongodb *api.MongoDB) ([]*apps.StatefulSet, kutil.VerbType, error) {
+	shardSts := func(nodeNum int32) (*apps.StatefulSet, kutil.VerbType, error) {
 		mongodbVersion, err := c.ExtClient.CatalogV1alpha1().MongoDBVersions().Get(string(mongodb.Spec.Version), metav1.GetOptions{})
 		if err != nil {
-			return kutil.VerbUnchanged, err
+			return nil, kutil.VerbUnchanged, err
 		}
 
 		// mongodb.Spec.SSLMode & mongodb.Spec.ClusterAuthMode can be empty if upgraded operator from
@@ -185,19 +203,26 @@ func (c *Controller) ensureShardNode(mongodb *api.MongoDB) (kutil.VerbType, erro
 		return c.ensureStatefulSet(mongodb, opts)
 	}
 
+	var sts []*apps.StatefulSet
+	vt := kutil.VerbUnchanged
 	for i := int32(0); i < mongodb.Spec.ShardTopology.Shard.Shards; i++ {
-		if _, err := shardSts(i); err != nil {
-			return kutil.VerbUnchanged, err
+		st, vt1, err := shardSts(i)
+		if err != nil {
+			return nil, kutil.VerbUnchanged, err
+		}
+		sts = append(sts, st)
+		if vt1 != kutil.VerbUnchanged {
+			vt = vt1
 		}
 	}
 
-	return kutil.VerbUnchanged, nil
+	return sts, vt, nil
 }
 
-func (c *Controller) ensureConfigNode(mongodb *api.MongoDB) (kutil.VerbType, error) {
+func (c *Controller) ensureConfigNode(mongodb *api.MongoDB) (*apps.StatefulSet, kutil.VerbType, error) {
 	mongodbVersion, err := c.ExtClient.CatalogV1alpha1().MongoDBVersions().Get(string(mongodb.Spec.Version), metav1.GetOptions{})
 	if err != nil {
-		return kutil.VerbUnchanged, err
+		return nil, kutil.VerbUnchanged, err
 	}
 
 	// mongodb.Spec.SSLMode & mongodb.Spec.ClusterAuthMode can be empty if upgraded operator from
@@ -373,22 +398,35 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 		volumeMount:    volumeMounts,
 	}
 
-	return c.ensureStatefulSet(mongodb, opts)
+	st, vt, err := c.ensureStatefulSet(mongodb, opts)
+	if vt != kutil.VerbUnchanged {
+		if err := c.checkStatefulSetPodStatus(st); err != nil {
+			return kutil.VerbUnchanged, err
+		}
+		c.recorder.Eventf(
+			mongodb,
+			core.EventTypeNormal,
+			eventer.EventReasonSuccessful,
+			"Successfully %v StatefulSet %v/%v",
+			vt, mongodb.Namespace, opts.stsName,
+		)
+	}
+	return vt, err
 }
 
-func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB, opts workloadOptions) (kutil.VerbType, error) {
+func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB, opts workloadOptions) (*apps.StatefulSet, kutil.VerbType, error) {
 	// Take value of podTemplate
 	var pt ofst.PodTemplateSpec
 	if opts.podTemplate != nil {
 		pt = *opts.podTemplate
 	}
 	if err := c.checkStatefulSet(mongodb, opts.stsName); err != nil {
-		return kutil.VerbUnchanged, err
+		return nil, kutil.VerbUnchanged, err
 	}
 
 	mongodbVersion, err := c.ExtClient.CatalogV1alpha1().MongoDBVersions().Get(string(mongodb.Spec.Version), metav1.GetOptions{})
 	if err != nil {
-		return kutil.VerbUnchanged, err
+		return nil, kutil.VerbUnchanged, err
 	}
 
 	// Create statefulSet for MongoDB database
@@ -399,7 +437,7 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB, opts workloadOption
 
 	ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb)
 	if rerr != nil {
-		return kutil.VerbUnchanged, rerr
+		return nil, kutil.VerbUnchanged, rerr
 	}
 
 	readinessProbe := pt.Spec.ReadinessProbe
@@ -509,28 +547,16 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB, opts workloadOption
 	})
 
 	if err != nil {
-		return kutil.VerbUnchanged, err
+		return nil, kutil.VerbUnchanged, err
 	}
 
 	// Check StatefulSet Pod status
-	if vt != kutil.VerbUnchanged {
-		if err := c.checkStatefulSetPodStatus(statefulSet); err != nil {
-			return kutil.VerbUnchanged, err
-		}
-		c.recorder.Eventf(
-			mongodb,
-			core.EventTypeNormal,
-			eventer.EventReasonSuccessful,
-			"Successfully %v StatefulSet %v/%v",
-			vt, mongodb.Namespace, opts.stsName,
-		)
-	}
 	// ensure pdb
 	if err := c.CreateStatefulSetPodDisruptionBudget(statefulSet); err != nil {
-		return vt, err
+		return nil, vt, err
 	}
 
-	return vt, nil
+	return statefulSet, vt, nil
 }
 
 func (c *Controller) checkStatefulSet(mongodb *api.MongoDB, stsName string) error {
