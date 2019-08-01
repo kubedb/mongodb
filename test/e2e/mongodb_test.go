@@ -1686,7 +1686,7 @@ var _ = Describe("MongoDB", func() {
 						})
 					})
 
-					Context("With Sharding", func() {
+					FContext("With Sharding", func() {
 						BeforeEach(func() {
 							verifySharding = true
 							anotherMongoDB = f.MongoDBShard()
@@ -1727,7 +1727,7 @@ var _ = Describe("MongoDB", func() {
 								enableSharding = true
 							})
 
-							FContext("with requireSSL sslMode", func() {
+							Context("with requireSSL sslMode", func() {
 								BeforeEach(func() {
 									mongodb.Spec.ClusterAuthMode = api.ClusterAuthModeX509
 									mongodb.Spec.SSLMode = api.SSLModeRequireSSL

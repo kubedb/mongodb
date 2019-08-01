@@ -149,7 +149,7 @@ if mongo "${ssl_args[@]}" --eval "rs.status()" | grep "no replset config has bee
     mongo admin "${ssl_args[@]}" --eval "db.createUser({user: '$admin_user', pwd: '$admin_password', roles: [{role: 'root', db: 'admin'}]})"
   fi
 
-  if [[ -f "$client_pem" ]]; then
+  if [[ ${SSL_MODE} != "disabled" ]] && [[ -f "$client_pem" ]]; then
     user=$(openssl x509 -in "$client_pem" -inform PEM -subject -nameopt RFC2253 -noout)
     user=${user#"subject= "}
     log "Creating root user $user for SSL..." #xref: https://docs.mongodb.com/manual/tutorial/configure-x509-client-authentication/#procedures
