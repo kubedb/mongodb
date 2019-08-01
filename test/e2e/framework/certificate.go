@@ -14,7 +14,6 @@ const (
 )
 
 // GetSSLCertificate gets ssl certificate of mongodb and creates a client certificate in certPath
-//TODO: use client.pem certificate from secret
 func (f *Framework) GetSSLCertificate(meta v12.ObjectMeta) error {
 	mg, err := f.GetMongoDB(meta)
 	if err != nil {

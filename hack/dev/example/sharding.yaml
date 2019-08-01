@@ -29,4 +29,3 @@ spec:
     type: RollingUpdate
   storageType: Durable
   terminationPolicy: WipeOut
-  sslMode: allowSSL

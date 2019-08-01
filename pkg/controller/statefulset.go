@@ -101,7 +101,6 @@ func (c *Controller) ensureTopologyCluster(mongodb *api.MongoDB) (kutil.VerbType
 				vt2, mongodb.Namespace, st.Name,
 			)
 		}
-
 	}
 
 	vt3, err := c.ensureMongosNode(mongodb)

@@ -1522,12 +1522,7 @@ var _ = Describe("MongoDB", func() {
 					By("Check for Succeeded backupsession")
 					f.EventuallyBackupSessionPhase(bs.ObjectMeta).Should(Equal(stashV1beta1.BackupSessionSucceeded))
 
-					//By("Insert Document Inside DB")
-					//f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName, 25).Should(BeTrue())
-					//
-					//By("Checking Inserted Document")
-					//f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 50).Should(BeTrue())
-
+					// Run second time to check if unlocking works.
 					By("Create BackupSession")
 					err = f.CreateBackupSession(bs2)
 					Expect(err).NotTo(HaveOccurred())
@@ -1644,6 +1639,7 @@ var _ = Describe("MongoDB", func() {
 								StorageSecretName: secret.Name,
 							}
 						})
+
 						It("should take Snapshot successfully", shouldInitializeFromStash)
 
 						Context("with SSL", func() {
@@ -1686,7 +1682,7 @@ var _ = Describe("MongoDB", func() {
 						})
 					})
 
-					FContext("With Sharding", func() {
+					Context("With Sharding", func() {
 						BeforeEach(func() {
 							verifySharding = true
 							anotherMongoDB = f.MongoDBShard()
@@ -1706,6 +1702,7 @@ var _ = Describe("MongoDB", func() {
 								StorageSecretName: secret.Name,
 							}
 						})
+
 						Context("With Sharding disabled database", func() {
 							BeforeEach(func() {
 								enableSharding = false

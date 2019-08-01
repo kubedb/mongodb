@@ -235,7 +235,7 @@ func (f *Framework) EventuallyDocumentExists(meta metav1.ObjectMeta, dbName stri
 				person := &KubedbTable{}
 
 				if er := client.Database(dbName).Collection(fmt.Sprintf("people-%03d", i)).FindOne(context.Background(), bson.M{"firstname": expected.FirstName}).Decode(&person); er != nil || person == nil || person.LastName != expected.LastName {
-					log.Errorln("expected document, checking error:", er)
+					log.Errorln("checking error:", er)
 					return false, er
 				}
 			}

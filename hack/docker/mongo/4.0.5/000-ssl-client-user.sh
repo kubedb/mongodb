@@ -1,6 +1,5 @@
 #!/bin/bash
 set -eo pipefail
-set -x #todo: delete
 
 # scripts inside /docker-entrypoint-initdb.d/ are executed alphabetically.
 # so, 000 prefix is added in filename to try executing this file first.

@@ -54,10 +54,6 @@ func (c *Controller) ensureAppBinding(db *api.MongoDB) (kutil.VerbType, error) {
 		}
 	}
 
-	mongodbVersion, err := c.ExtClient.CatalogV1alpha1().MongoDBVersions().Get(string(db.Spec.Version), metav1.GetOptions{})
-	if err != nil {
-		return kutil.VerbUnchanged, fmt.Errorf("failed to get MongoDBVersion %v for %v/%v. Reason: %v", db.Spec.Version, db.Namespace, db.Name, err)
-	}
 	var caBundle []byte
 	if (db.Spec.SSLMode == api.SSLModeRequireSSL || db.Spec.SSLMode == api.SSLModePreferSSL) &&
 		db.Spec.CertificateSecret != nil {
@@ -76,6 +72,11 @@ func (c *Controller) ensureAppBinding(db *api.MongoDB) (kutil.VerbType, error) {
 	secretName := db.Spec.DatabaseSecret.SecretName
 	if caBundle != nil {
 		secretName = db.Spec.CertificateSecret.SecretName
+	}
+
+	mongodbVersion, err := c.ExtClient.CatalogV1alpha1().MongoDBVersions().Get(string(db.Spec.Version), metav1.GetOptions{})
+	if err != nil {
+		return kutil.VerbUnchanged, fmt.Errorf("failed to get MongoDBVersion %v for %v/%v. Reason: %v", db.Spec.Version, db.Namespace, db.Name, err)
 	}
 
 	_, vt, err := appcat_util.CreateOrPatchAppBinding(c.AppCatalogClient, meta, func(in *appcat.AppBinding) *appcat.AppBinding {
