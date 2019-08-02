@@ -6,6 +6,10 @@ COPY sharding.sh /usr/local/bin/
 COPY mongos.sh /usr/local/bin/
 COPY peer-finder /usr/local/bin/
 
+# Copy ssl-client-user to docker-entrypoint.d directory.
+# xref: https://github.com/docker-library/mongo/issues/329#issuecomment-460858099
+COPY 000-ssl-client-user.sh /docker-entrypoint-initdb.d/
+
 RUN chmod -c 755 /usr/local/bin/peer-finder \
  /usr/local/bin/replicaset.sh \
  /usr/local/bin/configdb.sh \

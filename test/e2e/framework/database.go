@@ -54,7 +54,7 @@ func (f *Framework) GetMongoDBClient(meta metav1.ObjectMeta, tunnel *portforward
 		if err := f.GetSSLCertificate(meta); err != nil {
 			return nil, err
 		}
-		clientOpts = options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%s@localhost:%v/?ssl=true&sslclientcertificatekeyfile=/tmp/mongodb/client.pem&&sslcertificateauthorityfile=/tmp/mongodb/tls.crt", user, pass, tunnel.Local))
+		clientOpts = options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%s@localhost:%v/?ssl=true&sslclientcertificatekeyfile=/tmp/mongodb/%v&&sslcertificateauthorityfile=/tmp/mongodb/%v", user, pass, tunnel.Local, v1alpha1.MongoClientPemFileName, v1alpha1.MongoTLSCertFileName))
 	}
 
 	if (len(isReplSet) > 0 && isReplSet[0]) || IsRepSet(mongodb) {

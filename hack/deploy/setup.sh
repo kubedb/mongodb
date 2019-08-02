@@ -10,7 +10,7 @@ export SELF_HOSTED=1
 export ARGS="" # Forward arguments to installer script
 
 REPO_ROOT="$GOPATH/src/kubedb.dev/mongodb"
-INSTALLER_ROOT="$GOPATH/src/github.com/kubedb/installer"
+INSTALLER_ROOT="$GOPATH/src/kubedb.dev/installer"
 
 pushd $REPO_ROOT
 

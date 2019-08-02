@@ -43,8 +43,8 @@ done
 
 # Generate the ca cert
 if [[ ${SSL_MODE} != "disabled" ]]; then
-  ca_crt=/data/configdb/tls.crt
-  ca_key=/data/configdb/tls.key
+  ca_crt=/data/configdb/ca.cert
+  ca_key=/data/configdb/ca.key
   if [[ ! -f "$ca_crt" ]] || [[ ! -f "$ca_key" ]]; then
     log "ENABLE_SSL is set to true, but $ca_crt or $ca_key file does not exists "
     exit 1

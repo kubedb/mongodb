@@ -43,8 +43,8 @@ done
 
 # Generate the ca cert
 if [[ ${SSL_MODE} != "disabled" ]]; then
-  ca_crt=/data/configdb/tls.crt
-  ca_key=/data/configdb/tls.key
+  ca_crt=/data/configdb/ca.cert
+  ca_key=/data/configdb/ca.key
   if [[ ! -f "$ca_crt" ]] || [[ ! -f "$ca_key" ]]; then
     log "ENABLE_SSL is set to true, but $ca_crt or $ca_key file does not exists "
     exit 1
@@ -117,7 +117,7 @@ for peer in "${peers[@]}"; do
     sleep 3
 
     log 'Waiting for replica to reach SECONDARY state...'
-    until printf '.' && [[ $(mongo admin "${admin_creds[@]}" "${ssl_args[@]}" --quiet --eval "rs.status().myState" | tail -1) == '2' ]]; do
+    until printf '.' && [[ $(mongo admin "${admin_creds[@]}" "${ssl_args[@]}" --quiet --eval "rs.status().myState") == '2' ]]; do
       sleep 1
     done
 
@@ -137,7 +137,7 @@ if mongo "${ssl_args[@]}" --eval "rs.status()" | grep "no replset config has bee
   sleep 3
 
   log 'Waiting for replica to reach PRIMARY state...'
-  until printf '.' && [[ $(mongo "${ssl_args[@]}" --quiet --eval "rs.status().myState" | tail -1) == '1' ]]; do
+  until printf '.' && [[ $(mongo "${ssl_args[@]}" --quiet --eval "rs.status().myState") == '1' ]]; do
     sleep 1
   done
 
