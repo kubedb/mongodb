@@ -1,13 +1,11 @@
-Pre-SSPL (before October 16, 2018) versions are:
+Pre-SSPL (before October 16, 2018) versions:
 
 - 3.4.17
 - 3.6.8
 - 4.0.3
 - 4.1.4
 
-
-
-Mongodb shared tags:
+mongo and mongo-tools shared tags:
 
 # After kubedb 0.12.0 release
 
