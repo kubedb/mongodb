@@ -1,4 +1,4 @@
-FROM mongo:3.4
+FROM mongo:4.1.13
 
 COPY replicaset.sh /usr/local/bin/
 COPY configdb.sh /usr/local/bin/
@@ -20,7 +20,7 @@ ENV SSL_MODE ""
 ENV CLUSTER_AUTH_MODE ""
 
 # For starting mongodb container
-# default entrypoint of parent mongo:3.6
+# default entrypoint of parent mongo:4.1.13
 # ENTRYPOINT ["docker-entrypoint.sh"]
 
 # For starting bootstraper init container (for mongodb replicaset)

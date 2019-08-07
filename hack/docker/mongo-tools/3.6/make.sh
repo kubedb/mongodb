@@ -1,35 +1,19 @@
 #!/bin/bash
-set -eou pipefail
-
-GOPATH=$(go env GOPATH)
-REPO_ROOT=$GOPATH/src/kubedb.dev/mongodb
-
-source "$REPO_ROOT/hack/libbuild/common/lib.sh"
-source "$REPO_ROOT/hack/libbuild/common/kubedb_image.sh"
+set -xeou pipefail
 
 DOCKER_REGISTRY=${DOCKER_REGISTRY:-kubedb}
+
 IMG=mongo-tools
-SUFFIX=v3
+SUFFIX=v4
+
 DB_VERSION=3.6
+PATCH=3.6.13
+
 TAG="$DB_VERSION-$SUFFIX"
-OSM_VER=${OSM_VER:-0.9.1}
+BASE_TAG="$PATCH"
 
-DIST=$REPO_ROOT/dist
-mkdir -p $DIST
 
-build() {
-  pushd "$REPO_ROOT/hack/docker/mongo-tools/$DB_VERSION"
+docker pull "$DOCKER_REGISTRY/$IMG:$BASE_TAG"
 
-  # Download osm
-  wget https://cdn.appscode.com/binaries/osm/${OSM_VER}/osm-alpine-amd64
-  chmod +x osm-alpine-amd64
-  mv osm-alpine-amd64 osm
-
-  local cmd="docker build --pull -t $DOCKER_REGISTRY/$IMG:$TAG ."
-  echo $cmd; $cmd
-
-  rm osm
-  popd
-}
-
-binary_repo $@
+docker tag "$DOCKER_REGISTRY/$IMG:$BASE_TAG" "$DOCKER_REGISTRY/$IMG:$TAG"
+docker push "$DOCKER_REGISTRY/$IMG:$TAG"

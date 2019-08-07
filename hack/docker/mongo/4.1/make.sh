@@ -3,15 +3,13 @@ set -xeou pipefail
 
 DOCKER_REGISTRY=${DOCKER_REGISTRY:-kubedb}
 
-IMG=mongo-tools
-SUFFIX=v2
+IMG=mongo
 
 DB_VERSION=4.0
-PATCH=4.0.11
+PATCH=4.1.13
 
-TAG="$DB_VERSION-$SUFFIX"
+TAG="$DB_VERSION"
 BASE_TAG="$PATCH"
-
 
 docker pull "$DOCKER_REGISTRY/$IMG:$BASE_TAG"
 

@@ -9,9 +9,9 @@ source "$REPO_ROOT/hack/libbuild/common/kubedb_image.sh"
 
 DOCKER_REGISTRY=${DOCKER_REGISTRY:-kubedb}
 IMG=mongo
-SUFFIX=v4
+
 DB_VERSION=3.4.17
-TAG="$DB_VERSION-$SUFFIX"
+TAG="$DB_VERSION"
 
 DIST=$REPO_ROOT/dist
 mkdir -p $DIST

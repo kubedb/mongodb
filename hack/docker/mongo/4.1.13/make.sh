@@ -10,7 +10,7 @@ source "$REPO_ROOT/hack/libbuild/common/kubedb_image.sh"
 DOCKER_REGISTRY=${DOCKER_REGISTRY:-kubedb}
 IMG=mongo
 
-DB_VERSION=3.6.8
+DB_VERSION=4.1.13
 TAG="$DB_VERSION"
 
 DIST=$REPO_ROOT/dist

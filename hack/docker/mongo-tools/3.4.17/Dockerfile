@@ -1,4 +1,4 @@
-FROM mongo:3.4
+FROM mongo:3.4.17
 
 RUN set -x \
   && apt-get update \

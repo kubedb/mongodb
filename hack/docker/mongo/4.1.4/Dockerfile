@@ -20,7 +20,7 @@ ENV SSL_MODE ""
 ENV CLUSTER_AUTH_MODE ""
 
 # For starting mongodb container
-# default entrypoint of parent mongo:3.6
+# default entrypoint of parent mongo:4.1.4
 # ENTRYPOINT ["docker-entrypoint.sh"]
 
 # For starting bootstraper init container (for mongodb replicaset)
