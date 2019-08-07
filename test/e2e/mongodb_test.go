@@ -239,7 +239,7 @@ var _ = Describe("MongoDB", func() {
 					It("should run successfully", shouldRunWithPVC)
 				})
 
-				Context("With Sharding", func() {
+				FContext("With Sharding", func() {
 					BeforeEach(func() {
 						verifySharding = true
 						mongodb = f.MongoDBShard()
@@ -732,7 +732,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
+										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -821,7 +821,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
+										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -893,7 +893,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
+										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -1152,7 +1152,7 @@ var _ = Describe("MongoDB", func() {
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
-									Repository: "https://kubedb.dev/mongodb-init-scripts.git",
+									Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
 									Directory:  ".",
 								},
 							},
@@ -1176,7 +1176,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
+										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -1192,14 +1192,14 @@ var _ = Describe("MongoDB", func() {
 					})
 				})
 
-				Context("With Sharding", func() {
+				FContext("With Sharding", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBShard()
 						mongodb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
+										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -1994,7 +1994,7 @@ var _ = Describe("MongoDB", func() {
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
-									Repository: "https://kubedb.dev/mongodb-init-scripts.git",
+									Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
 									Directory:  ".",
 								},
 							},
@@ -2050,7 +2050,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
+										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -2067,7 +2067,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
+										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -2194,7 +2194,7 @@ var _ = Describe("MongoDB", func() {
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
-									Repository: "https://kubedb.dev/mongodb-init-scripts.git",
+									Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
 									Directory:  ".",
 								},
 							},
@@ -2252,7 +2252,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
+										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -2269,7 +2269,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
+										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -2834,7 +2834,7 @@ var _ = Describe("MongoDB", func() {
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
-									Repository: "https://kubedb.dev/mongodb-init-scripts.git",
+									Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
 									Directory:  ".",
 								},
 							},
@@ -2878,7 +2878,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
+										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -2895,7 +2895,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
+										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -2977,7 +2977,7 @@ var _ = Describe("MongoDB", func() {
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								GitRepo: &core.GitRepoVolumeSource{
-									Repository: "https://kubedb.dev/mongodb-init-scripts.git",
+									Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
 									Directory:  ".",
 								},
 							},
@@ -3044,7 +3044,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
+										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},
@@ -3062,7 +3062,7 @@ var _ = Describe("MongoDB", func() {
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://kubedb.dev/mongodb-init-scripts.git",
+										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
 										Directory:  ".",
 									},
 								},

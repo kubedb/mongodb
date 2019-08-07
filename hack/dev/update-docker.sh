@@ -75,6 +75,7 @@ dbversions=(
   4.1.4
   4.1.7
   4.1.13
+  4.1
 )
 
 exporters=(
