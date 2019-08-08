@@ -3,6 +3,7 @@ module kubedb.dev/mongodb
 go 1.12
 
 require (
+	cloud.google.com/go v0.41.0 // indirect
 	github.com/appscode/go v0.0.0-20190722173419-e454bf744023
 	github.com/aws/aws-sdk-go v1.20.21 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -12,6 +13,7 @@ require (
 	github.com/coreos/prometheus-operator v0.30.1
 	github.com/emicklei/go-restful v2.9.6+incompatible // indirect
 	github.com/fatih/structs v1.1.0
+	github.com/go-ini/ini v1.40.0 // indirect
 	github.com/go-openapi/spec v0.19.2 // indirect
 	github.com/go-openapi/swag v0.19.4 // indirect
 	github.com/golang/protobuf v1.3.2 // indirect

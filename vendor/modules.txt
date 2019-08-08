@@ -14,7 +14,7 @@ github.com/Azure/go-autorest/autorest/adal
 github.com/Azure/go-autorest/autorest/date
 # github.com/Azure/go-autorest/logger v0.1.0
 github.com/Azure/go-autorest/logger
-# github.com/Azure/go-autorest/tracing v0.1.0
+# github.com/Azure/go-autorest/tracing v0.2.0
 github.com/Azure/go-autorest/tracing
 # github.com/NYTimes/gziphandler v1.1.1
 github.com/NYTimes/gziphandler
@@ -924,7 +924,7 @@ k8s.io/kubernetes/pkg/util/hash
 k8s.io/utils/buffer
 k8s.io/utils/trace
 k8s.io/utils/integer
-# kmodules.xyz/client-go v0.0.0-20190715080709-7162a6c90b04
+# kmodules.xyz/client-go v0.0.0-20190802200916-043217632b6a
 kmodules.xyz/client-go/logs
 kmodules.xyz/client-go
 kmodules.xyz/client-go/core/v1
