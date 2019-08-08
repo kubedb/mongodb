@@ -239,7 +239,7 @@ var _ = Describe("MongoDB", func() {
 					It("should run successfully", shouldRunWithPVC)
 				})
 
-				FContext("With Sharding", func() {
+				Context("With Sharding", func() {
 					BeforeEach(func() {
 						verifySharding = true
 						mongodb = f.MongoDBShard()
@@ -1192,7 +1192,7 @@ var _ = Describe("MongoDB", func() {
 					})
 				})
 
-				FContext("With Sharding", func() {
+				Context("With Sharding", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBShard()
 						mongodb.Spec.Init = &api.InitSpec{

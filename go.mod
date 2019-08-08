@@ -12,7 +12,6 @@ require (
 	github.com/coreos/prometheus-operator v0.30.1
 	github.com/emicklei/go-restful v2.9.6+incompatible // indirect
 	github.com/fatih/structs v1.1.0
-	github.com/go-ini/ini v1.40.0 // indirect
 	github.com/go-openapi/spec v0.19.2 // indirect
 	github.com/go-openapi/swag v0.19.4 // indirect
 	github.com/golang/protobuf v1.3.2 // indirect
@@ -42,7 +41,7 @@ require (
 	k8s.io/klog v0.3.3 // indirect
 	k8s.io/kube-aggregator v0.0.0-20190508224022-f9852b6d3a84
 	k8s.io/kubernetes v1.14.4 // indirect
-	kmodules.xyz/client-go v0.0.0-20190715080709-7162a6c90b04
+	kmodules.xyz/client-go v0.0.0-20190802200916-043217632b6a
 	kmodules.xyz/custom-resources v0.0.0-20190730174012-d0224972f055
 	kmodules.xyz/monitoring-agent-api v0.0.0-20190513065523-186af167f817
 	kmodules.xyz/objectstore-api v0.0.0-20190718002052-da668b440b0b

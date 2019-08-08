@@ -8,7 +8,7 @@ script_name=${0##*/}
 if [[ "$AUTH" == "true" ]]; then
   admin_user="$MONGO_INITDB_ROOT_USERNAME"
   admin_password="$MONGO_INITDB_ROOT_PASSWORD"
-  admin_creds=(-u "$admin_user" -p "$admin_password")
+  admin_creds=(-u "$admin_user" -p "$admin_password" --authenticationDatabase admin)
   auth_args=(--clusterAuthMode ${CLUSTER_AUTH_MODE} --sslMode ${SSL_MODE} --auth --keyFile=/data/configdb/key.txt)
 fi
 

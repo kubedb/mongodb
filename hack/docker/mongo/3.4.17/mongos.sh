@@ -16,7 +16,7 @@ SHARD_REPSETS_LIST=(${SHARD_REPSETS// / })  # make array that splits by space. h
 if [[ "$AUTH" == "true" ]]; then
   admin_user="$MONGO_INITDB_ROOT_USERNAME"
   admin_password="$MONGO_INITDB_ROOT_PASSWORD"
-  admin_creds=(-u "$admin_user" -p "$admin_password")
+  admin_creds=(-u "$admin_user" -p "$admin_password" --authenticationDatabase admin)
   auth_args=(--clusterAuthMode ${CLUSTER_AUTH_MODE} --sslMode ${SSL_MODE} --keyFile=/data/configdb/key.txt)
 fi
 
@@ -146,7 +146,7 @@ if [[ $(mongo admin "${admin_creds[@]}" "${ssl_args[@]}" --eval "db.kubedb.find(
         ;;
       *.js)
         echo "$0: running $f 1"
-        mongo "$MONGO_INITDB_DATABASE" "${admin_creds[@]}" "${ssl_args[@]}" --authenticationDatabase admin "$f"
+        mongo "$MONGO_INITDB_DATABASE" "${admin_creds[@]}" "${ssl_args[@]}"  "$f"
         ;;
       *) echo "$0: ignoring $f" ;;
     esac

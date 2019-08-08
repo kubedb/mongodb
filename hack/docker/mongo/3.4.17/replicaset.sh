@@ -8,7 +8,7 @@ script_name=${0##*/}
 if [[ "$AUTH" == "true" ]]; then
   admin_user="$MONGO_INITDB_ROOT_USERNAME"
   admin_password="$MONGO_INITDB_ROOT_PASSWORD"
-  admin_creds=(-u "$admin_user" -p "$admin_password")
+  admin_creds=(-u "$admin_user" -p "$admin_password" --authenticationDatabase admin)
   auth_args=(--clusterAuthMode ${CLUSTER_AUTH_MODE} --sslMode ${SSL_MODE} --auth --keyFile=/data/configdb/key.txt)
 fi
 
@@ -163,7 +163,7 @@ if mongo "${ssl_args[@]}" --eval "rs.status()" | grep "no replset config has bee
         ;;
       *.js)
         echo "$0: running $f 1"
-        mongo "$MONGO_INITDB_DATABASE" "${admin_creds[@]}" "${ssl_args[@]}" --authenticationDatabase admin "$f"
+        mongo "$MONGO_INITDB_DATABASE" "${admin_creds[@]}" "${ssl_args[@]}"  "$f"
         ;;
       *) echo "$0: ignoring $f" ;;
     esac

@@ -6,6 +6,7 @@ cloud.google.com/go v0.39.0/go.mod h1:rVLT6fkc8chs9sfPtFc1SBH6em7n+ZoXaG+87tDISt
 cloud.google.com/go v0.41.0 h1:NFvqUTDnSNYPX5oReekmB+D+90jrJIcVImxQ3qrBVgM=
 cloud.google.com/go v0.41.0/go.mod h1:OauMR7DV8fzvZIl2qg6rkaIhD/vmgk4iwEw/h6ercmg=
 contrib.go.opencensus.io/exporter/aws v0.0.0-20181029163544-2befc13012d0/go.mod h1:uu1P0UCM/6RbsMrgPa98ll8ZcHM858i/AD06a9aLRCA=
+contrib.go.opencensus.io/exporter/ocagent v0.3.0/go.mod h1:0fnkYHF+ORKj7HWzOExKkUHeFX79gXSKUQbpnAM+wzo=
 contrib.go.opencensus.io/exporter/ocagent v0.4.1/go.mod h1:b6YwD5Q3Yvj4yk0CDK5vGXexygNzI09aXUdDEakQBgA=
 contrib.go.opencensus.io/exporter/ocagent v0.4.12 h1:jGFvw3l57ViIVEPKKEUXPcLYIXJmQxLUh6ey1eJhwyc=
 contrib.go.opencensus.io/exporter/ocagent v0.4.12/go.mod h1:450APlNTSR6FrvC3CTRqYosuDstRB9un7SOx2k/9ckA=
@@ -42,8 +43,9 @@ github.com/Azure/go-autorest/autorest/to v0.2.0/go.mod h1:GunWKJp1AEqgMaGLV+iocm
 github.com/Azure/go-autorest/autorest/validation v0.1.0/go.mod h1:Ha3z/SqBeaalWQvokg3NZAlQTalVMtOIAs1aGK7G6u8=
 github.com/Azure/go-autorest/logger v0.1.0 h1:ruG4BSDXONFRrZZJ2GUXDiUyVpayPmb1GnWeHDdaNKY=
 github.com/Azure/go-autorest/logger v0.1.0/go.mod h1:oExouG+K6PryycPJfVSxi/koC6LSNgds39diKLz7Vrc=
-github.com/Azure/go-autorest/tracing v0.1.0 h1:TRBxC5Pj/fIuh4Qob0ZpkggbfT8RC0SubHbpV3p4/Vc=
 github.com/Azure/go-autorest/tracing v0.1.0/go.mod h1:ROEEAFwXycQw7Sn3DXNtEedEvdeRAgDr0izn4z5Ij88=
+github.com/Azure/go-autorest/tracing v0.2.0 h1:0On0x3ZEJpUcObXmQ6xuQ+mdpZ09eUDjSL3iTIMEUaE=
+github.com/Azure/go-autorest/tracing v0.2.0/go.mod h1:ng/PfbpoQvU+aoDUI6eMvvqKS+kkHBqZglqyVFLJ31s=
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
@@ -70,8 +72,8 @@ github.com/appscode/go v0.0.0-20190621064509-6b292c9166e3/go.mod h1:lZoPivA2BU6p
 github.com/appscode/go v0.0.0-20190722173419-e454bf744023 h1:RFcQLLdIALM+/Ut8IoUPuhULmn7sdV3Y9x+aqlwfR4c=
 github.com/appscode/go v0.0.0-20190722173419-e454bf744023/go.mod h1:VHCQuszPTOu/LEgSAfVX5H7w0MkkBvddUp+7kw4JCac=
 github.com/appscode/jsonpatch v0.0.0-20190108182946-7c0e3b262f30/go.mod h1:4AJxUpXUhv4N+ziTvIcWWXgeorXpxPZOfk9HdEVr96M=
-github.com/appscode/osm v0.12.0 h1:l7cM6auoo6k6Ic59dn/lrEusNu2dvL3hF2Lxdds4JEU=
-github.com/appscode/osm v0.12.0/go.mod h1:M2dkG7yApVG4hWvRli6FgDxYItfkkN7jZditR2AAvdA=
+github.com/appscode/osm v0.12.0 h1:Gd45HmaKgpAj8vai2ndtWhtksDn/w1Ph3J7VWc1WCJE=
+github.com/appscode/osm v0.12.0/go.mod h1:9VjEQ1G/iqM87ZgAZE6xBeJPaPw9OSUjJY2IumJb/Pk=
 github.com/armon/circbuf v0.0.0-20190214190532-5111143e8da2 h1:7Ip0wMmLHLRJdrloDxZfhMm0xrLXZS8+COSu2bXmEQs=
 github.com/armon/circbuf v0.0.0-20190214190532-5111143e8da2/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
 github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6/go.mod h1:grANhF5doyWs3UAsr3K4I6qtAmlQcZDesFNEHPZAzj8=
@@ -95,6 +97,7 @@ github.com/brancz/gojsontoyaml v0.0.0-20190425155809-e8bd32d46b3d/go.mod h1:IyUJ
 github.com/campoy/embedmd v1.0.0/go.mod h1:oxyr9RCiSXg0M3VJ3ks0UGfp98BpSSGr0kpiX3MzVl8=
 github.com/cenk/backoff v2.0.0+incompatible/go.mod h1:7FtoeaSnHoZnmZzz47cM35Y9nSW7tNyaidugnHTaFDE=
 github.com/cenkalti/backoff v2.1.1+incompatible/go.mod h1:90ReRw6GdpyfrHakVjL/QHaoyV4aDUVVkXQJJJ3NXXM=
+github.com/census-instrumentation/opencensus-proto v0.0.2-0.20180913191712-f303ae3f8d6a/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/census-instrumentation/opencensus-proto v0.1.0/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/census-instrumentation/opencensus-proto v0.2.0/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/census-instrumentation/opencensus-proto v0.2.1 h1:glEXhBS5PSLLv4IXzLA5yPRVX4bilULVyxxbrfOtDAk=
@@ -572,6 +575,7 @@ go.mongodb.org/mongo-driver v1.0.1/go.mod h1:u7ryQJ+DOzQmeO7zB6MHyr8jkEQvC8vH7qL
 go.mongodb.org/mongo-driver v1.0.4 h1:bHxbjH6iwh1uInchXadI6hQR107KEbgYsMzoblDONmQ=
 go.mongodb.org/mongo-driver v1.0.4/go.mod h1:u7ryQJ+DOzQmeO7zB6MHyr8jkEQvC8vH7qLUO4lqsUM=
 go.opencensus.io v0.15.0/go.mod h1:UffZAU+4sDEINUGP/B7UfBBkq4fqLu9zXAX7ke6CHW0=
+go.opencensus.io v0.17.0/go.mod h1:mp1VrMQxhlqqDpKvH4UcQUa4YwlzNmymAjPrDdfxNpI=
 go.opencensus.io v0.18.0/go.mod h1:vKdFvxhtzZ9onBp9VKHK8z/sRpBMnKAsufL7wlDrCOA=
 go.opencensus.io v0.18.1-0.20181204023538-aab39bd6a98b/go.mod h1:vKdFvxhtzZ9onBp9VKHK8z/sRpBMnKAsufL7wlDrCOA=
 go.opencensus.io v0.19.0/go.mod h1:AYeH0+ZxYyghG8diqaaIq/9P3VgCCt5GF2ldCY4dkFg=
@@ -715,8 +719,8 @@ gomodules.xyz/cert v1.0.0/go.mod h1:amhuI40SpnLj/4dWzsfZyVpblMsfKi0tYH83era8078=
 gomodules.xyz/envsubst v0.0.0-20190321051520-c745d52104af/go.mod h1:2o5f7bd13XIITbE2ZKieE05YkqB2KDoZkqKccGebduA=
 gomodules.xyz/jsonpatch/v2 v2.0.0 h1:OyHbl+7IOECpPKfVK42oFr6N7+Y2dR+Jsb/IiDV3hOo=
 gomodules.xyz/jsonpatch/v2 v2.0.0/go.mod h1:IhYNNY4jnS53ZnfE4PAmpKtDpTCj1JFXc+3mwe7XcUU=
-gomodules.xyz/stow v0.2.0 h1:YL2QID9eO5FoNYIh+F56SCwBS3L57xlyqqABipCEZoA=
-gomodules.xyz/stow v0.2.0/go.mod h1:nSTw1H1Gb/GktlrUgElN4YR+jww9OcNsxxrx3zNp+qA=
+gomodules.xyz/stow v0.2.0 h1:bLgd+/F4fXI+7kR+zUArRaIVvJtdQ9zTq4fwrM4UBVY=
+gomodules.xyz/stow v0.2.0/go.mod h1:TVZtDmwKNM0U/RKMW4AjhMhYkTNrXNmxrKwg91cLI3s=
 gomodules.xyz/version v0.0.0-20190507203204-7cec7ee542d3 h1:MiBtMikyjuBwD22+QIEsbnMHdRkknM/0N5ig34jSNgQ=
 gomodules.xyz/version v0.0.0-20190507203204-7cec7ee542d3/go.mod h1:Y8xuV02mL/45psyPKG3NCVOwvAOy6T5Kx0l3rCjKSjU=
 google.golang.org/api v0.0.0-20180910000450-7ca32eb868bf/go.mod h1:4mhQ8q/RsB7i+udVvVy5NUi08OU8ZlA0gRVgrF7VFY0=
@@ -821,8 +825,9 @@ k8s.io/utils v0.0.0-20190221042446-c2654d5206da h1:ElyM7RPonbKnQqOcw7dG2IK5uvQQn
 k8s.io/utils v0.0.0-20190221042446-c2654d5206da/go.mod h1:8k8uAuAQ0rXslZKaEWd0c3oVhZz7sSzSiPnVZayjIX0=
 kmodules.xyz/client-go v0.0.0-20190507204740-e4690d8026e7/go.mod h1:3meAILhyA9BTLbPQdVV2ucE4qaEjWy5dCb3S+L/1f4Y=
 kmodules.xyz/client-go v0.0.0-20190508091620-0d215c04352f/go.mod h1:R1t4K2wWb6PTkhQPEjqQIWz+gRS0/Z0mMfIy/TsdB/w=
-kmodules.xyz/client-go v0.0.0-20190715080709-7162a6c90b04 h1:17h0mshnlihkZMP6LqMmpliCQIknKasjdNGWyZCCmV4=
 kmodules.xyz/client-go v0.0.0-20190715080709-7162a6c90b04/go.mod h1:3h1/ZglH6fV2uv3p9AB1JnHUknhWniShJ7fBJfSf7Js=
+kmodules.xyz/client-go v0.0.0-20190802200916-043217632b6a h1:Tkg0QgQUPs6PamZHs97wr1VMZtHplPAGPCBpkNmqUdY=
+kmodules.xyz/client-go v0.0.0-20190802200916-043217632b6a/go.mod h1:j8CanEoQaOFiM+1Ulap3b5Td2rdcz6JdLjhS5mCfAOw=
 kmodules.xyz/custom-resources v0.0.0-20190508103408-464e8324c3ec/go.mod h1:0C61XSEPGexAmkrayynpNnCTacvkwn4802CRAQ5tUPI=
 kmodules.xyz/custom-resources v0.0.0-20190723185639-711575c0b8a9/go.mod h1:0C61XSEPGexAmkrayynpNnCTacvkwn4802CRAQ5tUPI=
 kmodules.xyz/custom-resources v0.0.0-20190730174012-d0224972f055 h1:w5CZ2h0pkofl6gAtchAP79vEuMAkbyRngU1jV9lzfWc=
