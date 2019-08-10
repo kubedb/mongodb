@@ -9,7 +9,8 @@ source "$REPO_ROOT/hack/libbuild/common/kubedb_image.sh"
 
 DOCKER_REGISTRY=${DOCKER_REGISTRY:-kubedb}
 IMG=mongo-tools
-SUFFIX=v1
+SUFFIX=v2
+
 DB_VERSION=4.0.5
 TAG="$DB_VERSION-$SUFFIX"
 OSM_VER=${OSM_VER:-0.9.1}
