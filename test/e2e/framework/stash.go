@@ -90,7 +90,7 @@ func (f *Framework) CreateRepository(repo *stashV1alpha1.Repository) error {
 }
 
 func (f *Framework) DeleteRepository(meta metav1.ObjectMeta) error {
-	err := f.stashClient.StashV1alpha1().Repositories(meta.Namespace).Delete(meta.Name, deleteInBackground())
+	err := f.stashClient.StashV1alpha1().Repositories(meta.Namespace).Delete(meta.Name, deleteInForeground())
 	return err
 }
 
@@ -114,7 +114,7 @@ func (f *Framework) CreateBackupSession(bc *v1beta1.BackupSession) error {
 }
 
 func (f *Framework) DeleteBackupSession(meta metav1.ObjectMeta) error {
-	err := f.stashClient.StashV1beta1().BackupSessions(meta.Namespace).Delete(meta.Name, deleteInBackground())
+	err := f.stashClient.StashV1beta1().BackupSessions(meta.Namespace).Delete(meta.Name, deleteInForeground())
 	return err
 }
 

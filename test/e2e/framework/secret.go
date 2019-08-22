@@ -199,7 +199,7 @@ func (i *Invocation) SecretForDatabaseAuthentication(meta metav1.ObjectMeta, man
 	randPassword := ""
 
 	// if the password starts with "-" it will cause error in bash scripts (in mongodb-tools)
-	for randPassword = rand.GeneratePassword(); randPassword[0] == '-'; {
+	for randPassword = rand.GeneratePassword(); randPassword[0] == '-'; randPassword = rand.GeneratePassword() {
 	}
 
 	var dbObjectMeta = metav1.ObjectMeta{
