@@ -127,7 +127,7 @@ func (c *Controller) ensureDeployment(
 					Args: append([]string{
 						fmt.Sprintf("--web.listen-address=:%d", mongodb.Spec.Monitor.Prometheus.Port),
 						fmt.Sprintf("--web.metrics-path=%v", mongodb.StatsService().Path()),
-						"--mongodb.uri=mongodb://$(MONGO_INITDB_ROOT_USERNAME):$(MONGO_INITDB_ROOT_PASSWORD)@127.0.0.1:27017",
+						"--mongodb.uri=mongodb://$(MONGO_INITDB_ROOT_USERNAME):$(MONGO_INITDB_ROOT_PASSWORD)@localhost:27017/admin",
 					}, mongodb.Spec.Monitor.Args...),
 					Image: mongodbVersion.Spec.Exporter.Image,
 					Ports: []core.ContainerPort{
