@@ -83,6 +83,11 @@ exporters=(
   v1.0.0
 )
 
+percona_exporters=(
+  latest
+  v0.8.0
+)
+
 echo ""
 env | sort | grep -e DOCKER_REGISTRY -e APPSCODE_ENV || true
 echo ""
@@ -106,8 +111,14 @@ fi
 if [ "$EXPORTER_UPDATE" -eq 1 ]; then
   cowsay -f tux "Processing database-exporter images" || true
   for exporter in "${exporters[@]}"; do
+    # deprecated
     ${REPO_ROOT}/hack/docker/mongodb_exporter/${exporter}/make.sh build
     ${REPO_ROOT}/hack/docker/mongodb_exporter/${exporter}/make.sh push
+  done
+
+  for exporter in "${percona_exporters[@]}"; do
+    ${REPO_ROOT}/hack/docker/percona-mongodb-exporter/${exporter}/make.sh build
+    ${REPO_ROOT}/hack/docker/percona-mongodb-exporter/${exporter}/make.sh push
   done
 fi
 
