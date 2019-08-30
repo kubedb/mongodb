@@ -122,25 +122,7 @@ func (c *Controller) ensureDeployment(
 		if mongodb.GetMonitoringVendor() == mona.VendorPrometheus {
 			in.Spec.Template.Spec.Containers = core_util.UpsertContainer(
 				in.Spec.Template.Spec.Containers,
-				core.Container{
-					Name: "exporter",
-					Args: append([]string{
-						fmt.Sprintf("--web.listen-address=:%d", mongodb.Spec.Monitor.Prometheus.Port),
-						fmt.Sprintf("--web.metrics-path=%v", mongodb.StatsService().Path()),
-						"--mongodb.uri=mongodb://$(MONGO_INITDB_ROOT_USERNAME):$(MONGO_INITDB_ROOT_PASSWORD)@127.0.0.1:27017",
-					}, mongodb.Spec.Monitor.Args...),
-					Image: mongodbVersion.Spec.Exporter.Image,
-					Ports: []core.ContainerPort{
-						{
-							Name:          api.PrometheusExporterPortName,
-							Protocol:      core.ProtocolTCP,
-							ContainerPort: mongodb.Spec.Monitor.Prometheus.Port,
-						},
-					},
-					Env:             mongodb.Spec.Monitor.Env,
-					Resources:       mongodb.Spec.Monitor.Resources,
-					SecurityContext: mongodb.Spec.Monitor.SecurityContext,
-				},
+				getExporterContainer(mongodb, mongodbVersion),
 			)
 		}
 
