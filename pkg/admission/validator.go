@@ -253,6 +253,11 @@ func ValidateMongoDB(client kubernetes.Interface, extClient cs.Interface, mongod
 			return fmt.Errorf("mongoDB %s/%s is using deprecated version %v. Skipped processing",
 				mongodb.Namespace, mongodb.Name, mongodbVersion.Name)
 		}
+
+		if err := mongodbVersion.ValidateSpecs(); err != nil {
+			return fmt.Errorf("mongodb %s/%s is using invalid mongodbVersion %v. Skipped processing. reason: %v", mongodb.Namespace,
+				mongodb.Name, mongodbVersion.Name, err)
+		}
 	}
 
 	backupScheduleSpec := mongodb.Spec.BackupSchedule
