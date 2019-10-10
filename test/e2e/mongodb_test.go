@@ -153,6 +153,13 @@ var _ = Describe("MongoDB", func() {
 			}
 		})
 
+		// if secret is empty (no .env file) then skip
+		JustBeforeEach(func() {
+			if secret != nil && len(secret.Data) == 0 && (snapshot != nil && snapshot.Spec.Local == nil) {
+				Skip("Missing repository credential")
+			}
+		})
+
 		AfterEach(func() {
 			// Delete test resource
 			deleteTestResource()

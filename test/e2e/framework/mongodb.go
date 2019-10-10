@@ -77,6 +77,7 @@ func (i *Invocation) MongoDBRS() *api.MongoDB {
 				},
 				StorageClassName: types.StringP(i.StorageClass),
 			},
+			TerminationPolicy: api.TerminationPolicyPause,
 		},
 	}
 }
@@ -127,6 +128,7 @@ func (i *Invocation) MongoDBShard() *api.MongoDB {
 					},
 				},
 			},
+			TerminationPolicy: api.TerminationPolicyPause,
 		},
 	}
 }
