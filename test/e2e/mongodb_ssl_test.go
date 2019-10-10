@@ -455,6 +455,18 @@ var _ = Describe("MongoDB SSL", func() {
 					It("should run successfully", shouldRunWithPVC)
 
 					Context("Initialization - script & snapshot", func() {
+						var configMap *core.ConfigMap
+
+						BeforeEach(func() {
+							configMap = f.ConfigMapForInitialization()
+							err := f.CreateConfigMap(configMap)
+							Expect(err).NotTo(HaveOccurred())
+						})
+
+						AfterEach(func() {
+							err := f.DeleteConfigMap(configMap.ObjectMeta)
+							Expect(err).NotTo(HaveOccurred())
+						})
 
 						BeforeEach(func() {
 							skipConfig = true
@@ -475,9 +487,10 @@ var _ = Describe("MongoDB SSL", func() {
 							mongodb.Spec.Init = &api.InitSpec{
 								ScriptSource: &api.ScriptSourceSpec{
 									VolumeSource: core.VolumeSource{
-										GitRepo: &core.GitRepoVolumeSource{
-											Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-											Directory:  ".",
+										ConfigMap: &core.ConfigMapVolumeSource{
+											LocalObjectReference: core.LocalObjectReference{
+												Name: configMap.Name,
+											},
 										},
 									},
 								},
@@ -505,6 +518,18 @@ var _ = Describe("MongoDB SSL", func() {
 						It("should run successfully", shouldRunWithPVC)
 
 						Context("Initialization - script & snapshot", func() {
+							var configMap *core.ConfigMap
+
+							BeforeEach(func() {
+								configMap = f.ConfigMapForInitialization()
+								err := f.CreateConfigMap(configMap)
+								Expect(err).NotTo(HaveOccurred())
+							})
+
+							AfterEach(func() {
+								err := f.DeleteConfigMap(configMap.ObjectMeta)
+								Expect(err).NotTo(HaveOccurred())
+							})
 
 							BeforeEach(func() {
 								skipConfig = true
@@ -525,9 +550,10 @@ var _ = Describe("MongoDB SSL", func() {
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
-											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-												Directory:  ".",
+											ConfigMap: &core.ConfigMapVolumeSource{
+												LocalObjectReference: core.LocalObjectReference{
+													Name: configMap.Name,
+												},
 											},
 										},
 									},
@@ -552,6 +578,18 @@ var _ = Describe("MongoDB SSL", func() {
 						It("should run successfully", shouldRunWithPVC)
 
 						Context("Initialization - script & snapshot", func() {
+							var configMap *core.ConfigMap
+
+							BeforeEach(func() {
+								configMap = f.ConfigMapForInitialization()
+								err := f.CreateConfigMap(configMap)
+								Expect(err).NotTo(HaveOccurred())
+							})
+
+							AfterEach(func() {
+								err := f.DeleteConfigMap(configMap.ObjectMeta)
+								Expect(err).NotTo(HaveOccurred())
+							})
 
 							BeforeEach(func() {
 								skipConfig = true
@@ -576,9 +614,10 @@ var _ = Describe("MongoDB SSL", func() {
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
-											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-												Directory:  ".",
+											ConfigMap: &core.ConfigMapVolumeSource{
+												LocalObjectReference: core.LocalObjectReference{
+													Name: configMap.Name,
+												},
 											},
 										},
 									},
@@ -620,6 +659,18 @@ var _ = Describe("MongoDB SSL", func() {
 						It("should run successfully", shouldRunWithPVC)
 
 						Context("Initialization - script & snapshot", func() {
+							var configMap *core.ConfigMap
+
+							BeforeEach(func() {
+								configMap = f.ConfigMapForInitialization()
+								err := f.CreateConfigMap(configMap)
+								Expect(err).NotTo(HaveOccurred())
+							})
+
+							AfterEach(func() {
+								err := f.DeleteConfigMap(configMap.ObjectMeta)
+								Expect(err).NotTo(HaveOccurred())
+							})
 
 							BeforeEach(func() {
 								skipConfig = true
@@ -644,9 +695,10 @@ var _ = Describe("MongoDB SSL", func() {
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
-											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-												Directory:  ".",
+											ConfigMap: &core.ConfigMapVolumeSource{
+												LocalObjectReference: core.LocalObjectReference{
+													Name: configMap.Name,
+												},
 											},
 										},
 									},
@@ -675,6 +727,18 @@ var _ = Describe("MongoDB SSL", func() {
 						It("should run successfully", shouldRunWithPVC)
 
 						Context("Initialization - script & snapshot", func() {
+							var configMap *core.ConfigMap
+
+							BeforeEach(func() {
+								configMap = f.ConfigMapForInitialization()
+								err := f.CreateConfigMap(configMap)
+								Expect(err).NotTo(HaveOccurred())
+							})
+
+							AfterEach(func() {
+								err := f.DeleteConfigMap(configMap.ObjectMeta)
+								Expect(err).NotTo(HaveOccurred())
+							})
 
 							BeforeEach(func() {
 								skipConfig = true
@@ -695,9 +759,10 @@ var _ = Describe("MongoDB SSL", func() {
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
-											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-												Directory:  ".",
+											ConfigMap: &core.ConfigMapVolumeSource{
+												LocalObjectReference: core.LocalObjectReference{
+													Name: configMap.Name,
+												},
 											},
 										},
 									},
@@ -722,6 +787,18 @@ var _ = Describe("MongoDB SSL", func() {
 						It("should run successfully", shouldRunWithPVC)
 
 						Context("Initialization - script & snapshot", func() {
+							var configMap *core.ConfigMap
+
+							BeforeEach(func() {
+								configMap = f.ConfigMapForInitialization()
+								err := f.CreateConfigMap(configMap)
+								Expect(err).NotTo(HaveOccurred())
+							})
+
+							AfterEach(func() {
+								err := f.DeleteConfigMap(configMap.ObjectMeta)
+								Expect(err).NotTo(HaveOccurred())
+							})
 
 							BeforeEach(func() {
 								skipConfig = true
@@ -746,9 +823,10 @@ var _ = Describe("MongoDB SSL", func() {
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
-											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-												Directory:  ".",
+											ConfigMap: &core.ConfigMapVolumeSource{
+												LocalObjectReference: core.LocalObjectReference{
+													Name: configMap.Name,
+												},
 											},
 										},
 									},
@@ -777,6 +855,18 @@ var _ = Describe("MongoDB SSL", func() {
 						It("should run successfully", shouldRunWithPVC)
 
 						Context("Initialization - script & snapshot", func() {
+							var configMap *core.ConfigMap
+
+							BeforeEach(func() {
+								configMap = f.ConfigMapForInitialization()
+								err := f.CreateConfigMap(configMap)
+								Expect(err).NotTo(HaveOccurred())
+							})
+
+							AfterEach(func() {
+								err := f.DeleteConfigMap(configMap.ObjectMeta)
+								Expect(err).NotTo(HaveOccurred())
+							})
 
 							BeforeEach(func() {
 								skipConfig = true
@@ -797,9 +887,10 @@ var _ = Describe("MongoDB SSL", func() {
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
-											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-												Directory:  ".",
+											ConfigMap: &core.ConfigMapVolumeSource{
+												LocalObjectReference: core.LocalObjectReference{
+													Name: configMap.Name,
+												},
 											},
 										},
 									},
@@ -824,6 +915,18 @@ var _ = Describe("MongoDB SSL", func() {
 						It("should run successfully", shouldRunWithPVC)
 
 						Context("Initialization - script & snapshot", func() {
+							var configMap *core.ConfigMap
+
+							BeforeEach(func() {
+								configMap = f.ConfigMapForInitialization()
+								err := f.CreateConfigMap(configMap)
+								Expect(err).NotTo(HaveOccurred())
+							})
+
+							AfterEach(func() {
+								err := f.DeleteConfigMap(configMap.ObjectMeta)
+								Expect(err).NotTo(HaveOccurred())
+							})
 
 							BeforeEach(func() {
 								skipConfig = true
@@ -848,9 +951,10 @@ var _ = Describe("MongoDB SSL", func() {
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
-											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-												Directory:  ".",
+											ConfigMap: &core.ConfigMapVolumeSource{
+												LocalObjectReference: core.LocalObjectReference{
+													Name: configMap.Name,
+												},
 											},
 										},
 									},
@@ -879,7 +983,18 @@ var _ = Describe("MongoDB SSL", func() {
 					It("should run successfully", shouldRunWithPVC)
 
 					Context("Initialization - script & snapshot", func() {
+						var configMap *core.ConfigMap
 
+						BeforeEach(func() {
+							configMap = f.ConfigMapForInitialization()
+							err := f.CreateConfigMap(configMap)
+							Expect(err).NotTo(HaveOccurred())
+						})
+
+						AfterEach(func() {
+							err := f.DeleteConfigMap(configMap.ObjectMeta)
+							Expect(err).NotTo(HaveOccurred())
+						})
 						BeforeEach(func() {
 							skipConfig = true
 							anotherMongoDB = f.MongoDBStandalone()
@@ -899,9 +1014,10 @@ var _ = Describe("MongoDB SSL", func() {
 							mongodb.Spec.Init = &api.InitSpec{
 								ScriptSource: &api.ScriptSourceSpec{
 									VolumeSource: core.VolumeSource{
-										GitRepo: &core.GitRepoVolumeSource{
-											Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-											Directory:  ".",
+										ConfigMap: &core.ConfigMapVolumeSource{
+											LocalObjectReference: core.LocalObjectReference{
+												Name: configMap.Name,
+											},
 										},
 									},
 								},
@@ -929,6 +1045,18 @@ var _ = Describe("MongoDB SSL", func() {
 						It("should run successfully", shouldRunWithPVC)
 
 						Context("Initialization - script & snapshot", func() {
+							var configMap *core.ConfigMap
+
+							BeforeEach(func() {
+								configMap = f.ConfigMapForInitialization()
+								err := f.CreateConfigMap(configMap)
+								Expect(err).NotTo(HaveOccurred())
+							})
+
+							AfterEach(func() {
+								err := f.DeleteConfigMap(configMap.ObjectMeta)
+								Expect(err).NotTo(HaveOccurred())
+							})
 
 							BeforeEach(func() {
 								skipConfig = true
@@ -949,9 +1077,10 @@ var _ = Describe("MongoDB SSL", func() {
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
-											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-												Directory:  ".",
+											ConfigMap: &core.ConfigMapVolumeSource{
+												LocalObjectReference: core.LocalObjectReference{
+													Name: configMap.Name,
+												},
 											},
 										},
 									},
@@ -976,6 +1105,18 @@ var _ = Describe("MongoDB SSL", func() {
 						It("should run successfully", shouldRunWithPVC)
 
 						Context("Initialization - script & snapshot", func() {
+							var configMap *core.ConfigMap
+
+							BeforeEach(func() {
+								configMap = f.ConfigMapForInitialization()
+								err := f.CreateConfigMap(configMap)
+								Expect(err).NotTo(HaveOccurred())
+							})
+
+							AfterEach(func() {
+								err := f.DeleteConfigMap(configMap.ObjectMeta)
+								Expect(err).NotTo(HaveOccurred())
+							})
 
 							BeforeEach(func() {
 								skipConfig = true
@@ -1000,9 +1141,10 @@ var _ = Describe("MongoDB SSL", func() {
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
-											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-												Directory:  ".",
+											ConfigMap: &core.ConfigMapVolumeSource{
+												LocalObjectReference: core.LocalObjectReference{
+													Name: configMap.Name,
+												},
 											},
 										},
 									},
@@ -1063,6 +1205,18 @@ var _ = Describe("MongoDB SSL", func() {
 						It("should run successfully", shouldRunWithPVC)
 
 						Context("Initialization - script & snapshot", func() {
+							var configMap *core.ConfigMap
+
+							BeforeEach(func() {
+								configMap = f.ConfigMapForInitialization()
+								err := f.CreateConfigMap(configMap)
+								Expect(err).NotTo(HaveOccurred())
+							})
+
+							AfterEach(func() {
+								err := f.DeleteConfigMap(configMap.ObjectMeta)
+								Expect(err).NotTo(HaveOccurred())
+							})
 
 							BeforeEach(func() {
 								skipConfig = true
@@ -1083,9 +1237,10 @@ var _ = Describe("MongoDB SSL", func() {
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
-											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-												Directory:  ".",
+											ConfigMap: &core.ConfigMapVolumeSource{
+												LocalObjectReference: core.LocalObjectReference{
+													Name: configMap.Name,
+												},
 											},
 										},
 									},
@@ -1110,6 +1265,18 @@ var _ = Describe("MongoDB SSL", func() {
 						It("should run successfully", shouldRunWithPVC)
 
 						Context("Initialization - script & snapshot", func() {
+							var configMap *core.ConfigMap
+
+							BeforeEach(func() {
+								configMap = f.ConfigMapForInitialization()
+								err := f.CreateConfigMap(configMap)
+								Expect(err).NotTo(HaveOccurred())
+							})
+
+							AfterEach(func() {
+								err := f.DeleteConfigMap(configMap.ObjectMeta)
+								Expect(err).NotTo(HaveOccurred())
+							})
 
 							BeforeEach(func() {
 								skipConfig = true
@@ -1134,9 +1301,10 @@ var _ = Describe("MongoDB SSL", func() {
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
-											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-												Directory:  ".",
+											ConfigMap: &core.ConfigMapVolumeSource{
+												LocalObjectReference: core.LocalObjectReference{
+													Name: configMap.Name,
+												},
 											},
 										},
 									},
@@ -1197,6 +1365,18 @@ var _ = Describe("MongoDB SSL", func() {
 					It("should run successfully", shouldRunWithPVC)
 
 					Context("Initialization - script & snapshot", func() {
+						var configMap *core.ConfigMap
+
+						BeforeEach(func() {
+							configMap = f.ConfigMapForInitialization()
+							err := f.CreateConfigMap(configMap)
+							Expect(err).NotTo(HaveOccurred())
+						})
+
+						AfterEach(func() {
+							err := f.DeleteConfigMap(configMap.ObjectMeta)
+							Expect(err).NotTo(HaveOccurred())
+						})
 
 						BeforeEach(func() {
 							skipConfig = true
@@ -1217,9 +1397,10 @@ var _ = Describe("MongoDB SSL", func() {
 							mongodb.Spec.Init = &api.InitSpec{
 								ScriptSource: &api.ScriptSourceSpec{
 									VolumeSource: core.VolumeSource{
-										GitRepo: &core.GitRepoVolumeSource{
-											Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-											Directory:  ".",
+										ConfigMap: &core.ConfigMapVolumeSource{
+											LocalObjectReference: core.LocalObjectReference{
+												Name: configMap.Name,
+											},
 										},
 									},
 								},
@@ -1247,6 +1428,18 @@ var _ = Describe("MongoDB SSL", func() {
 						It("should run successfully", shouldRunWithPVC)
 
 						Context("Initialization - script & snapshot", func() {
+							var configMap *core.ConfigMap
+
+							BeforeEach(func() {
+								configMap = f.ConfigMapForInitialization()
+								err := f.CreateConfigMap(configMap)
+								Expect(err).NotTo(HaveOccurred())
+							})
+
+							AfterEach(func() {
+								err := f.DeleteConfigMap(configMap.ObjectMeta)
+								Expect(err).NotTo(HaveOccurred())
+							})
 
 							BeforeEach(func() {
 								skipConfig = true
@@ -1267,9 +1460,10 @@ var _ = Describe("MongoDB SSL", func() {
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
-											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-												Directory:  ".",
+											ConfigMap: &core.ConfigMapVolumeSource{
+												LocalObjectReference: core.LocalObjectReference{
+													Name: configMap.Name,
+												},
 											},
 										},
 									},
@@ -1294,6 +1488,18 @@ var _ = Describe("MongoDB SSL", func() {
 						It("should run successfully", shouldRunWithPVC)
 
 						Context("Initialization - script & snapshot", func() {
+							var configMap *core.ConfigMap
+
+							BeforeEach(func() {
+								configMap = f.ConfigMapForInitialization()
+								err := f.CreateConfigMap(configMap)
+								Expect(err).NotTo(HaveOccurred())
+							})
+
+							AfterEach(func() {
+								err := f.DeleteConfigMap(configMap.ObjectMeta)
+								Expect(err).NotTo(HaveOccurred())
+							})
 
 							BeforeEach(func() {
 								skipConfig = true
@@ -1318,9 +1524,10 @@ var _ = Describe("MongoDB SSL", func() {
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
-											GitRepo: &core.GitRepoVolumeSource{
-												Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-												Directory:  ".",
+											ConfigMap: &core.ConfigMapVolumeSource{
+												LocalObjectReference: core.LocalObjectReference{
+													Name: configMap.Name,
+												},
 											},
 										},
 									},

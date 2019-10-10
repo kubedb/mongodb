@@ -733,18 +733,29 @@ var _ = Describe("MongoDB", func() {
 				})
 
 				Context("Delete One Snapshot keeping others", func() {
+					var configMap *core.ConfigMap
 
 					BeforeEach(func() {
+						configMap = f.ConfigMapForInitialization()
+						err := f.CreateConfigMap(configMap)
+						Expect(err).NotTo(HaveOccurred())
+
 						mongodb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
-									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-										Directory:  ".",
+									ConfigMap: &core.ConfigMapVolumeSource{
+										LocalObjectReference: core.LocalObjectReference{
+											Name: configMap.Name,
+										},
 									},
 								},
 							},
 						}
+					})
+
+					AfterEach(func() {
+						err := f.DeleteConfigMap(configMap.ObjectMeta)
+						Expect(err).NotTo(HaveOccurred())
 					})
 
 					It("Delete One Snapshot keeping others", func() {
@@ -822,18 +833,29 @@ var _ = Describe("MongoDB", func() {
 				})
 
 				Context("Delete One Snapshot keeping others", func() {
+					var configMap *core.ConfigMap
 
 					BeforeEach(func() {
+						configMap = f.ConfigMapForInitialization()
+						err := f.CreateConfigMap(configMap)
+						Expect(err).NotTo(HaveOccurred())
+
 						mongodb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
-									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-										Directory:  ".",
+									ConfigMap: &core.ConfigMapVolumeSource{
+										LocalObjectReference: core.LocalObjectReference{
+											Name: configMap.Name,
+										},
 									},
 								},
 							},
 						}
+					})
+
+					AfterEach(func() {
+						err := f.DeleteConfigMap(configMap.ObjectMeta)
+						Expect(err).NotTo(HaveOccurred())
 					})
 
 					It("Delete One Snapshot keeping others", func() {
@@ -894,18 +916,28 @@ var _ = Describe("MongoDB", func() {
 				It("should take Snapshot successfully", shouldTakeSnapshot)
 
 				Context("Delete One Snapshot keeping others", func() {
+					var configMap *core.ConfigMap
 
 					BeforeEach(func() {
+						configMap = f.ConfigMapForInitialization()
+						err := f.CreateConfigMap(configMap)
+						Expect(err).NotTo(HaveOccurred())
 						mongodb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
-									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-										Directory:  ".",
+									ConfigMap: &core.ConfigMapVolumeSource{
+										LocalObjectReference: core.LocalObjectReference{
+											Name: configMap.Name,
+										},
 									},
 								},
 							},
 						}
+					})
+
+					AfterEach(func() {
+						err := f.DeleteConfigMap(configMap.ObjectMeta)
+						Expect(err).NotTo(HaveOccurred())
 					})
 
 					It("Delete One Snapshot keeping others", func() {
@@ -1154,17 +1186,29 @@ var _ = Describe("MongoDB", func() {
 		Context("Initialize", func() {
 
 			Context("With Script", func() {
+				var configMap *core.ConfigMap
+
 				BeforeEach(func() {
+					configMap = f.ConfigMapForInitialization()
+					err := f.CreateConfigMap(configMap)
+					Expect(err).NotTo(HaveOccurred())
+
 					mongodb.Spec.Init = &api.InitSpec{
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
-								GitRepo: &core.GitRepoVolumeSource{
-									Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-									Directory:  ".",
+								ConfigMap: &core.ConfigMapVolumeSource{
+									LocalObjectReference: core.LocalObjectReference{
+										Name: configMap.Name,
+									},
 								},
 							},
 						},
 					}
+				})
+
+				AfterEach(func() {
+					err := f.DeleteConfigMap(configMap.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("should run successfully", func() {
@@ -1182,9 +1226,10 @@ var _ = Describe("MongoDB", func() {
 						mongodb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
-									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-										Directory:  ".",
+									ConfigMap: &core.ConfigMapVolumeSource{
+										LocalObjectReference: core.LocalObjectReference{
+											Name: configMap.Name,
+										},
 									},
 								},
 							},
@@ -1205,9 +1250,10 @@ var _ = Describe("MongoDB", func() {
 						mongodb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
-									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-										Directory:  ".",
+									ConfigMap: &core.ConfigMapVolumeSource{
+										LocalObjectReference: core.LocalObjectReference{
+											Name: configMap.Name,
+										},
 									},
 								},
 							},
@@ -1995,18 +2041,31 @@ var _ = Describe("MongoDB", func() {
 			})
 
 			Context("with init Script", func() {
+				var configMap *core.ConfigMap
+
 				BeforeEach(func() {
 					usedInitScript = true
+
+					configMap = f.ConfigMapForInitialization()
+					err := f.CreateConfigMap(configMap)
+					Expect(err).NotTo(HaveOccurred())
+
 					mongodb.Spec.Init = &api.InitSpec{
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
-								GitRepo: &core.GitRepoVolumeSource{
-									Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-									Directory:  ".",
+								ConfigMap: &core.ConfigMapVolumeSource{
+									LocalObjectReference: core.LocalObjectReference{
+										Name: configMap.Name,
+									},
 								},
 							},
 						},
 					}
+				})
+
+				AfterEach(func() {
+					err := f.DeleteConfigMap(configMap.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				var shouldResumeWithInit = func() {
@@ -2056,9 +2115,10 @@ var _ = Describe("MongoDB", func() {
 						mongodb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
-									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-										Directory:  ".",
+									ConfigMap: &core.ConfigMapVolumeSource{
+										LocalObjectReference: core.LocalObjectReference{
+											Name: configMap.Name,
+										},
 									},
 								},
 							},
@@ -2073,9 +2133,10 @@ var _ = Describe("MongoDB", func() {
 						mongodb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
-									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-										Directory:  ".",
+									ConfigMap: &core.ConfigMapVolumeSource{
+										LocalObjectReference: core.LocalObjectReference{
+											Name: configMap.Name,
+										},
 									},
 								},
 							},
@@ -2195,18 +2256,31 @@ var _ = Describe("MongoDB", func() {
 			})
 
 			Context("Multiple times with init script", func() {
+				var configMap *core.ConfigMap
+
 				BeforeEach(func() {
 					usedInitScript = true
+
+					configMap = f.ConfigMapForInitialization()
+					err := f.CreateConfigMap(configMap)
+					Expect(err).NotTo(HaveOccurred())
+
 					mongodb.Spec.Init = &api.InitSpec{
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
-								GitRepo: &core.GitRepoVolumeSource{
-									Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-									Directory:  ".",
+								ConfigMap: &core.ConfigMapVolumeSource{
+									LocalObjectReference: core.LocalObjectReference{
+										Name: configMap.Name,
+									},
 								},
 							},
 						},
 					}
+				})
+
+				AfterEach(func() {
+					err := f.DeleteConfigMap(configMap.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				var shouldResumeMultipleTimes = func() {
@@ -2258,9 +2332,10 @@ var _ = Describe("MongoDB", func() {
 						mongodb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
-									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-										Directory:  ".",
+									ConfigMap: &core.ConfigMapVolumeSource{
+										LocalObjectReference: core.LocalObjectReference{
+											Name: configMap.Name,
+										},
 									},
 								},
 							},
@@ -2275,9 +2350,10 @@ var _ = Describe("MongoDB", func() {
 						mongodb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
-									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-										Directory:  ".",
+									ConfigMap: &core.ConfigMapVolumeSource{
+										LocalObjectReference: core.LocalObjectReference{
+											Name: configMap.Name,
+										},
 									},
 								},
 							},
@@ -2836,17 +2912,29 @@ var _ = Describe("MongoDB", func() {
 		Context("Environment Variables", func() {
 
 			Context("With allowed Envs", func() {
+				var configMap *core.ConfigMap
+
 				BeforeEach(func() {
+					configMap = f.ConfigMapForInitialization()
+					err := f.CreateConfigMap(configMap)
+					Expect(err).NotTo(HaveOccurred())
+
 					mongodb.Spec.Init = &api.InitSpec{
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
-								GitRepo: &core.GitRepoVolumeSource{
-									Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-									Directory:  ".",
+								ConfigMap: &core.ConfigMapVolumeSource{
+									LocalObjectReference: core.LocalObjectReference{
+										Name: configMap.Name,
+									},
 								},
 							},
 						},
 					}
+				})
+
+				AfterEach(func() {
+					err := f.DeleteConfigMap(configMap.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				var withAllowedEnvs = func() {
@@ -2884,15 +2972,16 @@ var _ = Describe("MongoDB", func() {
 						mongodb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
-									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-										Directory:  ".",
+									ConfigMap: &core.ConfigMapVolumeSource{
+										LocalObjectReference: core.LocalObjectReference{
+											Name: configMap.Name,
+										},
 									},
 								},
 							},
 						}
 					})
-					It("should take Snapshot successfully", withAllowedEnvs)
+					It("should initialize database specified by env", withAllowedEnvs)
 				})
 
 				Context("With Sharding", func() {
@@ -2901,15 +2990,16 @@ var _ = Describe("MongoDB", func() {
 						mongodb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
-									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-										Directory:  ".",
+									ConfigMap: &core.ConfigMapVolumeSource{
+										LocalObjectReference: core.LocalObjectReference{
+											Name: configMap.Name,
+										},
 									},
 								},
 							},
 						}
 					})
-					It("should take Snapshot successfully", withAllowedEnvs)
+					It("should initialize database specified by env", withAllowedEnvs)
 				})
 
 			})
@@ -2979,17 +3069,29 @@ var _ = Describe("MongoDB", func() {
 			})
 
 			Context("Update Envs", func() {
+				var configMap *core.ConfigMap
+
 				BeforeEach(func() {
+					configMap = f.ConfigMapForInitialization()
+					err := f.CreateConfigMap(configMap)
+					Expect(err).NotTo(HaveOccurred())
+
 					mongodb.Spec.Init = &api.InitSpec{
 						ScriptSource: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
-								GitRepo: &core.GitRepoVolumeSource{
-									Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-									Directory:  ".",
+								ConfigMap: &core.ConfigMapVolumeSource{
+									LocalObjectReference: core.LocalObjectReference{
+										Name: configMap.Name,
+									},
 								},
 							},
 						},
 					}
+				})
+
+				AfterEach(func() {
+					err := f.DeleteConfigMap(configMap.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				var withUpdateEnvs = func() {
@@ -3050,9 +3152,10 @@ var _ = Describe("MongoDB", func() {
 						mongodb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
-									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-										Directory:  ".",
+									ConfigMap: &core.ConfigMapVolumeSource{
+										LocalObjectReference: core.LocalObjectReference{
+											Name: configMap.Name,
+										},
 									},
 								},
 							},
@@ -3068,9 +3171,10 @@ var _ = Describe("MongoDB", func() {
 						mongodb.Spec.Init = &api.InitSpec{
 							ScriptSource: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
-									GitRepo: &core.GitRepoVolumeSource{
-										Repository: "https://github.com/kubedb/mongodb-init-scripts.git",
-										Directory:  ".",
+									ConfigMap: &core.ConfigMapVolumeSource{
+										LocalObjectReference: core.LocalObjectReference{
+											Name: configMap.Name,
+										},
 									},
 								},
 							},
