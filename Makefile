@@ -371,3 +371,19 @@ release:
 .PHONY: clean
 clean:
 	rm -rf .go bin
+
+# To test stash integration
+.PHONY: stash-install
+stash-install:
+	@curl -fsSL https://github.com/stashed/installer/raw/v0.9.0-rc.1/deploy/stash.sh | bash
+	@curl -fsSL https://github.com/stashed/catalog/raw/v0.9.0-rc.1/deploy/script.sh | bash -s -- --catalog=stash-mongodb --docker-registry=stashed
+
+.PHONY: stash-uninstall
+stash-uninstall:
+	@curl -fsSL https://github.com/stashed/catalog/raw/v0.9.0-rc.1/deploy/script.sh | bash -s -- --catalog=stash-mongodb --uninstall || true
+	@curl -fsSL https://github.com/stashed/installer/raw/v0.9.0-rc.1/deploy/stash.sh | bash -s -- --uninstall
+
+.PHONY: stash-purge
+stash-purge:
+	@cd /tmp
+	@curl -fsSL https://github.com/stashed/installer/raw/v0.9.0-rc.1/deploy/stash.sh | bash -s -- --uninstall --purge

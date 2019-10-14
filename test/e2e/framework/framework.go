@@ -16,6 +16,10 @@ var (
 	DockerRegistry     = "kubedbci"
 	SelfHostedOperator = true
 	DBCatalogName      = "3.6-v4"
+	// StashMgBackupTask is the task name for mongodb-stash backup task
+	StashMgBackupTask = "mongodb-backup-3.6"
+	// StashMgRestoreTask is the task name for mongodb-stash restore task
+	StashMgRestoreTask = "mongodb-restore-3.6"
 )
 
 type Framework struct {

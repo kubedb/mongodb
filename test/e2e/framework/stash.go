@@ -15,13 +15,6 @@ import (
 	"stash.appscode.dev/stash/apis/stash/v1beta1"
 )
 
-var (
-	// StashMgBackupTask is the task name for mongodb-stash backup task
-	StashMgBackupTask = "mg-backup-3.6"
-	// StashMgRestoreTask is the task name for mongodb-stash restore task
-	StashMgRestoreTask = "mg-restore-3.6"
-)
-
 func (f *Framework) FoundStashCRDs() bool {
 	return controller.FoundStashCRDs(f.apiExtKubeClient)
 }
@@ -79,6 +72,9 @@ func (i *Invocation) Repository(meta metav1.ObjectMeta, secretName string) *stas
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      meta.Name,
 			Namespace: i.namespace,
+		},
+		Spec: stashV1alpha1.RepositorySpec{
+			WipeOut: true,
 		},
 	}
 }
