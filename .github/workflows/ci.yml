@@ -72,6 +72,7 @@ jobs:
 
     - name: Install stash and addons
       run: |
+        export KUBECONFIG="$(kind get kubeconfig-path)"
         make stash-install
 
     - name: Run e2e tests
