@@ -4,7 +4,6 @@ import (
 	"github.com/appscode/go/log"
 	core_util "kmodules.xyz/client-go/core/v1"
 	"kmodules.xyz/client-go/tools/queue"
-	"kubedb.dev/apimachinery/apis"
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 )
@@ -13,7 +12,7 @@ func (c *Controller) initWatcher() {
 	c.mgInformer = c.KubedbInformerFactory.Kubedb().V1alpha1().MongoDBs().Informer()
 	c.mgQueue = queue.New("MongoDB", c.MaxNumRequeues, c.NumThreads, c.runMongoDB)
 	c.mgLister = c.KubedbInformerFactory.Kubedb().V1alpha1().MongoDBs().Lister()
-	c.mgInformer.AddEventHandler(queue.NewObservableUpdateHandler(c.mgQueue.GetQueue(), apis.EnableStatusSubresource))
+	c.mgInformer.AddEventHandler(queue.NewObservableUpdateHandler(c.mgQueue.GetQueue(), true))
 }
 
 func (c *Controller) runMongoDB(key string) error {

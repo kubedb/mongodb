@@ -16,7 +16,6 @@ import (
 	dynamic_util "kmodules.xyz/client-go/dynamic"
 	meta_util "kmodules.xyz/client-go/meta"
 	storage "kmodules.xyz/objectstore-api/osm"
-	"kubedb.dev/apimachinery/apis"
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 	"kubedb.dev/apimachinery/pkg/eventer"
@@ -46,7 +45,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 		mg, err := util.UpdateMongoDBStatus(c.ExtClient.KubedbV1alpha1(), mongodb, func(in *api.MongoDBStatus) *api.MongoDBStatus {
 			in.Phase = api.DatabasePhaseCreating
 			return in
-		}, apis.EnableStatusSubresource)
+		})
 		if err != nil {
 			return err
 		}
@@ -125,7 +124,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 		mg, err := util.UpdateMongoDBStatus(c.ExtClient.KubedbV1alpha1(), mongodb, func(in *api.MongoDBStatus) *api.MongoDBStatus {
 			in.Phase = api.DatabasePhaseInitializing
 			return in
-		}, apis.EnableStatusSubresource)
+		})
 		if err != nil {
 			return err
 		}
@@ -148,7 +147,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 		in.Phase = api.DatabasePhaseRunning
 		in.ObservedGeneration = types.NewIntHash(mongodb.Generation, meta_util.GenerationHash(mongodb))
 		return in
-	}, apis.EnableStatusSubresource)
+	})
 	if err != nil {
 		return err
 	}
