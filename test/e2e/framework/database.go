@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+
 	"github.com/appscode/go/log"
 	. "github.com/onsi/gomega"
 	"go.mongodb.org/mongo-driver/bson"
@@ -14,7 +16,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"kmodules.xyz/client-go/tools/portforward"
-	"kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 )
 
 type KubedbTable struct {

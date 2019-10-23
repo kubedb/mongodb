@@ -5,6 +5,10 @@ import (
 	"strconv"
 	"strings"
 
+	"kubedb.dev/apimachinery/apis/catalog/v1alpha1"
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+	"kubedb.dev/apimachinery/pkg/eventer"
+
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
 	"github.com/fatih/structs"
@@ -20,9 +24,6 @@ import (
 	meta_util "kmodules.xyz/client-go/meta"
 	mona "kmodules.xyz/monitoring-agent-api/api/v1"
 	ofst "kmodules.xyz/offshoot-api/api/v1"
-	"kubedb.dev/apimachinery/apis/catalog/v1alpha1"
-	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
-	"kubedb.dev/apimachinery/pkg/eventer"
 )
 
 const (

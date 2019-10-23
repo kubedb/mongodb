@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"net"
 
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+
 	"github.com/pkg/errors"
 	"gomodules.xyz/cert"
-	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 )
 
 // createCaCertificate returns generated caKey, caCert, err in order.

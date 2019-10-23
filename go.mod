@@ -49,6 +49,6 @@ replace (
 	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.0.0-20190314000639-da8327669ac5
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20190228160746-b3a7cee44a30
 	k8s.io/metrics => k8s.io/metrics v0.0.0-20190314001731-1bd6a4002213
-	k8s.io/utils => k8s.io/utils v0.0.0-20190221042446-c2654d5206da
+	k8s.io/utils => k8s.io/utils v0.0.0-20190514214443-0a167cbac756
 	sigs.k8s.io/structured-merge-diff => sigs.k8s.io/structured-merge-diff v0.0.0-20190302045857-e85c7b244fd2
 )
