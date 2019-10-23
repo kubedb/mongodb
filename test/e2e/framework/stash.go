@@ -102,9 +102,7 @@ func (i *Invocation) BackupSession(meta metav1.ObjectMeta) *v1beta1.BackupSessio
 			Invoker: v1beta1.BackupInvokerRef{
 				APIGroup: v1beta1.SchemeGroupVersion.Group,
 				Kind:     v1beta1.ResourceKindBackupConfiguration,
-				Name:     meta.Name},
-			BackupConfiguration: &core.LocalObjectReference{
-				Name: meta.Name,
+				Name:     meta.Name,
 			},
 		},
 	}

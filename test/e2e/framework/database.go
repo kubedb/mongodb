@@ -112,7 +112,7 @@ func (f *Framework) GetReplicaMasterNode(meta metav1.ObjectMeta, nodeName string
 		defer tunnel.Close()
 
 		res := make(map[string]interface{})
-		if err := client.Database("admin").RunCommand(context.Background(), bson.D{{"isMaster", "1"}}).Decode(&res); err != nil {
+		if err := client.Database("admin").RunCommand(context.Background(), bson.D{{Key: "isMaster", Value: "1"}}).Decode(&res); err != nil {
 			return false, err
 		}
 
@@ -263,14 +263,14 @@ func (f *Framework) EventuallyEnableSharding(meta metav1.ObjectMeta, dbName stri
 			}
 			defer tunnel.Close()
 
-			singleRes := client.Database("admin").RunCommand(context.Background(), bson.D{{"enableSharding", dbName}})
+			singleRes := client.Database("admin").RunCommand(context.Background(), bson.D{{Key: "enableSharding", Value: dbName}})
 			if singleRes.Err() != nil {
 				log.Errorln("RunCommand enableSharding error:", err)
 				return false, err
 			}
 
 			// Now shard collection
-			singleRes = client.Database("admin").RunCommand(context.Background(), bson.D{{"shardCollection", fmt.Sprintf("%v.public", dbName)}, {"key", bson.M{"firstname": 1}}})
+			singleRes = client.Database("admin").RunCommand(context.Background(), bson.D{{Key: "shardCollection", Value: fmt.Sprintf("%v.public", dbName)}, {Key: "key", Value: bson.M{"firstname": 1}}})
 			if singleRes.Err() != nil {
 				log.Errorln("RunCommand shardCollection error:", err)
 				return false, err
@@ -301,7 +301,7 @@ func (f *Framework) EventuallyCollectionPartitioned(meta metav1.ObjectMeta, dbNa
 			defer tunnel.Close()
 
 			res := make(map[string]interface{})
-			err = client.Database("config").Collection("databases").FindOne(context.TODO(), bson.D{{"_id", dbName}}).Decode(&res)
+			err = client.Database("config").Collection("databases").FindOne(context.TODO(), bson.D{{Key: "_id", Value: dbName}}).Decode(&res)
 			if err != nil {
 				if err == mongo.ErrNoDocuments {
 					log.Infoln("No document in config.databases:", err)
@@ -331,7 +331,7 @@ func (f *Framework) getMaxIncomingConnections(meta metav1.ObjectMeta, podName st
 	defer tunnel.Close()
 
 	res := make(map[string]interface{})
-	err = client.Database("admin").RunCommand(context.Background(), bson.D{{"getCmdLineOpts", 1}}).Decode(&res)
+	err = client.Database("admin").RunCommand(context.Background(), bson.D{{Key: "getCmdLineOpts", Value: 1}}).Decode(&res)
 	if err != nil {
 		log.Errorln("RunCommand getCmdLineOpts error:", err)
 		return 0, err

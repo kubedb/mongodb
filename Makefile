@@ -66,7 +66,7 @@ TAG              := $(VERSION)_$(OS)_$(ARCH)
 TAG_PROD         := $(TAG)
 TAG_DBG          := $(VERSION)-dbg_$(OS)_$(ARCH)
 
-GO_VERSION       ?= 1.12.10
+GO_VERSION       ?= 1.12.12
 BUILD_IMAGE      ?= appscode/golang-dev:$(GO_VERSION)-stretch
 
 OUTBIN = bin/$(OS)_$(ARCH)/$(BIN)
@@ -268,10 +268,10 @@ e2e-tests: $(BUILD_DIRS)
 	@docker run                                                 \
 	    -i                                                      \
 	    --rm                                                    \
+	    --network=host                                          \
 	    -u $$(id -u):$$(id -g)                                  \
 	    -v $$(pwd):/src                                         \
 	    -w /src                                                 \
-	    --net=host                                              \
 	    -v $(HOME)/.kube:/.kube                                 \
 	    -v $(HOME)/.minikube:$(HOME)/.minikube                  \
 	    -v $(HOME)/.credentials:$(HOME)/.credentials            \
@@ -318,7 +318,7 @@ lint: $(BUILD_DIRS)
 	    --env GO111MODULE=on                                    \
 	    --env GOFLAGS="-mod=vendor"                             \
 	    $(BUILD_IMAGE)                                          \
-	    golangci-lint run --enable $(ADDTL_LINTERS)
+	    golangci-lint run --enable $(ADDTL_LINTERS) --timeout=10m --skip-files="generated.*\.go$\" --skip-dirs-use-default --skip-dirs=client,vendor
 
 $(BUILD_DIRS):
 	@mkdir -p $@
@@ -342,7 +342,7 @@ purge:
 dev: gen fmt push
 
 .PHONY: ci
-ci: lint test build #cover
+ci: lint unit-tests #cover #TODO: revisit this section
 
 .PHONY: qa
 qa:
@@ -375,15 +375,15 @@ clean:
 # To test stash integration
 .PHONY: stash-install
 stash-install:
-	@curl -fsSL https://github.com/stashed/installer/raw/fix-install/deploy/stash.sh | bash
-	@curl -fsSL https://github.com/stashed/catalog/raw/fix-install/deploy/script.sh | bash -s -- --catalog=stash-mongodb --docker-registry=stashed
+	@curl -fsSL https://github.com/stashed/installer/raw/v0.9.0-rc.2/deploy/stash.sh | bash
+	@curl -fsSL https://github.com/stashed/catalog/raw/master/deploy/script.sh | bash -s -- --catalog=stash-mongodb --docker-registry=stashed
 
 .PHONY: stash-uninstall
 stash-uninstall:
-	@curl -fsSL https://github.com/stashed/catalog/raw/fix-install/deploy/script.sh | bash -s -- --catalog=stash-mongodb --uninstall || true
-	@curl -fsSL https://github.com/stashed/installer/raw/fix-install/deploy/stash.sh | bash -s -- --uninstall
+	@curl -fsSL https://github.com/stashed/catalog/raw/v0.9.0-rc.2/deploy/script.sh | bash -s -- --catalog=stash-mongodb --uninstall || true
+	@curl -fsSL https://github.com/stashed/installer/raw/master/deploy/stash.sh | bash -s -- --uninstall
 
 .PHONY: stash-purge
 stash-purge:
 	@cd /tmp
-	@curl -fsSL https://github.com/stashed/installer/raw/fix-install/deploy/stash.sh | bash -s -- --uninstall --purge
+	@curl -fsSL https://github.com/stashed/installer/raw/master/deploy/stash.sh | bash -s -- --uninstall --purge

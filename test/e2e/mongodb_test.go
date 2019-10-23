@@ -139,6 +139,9 @@ var _ = Describe("MongoDB", func() {
 			By("Delete Dormant Database")
 			err = f.DeleteDormantDatabase(mongodb.ObjectMeta)
 			Expect(err).NotTo(HaveOccurred())
+
+			By("Eventually dormant database is deleted")
+			f.EventuallyDormantDatabase(mongodb.ObjectMeta).Should(BeFalse())
 		}
 
 		By("Wait for mongodb resources to be wipedOut")

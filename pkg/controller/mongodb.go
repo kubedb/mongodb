@@ -243,7 +243,7 @@ func (c *Controller) initializeFromSnapshot(mongodb *api.MongoDB) error {
 	if err != nil {
 		return err
 	}
-	secret, err = c.Client.CoreV1().Secrets(secret.Namespace).Create(secret)
+	_, err = c.Client.CoreV1().Secrets(secret.Namespace).Create(secret)
 	if err != nil && !kerr.IsAlreadyExists(err) {
 		return err
 	}
