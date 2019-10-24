@@ -157,13 +157,6 @@ var _ = Describe("MongoDB", func() {
 			}
 		})
 
-		// if secret is empty (no .env file) then skip
-		JustBeforeEach(func() {
-			if secret != nil && len(secret.Data) == 0 && (snapshot != nil && snapshot.Spec.Local == nil) {
-				Skip("Missing repository credential")
-			}
-		})
-
 		AfterEach(func() {
 			// Delete test resource
 			deleteTestResource()
@@ -287,6 +280,7 @@ var _ = Describe("MongoDB", func() {
 
 				It("should run evictions on Sharded MongoDB successfully", func() {
 					mongodb = f.MongoDBShard()
+					mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 					mongodb.Spec.ShardTopology.Shard.Shards = int32(1)
 					mongodb.Spec.ShardTopology.ConfigServer.Replicas = int32(3)
 					mongodb.Spec.ShardTopology.Mongos.Replicas = int32(3)
@@ -355,6 +349,7 @@ var _ = Describe("MongoDB", func() {
 
 				It("should start and resume with shard successfully", func() {
 					mongodb = f.MongoDBShard()
+					mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 					mongodb.Spec.ShardTopology.Shard.Shards = int32(1)
 					mongodb.Spec.ShardTopology.Shard.MongoDBNode.Replicas = int32(1)
 					mongodb.Spec.ShardTopology.ConfigServer.MongoDBNode.Replicas = int32(1)
@@ -689,6 +684,7 @@ var _ = Describe("MongoDB", func() {
 				Context("With Sharding", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBShard()
+						mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 						snapshot.Spec.DatabaseName = mongodb.Name
 						snapshot.Spec.Local = &store.LocalSpec{
 							MountPath: "/repo",
@@ -831,6 +827,7 @@ var _ = Describe("MongoDB", func() {
 				Context("With Sharding", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBShard()
+						mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 						snapshot.Spec.DatabaseName = mongodb.Name
 					})
 					It("should take Snapshot successfully", shouldTakeSnapshot)
@@ -1421,6 +1418,8 @@ var _ = Describe("MongoDB", func() {
 									Args:      []string{fmt.Sprintf("--skip-config=%v", skipConfig)},
 								},
 							}
+							mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+							anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 						})
 						It("should initialize database successfully", shouldInitializeSnapshot)
 					})
@@ -1436,6 +1435,8 @@ var _ = Describe("MongoDB", func() {
 									Args:      []string{fmt.Sprintf("--skip-config=%v", skipConfig)},
 								},
 							}
+							mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+							anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 						})
 						It("should initialize database successfully", shouldInitializeSnapshot)
 					})
@@ -1469,6 +1470,8 @@ var _ = Describe("MongoDB", func() {
 								Args:      []string{"--skip-config=true"},
 							},
 						}
+						mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+						anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 					})
 					It("should take Snapshot successfully", shouldInitializeSnapshot)
 				})
@@ -1763,6 +1766,8 @@ var _ = Describe("MongoDB", func() {
 						Context("With Sharding disabled database", func() {
 							BeforeEach(func() {
 								enableSharding = false
+								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 							})
 
 							It("should initialize database successfully", shouldInitializeFromStash)
@@ -1771,6 +1776,8 @@ var _ = Describe("MongoDB", func() {
 						Context("With Sharding Enabled database", func() {
 							BeforeEach(func() {
 								enableSharding = true
+								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 							})
 
 							It("should initialize database successfully", shouldInitializeFromStash)
@@ -1788,6 +1795,9 @@ var _ = Describe("MongoDB", func() {
 
 									anotherMongoDB.Spec.ClusterAuthMode = api.ClusterAuthModeX509
 									anotherMongoDB.Spec.SSLMode = api.SSLModeRequireSSL
+
+									mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+									anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 								})
 
 								It("should initialize database successfully", shouldInitializeFromStash)
@@ -1800,6 +1810,9 @@ var _ = Describe("MongoDB", func() {
 
 									anotherMongoDB.Spec.ClusterAuthMode = api.ClusterAuthModeKeyFile
 									anotherMongoDB.Spec.SSLMode = api.SSLModeAllowSSL
+
+									mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+									anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 								})
 
 								It("should initialize database successfully", shouldInitializeFromStash)
@@ -1812,6 +1825,9 @@ var _ = Describe("MongoDB", func() {
 
 									anotherMongoDB.Spec.ClusterAuthMode = api.ClusterAuthModeX509
 									anotherMongoDB.Spec.SSLMode = api.SSLModePreferSSL
+
+									mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+									anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 								})
 
 								It("should initialize database successfully", shouldInitializeFromStash)
@@ -1838,6 +1854,9 @@ var _ = Describe("MongoDB", func() {
 								},
 								StorageSecretName: secret.Name,
 							}
+
+							mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+							anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 						})
 
 						AfterEach(func() {
@@ -1889,6 +1908,15 @@ var _ = Describe("MongoDB", func() {
 							// eventually backupsession succeeded
 							By("Check for Succeeded backupsession")
 							f.EventuallyBackupSessionPhase(bs.ObjectMeta).Should(Equal(stashV1beta1.BackupSessionSucceeded))
+
+							// Run second time to check if unlocking works.
+							By("Create BackupSession")
+							err = f.CreateBackupSession(bs2)
+							Expect(err).NotTo(HaveOccurred())
+
+							// eventually backupsession succeeded
+							By("Check for Succeeded backupsession")
+							f.EventuallyBackupSessionPhase(bs2.ObjectMeta).Should(Equal(stashV1beta1.BackupSessionSucceeded))
 
 							oldMongoDB, err := f.GetMongoDB(mongodb.ObjectMeta)
 							Expect(err).NotTo(HaveOccurred())
@@ -2039,6 +2067,7 @@ var _ = Describe("MongoDB", func() {
 				Context("With Sharding", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBShard()
+						mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 					})
 					It("should take Snapshot successfully", shouldResumeWithoutInit)
 				})
@@ -2145,6 +2174,7 @@ var _ = Describe("MongoDB", func() {
 								},
 							},
 						}
+						mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 					})
 					It("should take Snapshot successfully", shouldResumeWithInit)
 				})
@@ -2254,6 +2284,9 @@ var _ = Describe("MongoDB", func() {
 						mongodb = f.MongoDBShard()
 						snapshot.Spec.DatabaseName = mongodb.Name
 						anotherMongoDB = f.MongoDBShard()
+
+						mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+						anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 					})
 					It("should take Snapshot successfully", shouldResumeWithSnapshot)
 				})
@@ -2362,6 +2395,7 @@ var _ = Describe("MongoDB", func() {
 								},
 							},
 						}
+						mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 					})
 					It("should take Snapshot successfully", shouldResumeMultipleTimes)
 				})
@@ -2438,11 +2472,8 @@ var _ = Describe("MongoDB", func() {
 								CronExpression: "@every 20s",
 								Backend: store.Backend{
 									StorageSecretName: secret.Name,
-									Local: &store.LocalSpec{
-										MountPath: "/repo",
-										VolumeSource: core.VolumeSource{
-											EmptyDir: &core.EmptyDirVolumeSource{},
-										},
+									GCS: &store.GCSSpec{
+										Bucket: os.Getenv(GCS_BUCKET_NAME),
 									},
 								},
 							}
@@ -2457,14 +2488,12 @@ var _ = Describe("MongoDB", func() {
 								CronExpression: "@every 20s",
 								Backend: store.Backend{
 									StorageSecretName: secret.Name,
-									Local: &store.LocalSpec{
-										MountPath: "/repo",
-										VolumeSource: core.VolumeSource{
-											EmptyDir: &core.EmptyDirVolumeSource{},
-										},
+									GCS: &store.GCSSpec{
+										Bucket: os.Getenv(GCS_BUCKET_NAME),
 									},
 								},
 							}
+							mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 						})
 						It("should take Snapshot successfully", shouldStartupSchedular)
 					})
@@ -2532,6 +2561,7 @@ var _ = Describe("MongoDB", func() {
 				Context("With Sharding", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBShard()
+						mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 					})
 					It("should take Snapshot successfully", shouldScheduleWithUpdate)
 				})
@@ -2727,6 +2757,7 @@ var _ = Describe("MongoDB", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBShard()
 						mongodb.Spec.TerminationPolicy = api.TerminationPolicyDoNotTerminate
+						mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 					})
 					It("should run successfully", shouldWorkDoNotTerminate)
 				})
@@ -2788,6 +2819,7 @@ var _ = Describe("MongoDB", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBShard()
 						snapshot.Spec.DatabaseName = mongodb.Name
+						mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 					})
 
 					It("should create dormantdatabase successfully", shouldRunWithTerminationPause)
@@ -2907,6 +2939,8 @@ var _ = Describe("MongoDB", func() {
 						mongodb = f.MongoDBShard()
 						snapshot.Spec.DatabaseName = mongodb.Name
 						mongodb.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
+
+						mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 					})
 					It("should initialize database successfully", shouldRunWithTerminationWipeOut)
 				})
@@ -3002,6 +3036,7 @@ var _ = Describe("MongoDB", func() {
 								},
 							},
 						}
+						mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 					})
 					It("should initialize database specified by env", withAllowedEnvs)
 				})
@@ -3067,6 +3102,7 @@ var _ = Describe("MongoDB", func() {
 				Context("With Sharding", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBShard()
+						mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 					})
 					It("should take Snapshot successfully", withForbiddenEnvs)
 				})
@@ -3183,6 +3219,7 @@ var _ = Describe("MongoDB", func() {
 								},
 							},
 						}
+						mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 					})
 
 					It("should not reject to update EnvVar", withUpdateEnvs)
@@ -3285,6 +3322,8 @@ var _ = Describe("MongoDB", func() {
 							},
 						}
 
+						mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+
 					})
 
 					It("should run successfully", runWithUserProvidedConfig)
@@ -3342,6 +3381,8 @@ var _ = Describe("MongoDB", func() {
 						mongodb = f.MongoDBShard()
 						mongodb.Spec.StorageType = api.StorageTypeEphemeral
 						mongodb.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
+
+						mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 					})
 
 					It("should run successfully", shouldRunSuccessfully)

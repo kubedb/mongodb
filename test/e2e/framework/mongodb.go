@@ -134,6 +134,25 @@ func (i *Invocation) MongoDBShard() *api.MongoDB {
 	}
 }
 
+func (i *Invocation) MongoDBWithFlexibleProbeTimeout(db *api.MongoDB) *api.MongoDB {
+	db.SetDefaults()
+
+	if db.Spec.ShardTopology != nil {
+		if db.Spec.ShardTopology.Mongos.PodTemplate.Spec.ReadinessProbe != nil {
+			db.Spec.ShardTopology.Mongos.PodTemplate.Spec.ReadinessProbe.TimeoutSeconds = 3
+		}
+		if db.Spec.ShardTopology.Shard.PodTemplate.Spec.ReadinessProbe != nil {
+			db.Spec.ShardTopology.Shard.PodTemplate.Spec.ReadinessProbe.TimeoutSeconds = 3
+		}
+		if db.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.ReadinessProbe != nil {
+			db.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.ReadinessProbe.TimeoutSeconds = 3
+		}
+	} else if db.Spec.PodTemplate != nil && db.Spec.PodTemplate.Spec.ReadinessProbe != nil {
+		db.Spec.PodTemplate.Spec.ReadinessProbe.TimeoutSeconds = 3
+	}
+	return db
+}
+
 func IsRepSet(db *api.MongoDB) bool {
 	return db.Spec.ReplicaSet != nil
 }
@@ -294,7 +313,7 @@ func (f *Framework) EventuallyMongoDB(meta metav1.ObjectMeta) GomegaAsyncAsserti
 			}
 			return true
 		},
-		time.Minute*12,
+		time.Minute*13,
 		time.Second*5,
 	)
 }
@@ -306,7 +325,7 @@ func (f *Framework) EventuallyMongoDBPhase(meta metav1.ObjectMeta) GomegaAsyncAs
 			Expect(err).NotTo(HaveOccurred())
 			return db.Status.Phase
 		},
-		time.Minute*5,
+		time.Minute*13,
 		time.Second*5,
 	)
 }
@@ -318,7 +337,7 @@ func (f *Framework) EventuallyMongoDBRunning(meta metav1.ObjectMeta) GomegaAsync
 			Expect(err).NotTo(HaveOccurred())
 			return mongodb.Status.Phase == api.DatabasePhaseRunning
 		},
-		time.Minute*10,
+		time.Minute*13,
 		time.Second*5,
 	)
 }

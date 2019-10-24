@@ -67,6 +67,8 @@ func (f *Framework) EventuallyBackupSessionPhase(meta metav1.ObjectMeta) GomegaA
 			Expect(err).NotTo(HaveOccurred())
 			return bs.Status.Phase
 		},
+		time.Minute*13,
+		time.Second*5,
 	)
 }
 
@@ -168,7 +170,7 @@ func (f *Framework) EventuallyRestoreSessionPhase(meta metav1.ObjectMeta) Gomega
 		Expect(err).NotTo(HaveOccurred())
 		return restoreSession.Status.Phase
 	},
-		time.Minute*10,
+		time.Minute*13,
 		time.Second*5,
 	)
 }
