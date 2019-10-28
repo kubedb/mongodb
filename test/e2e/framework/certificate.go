@@ -3,10 +3,11 @@ package framework
 import (
 	"path/filepath"
 
+	"kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+
 	"github.com/appscode/go/ioutil"
 	"github.com/pkg/errors"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 )
 
 const (

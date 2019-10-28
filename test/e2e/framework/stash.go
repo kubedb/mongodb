@@ -3,23 +3,17 @@ package framework
 import (
 	"time"
 
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+	"kubedb.dev/apimachinery/pkg/controller"
+
 	"github.com/appscode/go/crypto/rand"
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1alpha13 "kmodules.xyz/custom-resources/apis/appcatalog/v1alpha1"
-	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
-	"kubedb.dev/apimachinery/pkg/controller"
 	"stash.appscode.dev/stash/apis/stash/v1alpha1"
 	stashV1alpha1 "stash.appscode.dev/stash/apis/stash/v1alpha1"
 	"stash.appscode.dev/stash/apis/stash/v1beta1"
-)
-
-var (
-	// StashMgBackupTask is the task name for mongodb-stash backup task
-	StashMgBackupTask = "mg-backup-3.6"
-	// StashMgRestoreTask is the task name for mongodb-stash restore task
-	StashMgRestoreTask = "mg-restore-3.6"
 )
 
 func (f *Framework) FoundStashCRDs() bool {
@@ -33,23 +27,25 @@ func (i *Invocation) BackupConfiguration(meta metav1.ObjectMeta) *v1beta1.Backup
 			Namespace: i.namespace,
 		},
 		Spec: v1beta1.BackupConfigurationSpec{
-			Task: v1beta1.TaskRef{
-				Name: StashMgBackupTask,
-			},
 			Repository: core.LocalObjectReference{
 				Name: meta.Name,
-			},
-			//Schedule: "*/3 * * * *",
-			Target: &v1beta1.BackupTarget{
-				Ref: v1beta1.TargetRef{
-					APIVersion: v1alpha13.SchemeGroupVersion.String(),
-					Kind:       v1alpha13.ResourceKindApp,
-					Name:       meta.Name,
-				},
 			},
 			RetentionPolicy: v1alpha1.RetentionPolicy{
 				KeepLast: 5,
 				Prune:    true,
+			},
+			BackupConfigurationTemplateSpec: v1beta1.BackupConfigurationTemplateSpec{
+				Task: v1beta1.TaskRef{
+					Name: StashMgBackupTask,
+				},
+				//Schedule: "*/3 * * * *",
+				Target: &v1beta1.BackupTarget{
+					Ref: v1beta1.TargetRef{
+						APIVersion: v1alpha13.SchemeGroupVersion.String(),
+						Kind:       v1alpha13.ResourceKindApp,
+						Name:       meta.Name,
+					},
+				},
 			},
 		},
 	}
@@ -71,6 +67,8 @@ func (f *Framework) EventuallyBackupSessionPhase(meta metav1.ObjectMeta) GomegaA
 			Expect(err).NotTo(HaveOccurred())
 			return bs.Status.Phase
 		},
+		time.Minute*13,
+		time.Second*5,
 	)
 }
 
@@ -79,6 +77,9 @@ func (i *Invocation) Repository(meta metav1.ObjectMeta, secretName string) *stas
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      meta.Name,
 			Namespace: i.namespace,
+		},
+		Spec: stashV1alpha1.RepositorySpec{
+			WipeOut: true,
 		},
 	}
 }
@@ -101,8 +102,10 @@ func (i *Invocation) BackupSession(meta metav1.ObjectMeta) *v1beta1.BackupSessio
 			Namespace: i.namespace,
 		},
 		Spec: v1beta1.BackupSessionSpec{
-			BackupConfiguration: core.LocalObjectReference{
-				Name: meta.Name,
+			Invoker: v1beta1.BackupInvokerRef{
+				APIGroup: v1beta1.SchemeGroupVersion.Group,
+				Kind:     v1beta1.ResourceKindBackupConfiguration,
+				Name:     meta.Name,
 			},
 		},
 	}
@@ -167,7 +170,7 @@ func (f *Framework) EventuallyRestoreSessionPhase(meta metav1.ObjectMeta) Gomega
 		Expect(err).NotTo(HaveOccurred())
 		return restoreSession.Status.Phase
 	},
-		time.Minute*10,
+		time.Minute*13,
 		time.Second*5,
 	)
 }

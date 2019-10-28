@@ -5,6 +5,9 @@ import (
 	"strconv"
 	"time"
 
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
+
 	"github.com/appscode/go/crypto/rand"
 	jsonTypes "github.com/appscode/go/encoding/json/types"
 	"github.com/appscode/go/types"
@@ -16,8 +19,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	meta_util "kmodules.xyz/client-go/meta"
-	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
-	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 )
 
 var (
@@ -77,6 +78,7 @@ func (i *Invocation) MongoDBRS() *api.MongoDB {
 				},
 				StorageClassName: types.StringP(i.StorageClass),
 			},
+			TerminationPolicy: api.TerminationPolicyPause,
 		},
 	}
 }
@@ -127,8 +129,28 @@ func (i *Invocation) MongoDBShard() *api.MongoDB {
 					},
 				},
 			},
+			TerminationPolicy: api.TerminationPolicyPause,
 		},
 	}
+}
+
+func (i *Invocation) MongoDBWithFlexibleProbeTimeout(db *api.MongoDB) *api.MongoDB {
+	db.SetDefaults()
+
+	if db.Spec.ShardTopology != nil {
+		if db.Spec.ShardTopology.Mongos.PodTemplate.Spec.ReadinessProbe != nil {
+			db.Spec.ShardTopology.Mongos.PodTemplate.Spec.ReadinessProbe.TimeoutSeconds = 3
+		}
+		if db.Spec.ShardTopology.Shard.PodTemplate.Spec.ReadinessProbe != nil {
+			db.Spec.ShardTopology.Shard.PodTemplate.Spec.ReadinessProbe.TimeoutSeconds = 3
+		}
+		if db.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.ReadinessProbe != nil {
+			db.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.ReadinessProbe.TimeoutSeconds = 3
+		}
+	} else if db.Spec.PodTemplate != nil && db.Spec.PodTemplate.Spec.ReadinessProbe != nil {
+		db.Spec.PodTemplate.Spec.ReadinessProbe.TimeoutSeconds = 3
+	}
+	return db
 }
 
 func IsRepSet(db *api.MongoDB) bool {
@@ -291,7 +313,7 @@ func (f *Framework) EventuallyMongoDB(meta metav1.ObjectMeta) GomegaAsyncAsserti
 			}
 			return true
 		},
-		time.Minute*12,
+		time.Minute*13,
 		time.Second*5,
 	)
 }
@@ -303,7 +325,7 @@ func (f *Framework) EventuallyMongoDBPhase(meta metav1.ObjectMeta) GomegaAsyncAs
 			Expect(err).NotTo(HaveOccurred())
 			return db.Status.Phase
 		},
-		time.Minute*5,
+		time.Minute*13,
 		time.Second*5,
 	)
 }
@@ -315,7 +337,7 @@ func (f *Framework) EventuallyMongoDBRunning(meta metav1.ObjectMeta) GomegaAsync
 			Expect(err).NotTo(HaveOccurred())
 			return mongodb.Status.Phase == api.DatabasePhaseRunning
 		},
-		time.Minute*10,
+		time.Minute*13,
 		time.Second*5,
 	)
 }
