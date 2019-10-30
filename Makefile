@@ -377,7 +377,7 @@ check-license:
 		--env HTTP_PROXY=$(HTTP_PROXY)                   \
 		--env HTTPS_PROXY=$(HTTPS_PROXY)                 \
 		$(BUILD_IMAGE)                                   \
-		ltag -t "./hack/license" --excludes "vendor contrib lubbuild" --check -v
+		ltag -t "./hack/license" --excludes "vendor contrib libbuild" --check -v
 
 .PHONY: ci
 ci: verify check-license lint build unit-tests #cover
