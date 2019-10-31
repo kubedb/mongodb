@@ -1,5 +1,5 @@
 [![Go Report Card](https://goreportcard.com/badge/kubedb.dev/mongodb)](https://goreportcard.com/report/kubedb.dev/mongodb)
-[![Build Status](https://travis-ci.org/kubedb/mongodb.svg?branch=master)](https://travis-ci.org/kubedb/mongodb)
+[![Build Status](https://github.com/kubedb/mongodb/workflows/CI/badge.svg)](https://github.com/kubedb/mongodb/actions?workflow=CI)
 [![codecov](https://codecov.io/gh/kubedb/mongodb/branch/master/graph/badge.svg)](https://codecov.io/gh/kubedb/mongodb)
 [![Slack](http://slack.kubernetes.io/badge.svg)](http://slack.kubernetes.io/#kubedb)
 [![mailing list](https://img.shields.io/badge/mailing_list-join-blue.svg)](https://groups.google.com/forum/#!forum/kubedb)
