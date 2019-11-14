@@ -1499,8 +1499,6 @@ var _ = Describe("MongoDB", func() {
 			// TODO: may be moved to another file?
 			Context("With Stash", func() {
 				var bc *stashV1beta1.BackupConfiguration
-				var bs *stashV1beta1.BackupSession
-				var bs2 *stashV1beta1.BackupSession
 				var rs *stashV1beta1.RestoreSession
 				var repo *stashV1alpha1.Repository
 
@@ -1523,14 +1521,6 @@ var _ = Describe("MongoDB", func() {
 				AfterEach(func() {
 					By("Deleting BackupConfiguration")
 					err := f.DeleteBackupConfiguration(bc.ObjectMeta)
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Deleting BackupSession:" + bs.Name)
-					err = f.DeleteBackupSession(bs.ObjectMeta)
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Deleting BackupSession:" + bs2.Name)
-					err = f.DeleteBackupSession(bs2.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Deleting RestoreSession")
@@ -1589,22 +1579,12 @@ var _ = Describe("MongoDB", func() {
 					err = f.CreateBackupConfiguration(bc)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("Create BackupSession")
-					err = f.CreateBackupSession(bs)
+					By("Check for snapshot count in stash-repository")
+					f.EventuallySnapshotInRepository(repo.ObjectMeta).Should(matcher.MoreThan(2))
+
+					By("Pause BackupConfiguration scheduling")
+					err = f.PauseBackupConfiguration(bc.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
-
-					// eventually backupsession succeeded
-					By("Check for Succeeded backupsession")
-					f.EventuallyBackupSessionPhase(bs.ObjectMeta).Should(Equal(stashV1beta1.BackupSessionSucceeded))
-
-					// Run second time to check if unlocking works.
-					By("Create BackupSession")
-					err = f.CreateBackupSession(bs2)
-					Expect(err).NotTo(HaveOccurred())
-
-					// eventually backupsession succeeded
-					By("Check for Succeeded backupsession")
-					f.EventuallyBackupSessionPhase(bs2.ObjectMeta).Should(Equal(stashV1beta1.BackupSessionSucceeded))
 
 					oldMongoDB, err := f.GetMongoDB(mongodb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
@@ -1624,7 +1604,7 @@ var _ = Describe("MongoDB", func() {
 					// Create and wait for running MongoDB
 					createAndWaitForInitializing()
 
-					By("Create RestoreSession")
+					By("Create Stash-RestoreSession")
 					err = f.CreateRestoreSession(rs)
 					Expect(err).NotTo(HaveOccurred())
 
@@ -1650,8 +1630,6 @@ var _ = Describe("MongoDB", func() {
 						secret = f.SecretForGCSBackend()
 						secret = f.PatchSecretForRestic(secret)
 						bc = f.BackupConfiguration(mongodb.ObjectMeta)
-						bs = f.BackupSession(mongodb.ObjectMeta)
-						bs2 = f.BackupSession(mongodb.ObjectMeta)
 						repo = f.Repository(mongodb.ObjectMeta, secret.Name)
 
 						repo.Spec.Backend = store.Backend{
@@ -1702,8 +1680,6 @@ var _ = Describe("MongoDB", func() {
 							secret = f.SecretForGCSBackend()
 							secret = f.PatchSecretForRestic(secret)
 							bc = f.BackupConfiguration(mongodb.ObjectMeta)
-							bs = f.BackupSession(mongodb.ObjectMeta)
-							bs2 = f.BackupSession(mongodb.ObjectMeta)
 							repo = f.Repository(mongodb.ObjectMeta, secret.Name)
 
 							repo.Spec.Backend = store.Backend{
@@ -1765,8 +1741,6 @@ var _ = Describe("MongoDB", func() {
 							secret = f.SecretForGCSBackend()
 							secret = f.PatchSecretForRestic(secret)
 							bc = f.BackupConfiguration(mongodb.ObjectMeta)
-							bs = f.BackupSession(mongodb.ObjectMeta)
-							bs2 = f.BackupSession(mongodb.ObjectMeta)
 							repo = f.Repository(mongodb.ObjectMeta, secret.Name)
 
 							repo.Spec.Backend = store.Backend{
@@ -1858,8 +1832,6 @@ var _ = Describe("MongoDB", func() {
 							anotherMongoDB = f.MongoDBStandalone()
 							customAppBindingName = mongodb.Name + "custom"
 							bc = f.BackupConfiguration(mongodb.ObjectMeta)
-							bs = f.BackupSession(mongodb.ObjectMeta)
-							bs2 = f.BackupSession(mongodb.ObjectMeta)
 							repo = f.Repository(mongodb.ObjectMeta, secret.Name)
 
 							repo.Spec.Backend = store.Backend{
@@ -1916,22 +1888,12 @@ var _ = Describe("MongoDB", func() {
 							err = f.CreateBackupConfiguration(bc)
 							Expect(err).NotTo(HaveOccurred())
 
-							By("Create BackupSession")
-							err = f.CreateBackupSession(bs)
+							By("Check for snapshot count in stash-repository")
+							f.EventuallySnapshotInRepository(repo.ObjectMeta).Should(matcher.MoreThan(2))
+
+							By("Pause BackupConfiguration scheduling")
+							err = f.PauseBackupConfiguration(bc.ObjectMeta)
 							Expect(err).NotTo(HaveOccurred())
-
-							// eventually backupsession succeeded
-							By("Check for Succeeded backupsession")
-							f.EventuallyBackupSessionPhase(bs.ObjectMeta).Should(Equal(stashV1beta1.BackupSessionSucceeded))
-
-							// Run second time to check if unlocking works.
-							By("Create BackupSession")
-							err = f.CreateBackupSession(bs2)
-							Expect(err).NotTo(HaveOccurred())
-
-							// eventually backupsession succeeded
-							By("Check for Succeeded backupsession")
-							f.EventuallyBackupSessionPhase(bs2.ObjectMeta).Should(Equal(stashV1beta1.BackupSessionSucceeded))
 
 							oldMongoDB, err := f.GetMongoDB(mongodb.ObjectMeta)
 							Expect(err).NotTo(HaveOccurred())
