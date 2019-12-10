@@ -315,11 +315,21 @@ var _ = Describe("MongoDB SSL", func() {
 				if CurrentGinkgoTestDescription().Failed {
 					sh := shell.NewSession()
 					fmt.Println("======================================[ Describe Job ]===================================================")
-					sh.Command("kubectl", "describe", "job", "-n", fmt.Sprintf("%v", f.Namespace()))
+					if err := sh.Command("kubectl", "describe", "job", "-n", fmt.Sprintf("%v", f.Namespace())).Run(); err != nil {
+						fmt.Println(err)
+					}
 					fmt.Println("======================================[ Describe Pod ]===================================================")
-					sh.Command("kubectl", "describe", "po", "-n", fmt.Sprintf("%v", f.Namespace()))
-					fmt.Println("======================================[ Describe mongodb ]===================================================")
-					sh.Command("kubectl", "describe", "mg", "-n", fmt.Sprintf("%v", f.Namespace()))
+					if err := sh.Command("kubectl", "describe", "po", "-n", fmt.Sprintf("%v", f.Namespace())).Run(); err != nil {
+						fmt.Println(err)
+					}
+					fmt.Println("======================================[ Describe Mongo ]===================================================")
+					if err := sh.Command("kubectl", "describe", "mg", "-n", fmt.Sprintf("%v", f.Namespace())).Run(); err != nil {
+						fmt.Println(err)
+					}
+					fmt.Println("======================================[ Describe Nodes ]===================================================")
+					if err := sh.Command("kubectl", "describe", "nodes").Run(); err != nil {
+						fmt.Println(err)
+					}
 				}
 			})
 
