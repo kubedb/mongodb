@@ -26,6 +26,7 @@ import (
 
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
+	shell "github.com/codeskyblue/go-sh"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
@@ -196,6 +197,20 @@ var _ = Describe("MongoDB", func() {
 		})
 
 		Context("General", func() {
+
+			AfterEach(func() {
+				if CurrentGinkgoTestDescription().Failed {
+					sh := shell.NewSession()
+					fmt.Println("======================================[ Describe Job ]===================================================")
+					sh.Command("kubectl", "describe", "job", "-n", fmt.Sprintf("%v", f.Namespace()))
+					fmt.Println("======================================[ Describe Pod ]===================================================")
+					sh.Command("kubectl", "describe", "po", "-n", fmt.Sprintf("%v", f.Namespace()))
+					fmt.Println("======================================[ Describe Mongo ]===================================================")
+					sh.Command("kubectl", "describe", "mg", "-n", fmt.Sprintf("%v", f.Namespace()))
+					fmt.Println("======================================[ Describe RestoreSession ]==========================================")
+					sh.Command("kubectl", "describe", "restoresession", "-n", fmt.Sprintf("%v", f.Namespace()))
+				}
+			})
 
 			Context("With PVC", func() {
 

@@ -23,6 +23,7 @@ import (
 	"kubedb.dev/mongodb/test/e2e/framework"
 	"kubedb.dev/mongodb/test/e2e/matcher"
 
+	shell "github.com/codeskyblue/go-sh"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
@@ -310,6 +311,17 @@ var _ = Describe("MongoDB SSL", func() {
 		})
 
 		Context("General SSL", func() {
+			AfterEach(func() {
+				if CurrentGinkgoTestDescription().Failed {
+					sh := shell.NewSession()
+					fmt.Println("======================================[ Describe Job ]===================================================")
+					sh.Command("kubectl", "describe", "job", "-n", fmt.Sprintf("%v", f.Namespace()))
+					fmt.Println("======================================[ Describe Pod ]===================================================")
+					sh.Command("kubectl", "describe", "po", "-n", fmt.Sprintf("%v", f.Namespace()))
+					fmt.Println("======================================[ Describe mongodb ]===================================================")
+					sh.Command("kubectl", "describe", "mg", "-n", fmt.Sprintf("%v", f.Namespace()))
+				}
+			})
 
 			Context("With sslMode requireSSL", func() {
 
