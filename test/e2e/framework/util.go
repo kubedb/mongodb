@@ -21,6 +21,7 @@ import (
 
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 
+	shell "github.com/codeskyblue/go-sh"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -58,5 +59,33 @@ func (f *Framework) CleanWorkloadLeftOvers() {
 		}).String(),
 	}); err != nil && !kerr.IsNotFound(err) {
 		fmt.Printf("error in deletion of PVC. Error: %v", err)
+	}
+}
+
+func (f *Framework) PrintDebugHelpers() {
+	sh := shell.NewSession()
+	fmt.Println("======================================[ Describe Job ]===================================================")
+	if err := sh.Command("kubectl", "describe", "job", "-n", fmt.Sprintf("%v", f.Namespace())).Run(); err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("======================================[ Describe Pod ]===================================================")
+	if err := sh.Command("kubectl", "describe", "po", "-n", fmt.Sprintf("%v", f.Namespace())).Run(); err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("======================================[ Describe Mongo ]===================================================")
+	if err := sh.Command("kubectl", "describe", "mg", "-n", fmt.Sprintf("%v", f.Namespace())).Run(); err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("======================================[ Describe RestoreSession ]==========================================")
+	if err := sh.Command("kubectl", "describe", "restoresession", "-n", fmt.Sprintf("%v", f.Namespace())).Run(); err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("======================================[ Describe Nodes ]===================================================")
+	if err := sh.Command("kubectl", "describe", "nodes").Run(); err != nil {
+		fmt.Println(err)
 	}
 }

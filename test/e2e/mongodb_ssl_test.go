@@ -23,7 +23,6 @@ import (
 	"kubedb.dev/mongodb/test/e2e/framework"
 	"kubedb.dev/mongodb/test/e2e/matcher"
 
-	shell "github.com/codeskyblue/go-sh"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
@@ -84,6 +83,12 @@ var _ = Describe("MongoDB SSL", func() {
 			if err != nil && !kerr.IsNotFound(err) {
 				Expect(err).NotTo(HaveOccurred())
 			}
+		}
+	})
+
+	JustAfterEach(func() {
+		if CurrentGinkgoTestDescription().Failed {
+			f.PrintDebugHelpers()
 		}
 	})
 
@@ -311,27 +316,6 @@ var _ = Describe("MongoDB SSL", func() {
 		})
 
 		Context("General SSL", func() {
-			AfterEach(func() {
-				if CurrentGinkgoTestDescription().Failed {
-					sh := shell.NewSession()
-					fmt.Println("======================================[ Describe Job ]===================================================")
-					if err := sh.Command("kubectl", "describe", "job", "-n", fmt.Sprintf("%v", f.Namespace())).Run(); err != nil {
-						fmt.Println(err)
-					}
-					fmt.Println("======================================[ Describe Pod ]===================================================")
-					if err := sh.Command("kubectl", "describe", "po", "-n", fmt.Sprintf("%v", f.Namespace())).Run(); err != nil {
-						fmt.Println(err)
-					}
-					fmt.Println("======================================[ Describe Mongo ]===================================================")
-					if err := sh.Command("kubectl", "describe", "mg", "-n", fmt.Sprintf("%v", f.Namespace())).Run(); err != nil {
-						fmt.Println(err)
-					}
-					fmt.Println("======================================[ Describe Nodes ]===================================================")
-					if err := sh.Command("kubectl", "describe", "nodes").Run(); err != nil {
-						fmt.Println(err)
-					}
-				}
-			})
 
 			Context("With sslMode requireSSL", func() {
 
