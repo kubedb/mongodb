@@ -1651,7 +1651,7 @@ var _ = Describe("MongoDB", func() {
 
 					Context("Standalone with SSL", func() {
 
-						FContext("with requireSSL sslMode", func() {
+						Context("with requireSSL sslMode", func() {
 							BeforeEach(func() {
 								mongodb.Spec.SSLMode = api.SSLModeRequireSSL
 								anotherMongoDB.Spec.SSLMode = api.SSLModeRequireSSL

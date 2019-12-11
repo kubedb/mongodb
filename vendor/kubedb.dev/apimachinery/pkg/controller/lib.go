@@ -223,7 +223,7 @@ func (c *Controller) GetVolumeForSnapshot(st api.StorageType, pvcSpec *core.Pers
 }
 
 func (c *Controller) CreateStatefulSetPodDisruptionBudget(sts *appsv1.StatefulSet) error {
-	owner := metav1.NewControllerRef(sts, sts.GroupVersionKind())
+	owner := metav1.NewControllerRef(sts, appsv1.SchemeGroupVersion.WithKind("StatefulSet"))
 
 	m := metav1.ObjectMeta{
 		Name:      sts.Name,
@@ -248,7 +248,7 @@ func (c *Controller) CreateStatefulSetPodDisruptionBudget(sts *appsv1.StatefulSe
 }
 
 func (c *Controller) CreateDeploymentPodDisruptionBudget(deployment *appsv1.Deployment) error {
-	owner := metav1.NewControllerRef(deployment, deployment.GroupVersionKind())
+	owner := metav1.NewControllerRef(deployment, appsv1.SchemeGroupVersion.WithKind("Deployment"))
 
 	m := metav1.ObjectMeta{
 		Name:      deployment.Name,

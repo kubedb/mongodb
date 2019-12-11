@@ -413,6 +413,9 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 	}
 
 	st, vt, err := c.ensureStatefulSet(mongodb, opts)
+	if err != nil {
+		return  kutil.VerbUnchanged , err
+	}
 	if vt != kutil.VerbUnchanged {
 		if err := c.checkStatefulSetPodStatus(st); err != nil {
 			return kutil.VerbUnchanged, err
