@@ -64,27 +64,27 @@ func (f *Framework) CleanWorkloadLeftOvers() {
 
 func (f *Framework) PrintDebugHelpers() {
 	sh := shell.NewSession()
-	fmt.Println("======================================[ Describe Job ]===================================================")
+	fmt.Println("\n======================================[ Describe Job ]===================================================")
 	if err := sh.Command("/usr/bin/kubectl", "describe", "job", "-n", fmt.Sprintf("%v", f.Namespace())).Run(); err != nil {
 		fmt.Println(err)
 	}
 
-	fmt.Println("======================================[ Describe Pod ]===================================================")
+	fmt.Println("\n======================================[ Describe Pod ]===================================================")
 	if err := sh.Command("/usr/bin/kubectl", "describe", "po", "-n", fmt.Sprintf("%v", f.Namespace())).Run(); err != nil {
 		fmt.Println(err)
 	}
 
-	fmt.Println("======================================[ Describe Mongo ]===================================================")
+	fmt.Println("\n======================================[ Describe Mongo ]===================================================")
 	if err := sh.Command("/usr/bin/kubectl", "describe", "mg", "-n", fmt.Sprintf("%v", f.Namespace())).Run(); err != nil {
 		fmt.Println(err)
 	}
 
-	fmt.Println("======================================[ Describe RestoreSession ]==========================================")
+	fmt.Println("\n======================================[ Describe RestoreSession ]==========================================")
 	if err := sh.Command("/usr/bin/kubectl", "describe", "restoresession", "-n", fmt.Sprintf("%v", f.Namespace())).Run(); err != nil {
 		fmt.Println(err)
 	}
 
-	fmt.Println("======================================[ Describe Nodes ]===================================================")
+	fmt.Println("\n======================================[ Describe Nodes ]===================================================")
 	if err := sh.Command("/usr/bin/kubectl", "describe", "nodes").Run(); err != nil {
 		fmt.Println(err)
 	}

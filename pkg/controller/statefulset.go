@@ -31,8 +31,6 @@ import (
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clientsetscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/reference"
 	kutil "kmodules.xyz/client-go"
 	app_util "kmodules.xyz/client-go/apps/v1"
 	core_util "kmodules.xyz/client-go/core/v1"
@@ -451,10 +449,7 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB, opts workloadOption
 		Namespace: mongodb.Namespace,
 	}
 
-	ref, rerr := reference.GetReference(clientsetscheme.Scheme, mongodb)
-	if rerr != nil {
-		return nil, kutil.VerbUnchanged, rerr
-	}
+	owner := metav1.NewControllerRef(mongodb, api.SchemeGroupVersion.WithKind(api.ResourceKindMongoDB))
 
 	readinessProbe := pt.Spec.ReadinessProbe
 	if readinessProbe != nil && structs.IsZero(*readinessProbe) {
@@ -468,7 +463,7 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB, opts workloadOption
 	statefulSet, vt, err := app_util.CreateOrPatchStatefulSet(c.Client, statefulSetMeta, func(in *apps.StatefulSet) *apps.StatefulSet {
 		in.Labels = opts.labels
 		in.Annotations = pt.Controller.Annotations
-		core_util.EnsureOwnerReference(&in.ObjectMeta, ref)
+		core_util.EnsureOwnerReference(&in.ObjectMeta, owner)
 
 		in.Spec.Replicas = opts.replicas
 		in.Spec.ServiceName = opts.gvrSvcName

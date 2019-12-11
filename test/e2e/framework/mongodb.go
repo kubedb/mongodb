@@ -24,7 +24,6 @@ import (
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 
 	"github.com/appscode/go/crypto/rand"
-	jsonTypes "github.com/appscode/go/encoding/json/types"
 	"github.com/appscode/go/types"
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
@@ -55,7 +54,7 @@ func (i *Invocation) MongoDBStandalone() *api.MongoDB {
 			},
 		},
 		Spec: api.MongoDBSpec{
-			Version: jsonTypes.StrYo(DBCatalogName),
+			Version: DBCatalogName,
 			Storage: &core.PersistentVolumeClaimSpec{
 				Resources: core.ResourceRequirements{
 					Requests: core.ResourceList{
@@ -80,7 +79,7 @@ func (i *Invocation) MongoDBRS() *api.MongoDB {
 			},
 		},
 		Spec: api.MongoDBSpec{
-			Version:  jsonTypes.StrYo(DBCatalogName),
+			Version:  DBCatalogName,
 			Replicas: types.Int32P(2),
 			ReplicaSet: &api.MongoDBReplicaSet{
 				Name: dbName,
@@ -109,7 +108,7 @@ func (i *Invocation) MongoDBShard() *api.MongoDB {
 			},
 		},
 		Spec: api.MongoDBSpec{
-			Version: jsonTypes.StrYo(DBCatalogName),
+			Version: DBCatalogName,
 			ShardTopology: &api.MongoDBShardingTopology{
 				Shard: api.MongoDBShardNode{
 					Shards: 2,
@@ -147,25 +146,6 @@ func (i *Invocation) MongoDBShard() *api.MongoDB {
 			TerminationPolicy: api.TerminationPolicyPause,
 		},
 	}
-}
-
-func (i *Invocation) MongoDBWithFlexibleProbeTimeout(db *api.MongoDB) *api.MongoDB {
-	db.SetDefaults()
-
-	if db.Spec.ShardTopology != nil {
-		if db.Spec.ShardTopology.Mongos.PodTemplate.Spec.ReadinessProbe != nil {
-			db.Spec.ShardTopology.Mongos.PodTemplate.Spec.ReadinessProbe.TimeoutSeconds = 3
-		}
-		if db.Spec.ShardTopology.Shard.PodTemplate.Spec.ReadinessProbe != nil {
-			db.Spec.ShardTopology.Shard.PodTemplate.Spec.ReadinessProbe.TimeoutSeconds = 3
-		}
-		if db.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.ReadinessProbe != nil {
-			db.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.ReadinessProbe.TimeoutSeconds = 3
-		}
-	} else if db.Spec.PodTemplate != nil && db.Spec.PodTemplate.Spec.ReadinessProbe != nil {
-		db.Spec.PodTemplate.Spec.ReadinessProbe.TimeoutSeconds = 3
-	}
-	return db
 }
 
 func IsRepSet(db *api.MongoDB) bool {
