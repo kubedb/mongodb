@@ -104,4 +104,4 @@ jobs:
         echo "GOOGLE_SERVICE_ACCOUNT_JSON_KEY=$(echo $GOOGLE_SERVICE_ACCOUNT_JSON_KEY)" >> hack/config/.env
         make install
         echo
-        make e2e-parallel TEST_ARGS="--db-catalog=${{ matrix.db }}" || (kubectl describe deployment -n kube-system kubedb-mg-operator; kubectl logs -n kube-system deployment/kubedb-mg-operator; kubectl describe deployment -n kube-system stash-operator; kubectl logs -n kube-system deployment/stash-operator; exit 1;)
+        make e2e-parallel TEST_ARGS="--db-catalog=${{ matrix.db }}" || (kubectl describe deployment -n kube-system kubedb-mg-operator; kubectl logs -n kube-system deployment/kubedb-mg-operator; kubectl describe deployment -n kube-system stash-operator; kubectl logs -n kube-system deployment/stash-operator operator; exit 1;)
