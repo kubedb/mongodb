@@ -19,12 +19,15 @@ import (
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 
+	"github.com/appscode/go/log"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/wait"
+	kutil "kmodules.xyz/client-go"
 	core_util "kmodules.xyz/client-go/core/v1"
 	dynamic_util "kmodules.xyz/client-go/dynamic"
 	meta_util "kmodules.xyz/client-go/meta"
@@ -51,6 +54,10 @@ func (c *Controller) WaitUntilPaused(drmn *api.DormantDatabase) error {
 		return err
 	}
 
+	if err := c.waitUntilMongoDBDeleted(db); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -70,6 +77,16 @@ func (c *Controller) waitUntilRBACStuffDeleted(mongodb *api.MongoDB) error {
 	}
 
 	return nil
+}
+
+func (c *Controller) waitUntilMongoDBDeleted(mongodb *api.MongoDB) error {
+	log.Infof("waiting for mongodb %v/%v to be deleted\n", mongodb.Namespace, mongodb.Name)
+	return wait.PollImmediate(kutil.RetryInterval, kutil.ReadinessTimeout, func() (bool, error) {
+		if _, err := c.ExtClient.KubedbV1alpha1().MongoDBs(mongodb.Namespace).Get(mongodb.Name, metav1.GetOptions{}); err != nil && kerr.IsNotFound(err) {
+			return true, nil
+		}
+		return false, nil
+	})
 }
 
 // WipeOutDatabase is an Interface of *amc.Controller.

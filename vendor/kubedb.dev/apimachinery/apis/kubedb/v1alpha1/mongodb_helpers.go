@@ -400,11 +400,17 @@ func (m *MongoDBSpec) setDefaultProbes(podTemplate *ofst.PodTemplateSpec, mgVers
 		if err != nil {
 			return
 		}
+		exceptionVer, err := version.NewVersion("4.1.4")
+		if err != nil {
+			return
+		}
 		currentVer, err := version.NewVersion(mgVersion.Spec.Version)
 		if err != nil {
 			return
 		}
-		if currentVer.LessThan(breakingVer) {
+		if currentVer.Equal(exceptionVer) {
+			sslArgs = fmt.Sprintf("--tls --tlsCAFile=/data/configdb/%v --tlsPEMKeyFile=/data/configdb/%v", MongoTLSCertFileName, MongoClientPemFileName)
+		} else if currentVer.LessThan(breakingVer) {
 			sslArgs = fmt.Sprintf("--ssl --sslCAFile=/data/configdb/%v --sslPEMKeyFile=/data/configdb/%v", MongoTLSCertFileName, MongoClientPemFileName)
 		}
 	}

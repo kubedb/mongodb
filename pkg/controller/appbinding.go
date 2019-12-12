@@ -114,7 +114,6 @@ func (c *Controller) ensureAppBinding(db *api.MongoDB) (kutil.VerbType, error) {
 				Raw: jsonBytes,
 			}
 		}
-
 		return in
 	})
 
