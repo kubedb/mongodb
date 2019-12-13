@@ -58,6 +58,10 @@ func (c *Controller) ensureAppBinding(db *api.MongoDB) (kutil.VerbType, error) {
 		}
 
 		parameter := v1alpha1.MongoDBConfiguration{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: v1alpha1.SchemeGroupVersion.String(),
+				Kind:       v1alpha1.ResourceKindMongoConfiguration,
+			},
 			ConfigServer: db.ConfigSvrDSN(),
 			ReplicaSets:  replicaHosts,
 		}

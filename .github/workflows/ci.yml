@@ -88,6 +88,10 @@ jobs:
         if [ -x "$(command -v helm)" ]; then
             helm init --client-only
         fi
+        #==== debug :: TODO: delete
+        export STASH_DOCKER_REGISTRY=kubedbci
+        export STASH_IMAGE_TAG=v0.9.0-rc.2-18-gec5c9efd_linux_amd64
+        # end =====
         make stash-install
 
     - name: Run e2e tests
