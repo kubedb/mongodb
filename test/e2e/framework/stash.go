@@ -49,7 +49,7 @@ func (i *Invocation) BackupConfiguration(meta metav1.ObjectMeta) *v1beta1.Backup
 				KeepLast: 5,
 				Prune:    true,
 			},
-			Schedule: "*/1 * * * *",
+			Schedule: "*/2 * * * *",
 			BackupConfigurationTemplateSpec: v1beta1.BackupConfigurationTemplateSpec{
 				Task: v1beta1.TaskRef{
 					Name: i.getStashMGBackupTaskName(),
