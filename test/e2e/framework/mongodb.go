@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"time"
 
+	"kubedb.dev/apimachinery/apis/catalog/v1alpha1"
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 
@@ -148,6 +149,27 @@ func (i *Invocation) MongoDBShard() *api.MongoDB {
 	}
 }
 
+func (i *Invocation) MongoDBWithFlexibleProbeTimeout(db *api.MongoDB) *api.MongoDB {
+	dbVersion, err := i.GetMongoDBVersion(DBCatalogName)
+	Expect(err).NotTo(HaveOccurred())
+	db.SetDefaults(dbVersion)
+
+	if db.Spec.ShardTopology != nil {
+		if db.Spec.ShardTopology.Mongos.PodTemplate.Spec.ReadinessProbe != nil {
+			db.Spec.ShardTopology.Mongos.PodTemplate.Spec.ReadinessProbe.TimeoutSeconds = 3
+		}
+		if db.Spec.ShardTopology.Shard.PodTemplate.Spec.ReadinessProbe != nil {
+			db.Spec.ShardTopology.Shard.PodTemplate.Spec.ReadinessProbe.TimeoutSeconds = 3
+		}
+		if db.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.ReadinessProbe != nil {
+			db.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.ReadinessProbe.TimeoutSeconds = 3
+		}
+	} else if db.Spec.PodTemplate != nil && db.Spec.PodTemplate.Spec.ReadinessProbe != nil {
+		db.Spec.PodTemplate.Spec.ReadinessProbe.TimeoutSeconds = 3
+	}
+	return db
+}
+
 func IsRepSet(db *api.MongoDB) bool {
 	return db.Spec.ReplicaSet != nil
 }
@@ -182,6 +204,10 @@ func (f *Framework) PatchMongoDB(meta metav1.ObjectMeta, transform func(*api.Mon
 
 func (f *Framework) DeleteMongoDB(meta metav1.ObjectMeta) error {
 	return f.dbClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Delete(meta.Name, deleteInForeground())
+}
+
+func (f *Framework) GetMongoDBVersion(name string) (*v1alpha1.MongoDBVersion, error) {
+	return f.dbClient.CatalogV1alpha1().MongoDBVersions().Get(name, metav1.GetOptions{})
 }
 
 func (f *Framework) EvictPodsFromStatefulSet(meta metav1.ObjectMeta) error {
