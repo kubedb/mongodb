@@ -150,21 +150,21 @@ func (i *Invocation) MongoDBShard() *api.MongoDB {
 }
 
 func (i *Invocation) MongoDBWithFlexibleProbeTimeout(db *api.MongoDB) *api.MongoDB {
-	dbVersion, err := i.GetMongoDBVersion(DBCatalogName)
-	Expect(err).NotTo(HaveOccurred())
-	db.SetDefaults(dbVersion)
-
-	if db.Spec.ShardTopology != nil {
-		db.Spec.ShardTopology.Mongos.PodTemplate.Spec.ReadinessProbe = &core.Probe{}
-		db.Spec.ShardTopology.Mongos.PodTemplate.Spec.LivenessProbe = &core.Probe{}
-		db.Spec.ShardTopology.Shard.PodTemplate.Spec.ReadinessProbe = &core.Probe{}
-		db.Spec.ShardTopology.Shard.PodTemplate.Spec.LivenessProbe = &core.Probe{}
-		db.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.ReadinessProbe = &core.Probe{}
-		db.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.LivenessProbe = &core.Probe{}
-	} else if db.Spec.PodTemplate != nil && db.Spec.PodTemplate.Spec.ReadinessProbe != nil {
-		db.Spec.PodTemplate.Spec.ReadinessProbe = &core.Probe{}
-		db.Spec.PodTemplate.Spec.LivenessProbe = &core.Probe{}
-	}
+	//dbVersion, err := i.GetMongoDBVersion(DBCatalogName)
+	//Expect(err).NotTo(HaveOccurred())
+	//db.SetDefaults(dbVersion)
+	//
+	//if db.Spec.ShardTopology != nil {
+	//	db.Spec.ShardTopology.Mongos.PodTemplate.Spec.ReadinessProbe = &core.Probe{}
+	//	db.Spec.ShardTopology.Mongos.PodTemplate.Spec.LivenessProbe = &core.Probe{}
+	//	db.Spec.ShardTopology.Shard.PodTemplate.Spec.ReadinessProbe = &core.Probe{}
+	//	db.Spec.ShardTopology.Shard.PodTemplate.Spec.LivenessProbe = &core.Probe{}
+	//	db.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.ReadinessProbe = &core.Probe{}
+	//	db.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.LivenessProbe = &core.Probe{}
+	//} else if db.Spec.PodTemplate != nil && db.Spec.PodTemplate.Spec.ReadinessProbe != nil {
+	//	db.Spec.PodTemplate.Spec.ReadinessProbe = &core.Probe{}
+	//	db.Spec.PodTemplate.Spec.LivenessProbe = &core.Probe{}
+	//}
 	return db
 }
 
