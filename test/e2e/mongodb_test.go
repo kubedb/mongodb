@@ -1647,7 +1647,13 @@ var _ = Describe("MongoDB", func() {
 						}
 					})
 
-					It("should run successfully", shouldInitializeFromStash)
+					Context("-", func() {
+						BeforeEach(func() {
+							mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+							anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
+						})
+						It("should run successfully", shouldInitializeFromStash)
+					})
 
 					Context("Standalone with SSL", func() {
 
@@ -1655,6 +1661,9 @@ var _ = Describe("MongoDB", func() {
 							BeforeEach(func() {
 								mongodb.Spec.SSLMode = api.SSLModeRequireSSL
 								anotherMongoDB.Spec.SSLMode = api.SSLModeRequireSSL
+
+								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 							})
 
 							It("should initialize database successfully", shouldInitializeFromStash)
@@ -1664,6 +1673,9 @@ var _ = Describe("MongoDB", func() {
 							BeforeEach(func() {
 								mongodb.Spec.SSLMode = api.SSLModeAllowSSL
 								anotherMongoDB.Spec.SSLMode = api.SSLModeAllowSSL
+
+								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 							})
 
 							It("should initialize database successfully", shouldInitializeFromStash)
@@ -1673,6 +1685,9 @@ var _ = Describe("MongoDB", func() {
 							BeforeEach(func() {
 								mongodb.Spec.SSLMode = api.SSLModePreferSSL
 								anotherMongoDB.Spec.SSLMode = api.SSLModePreferSSL
+
+								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 							})
 
 							It("should initialize database successfully", shouldInitializeFromStash)
@@ -1697,7 +1712,13 @@ var _ = Describe("MongoDB", func() {
 							}
 						})
 
-						It("should take Snapshot successfully", shouldInitializeFromStash)
+						Context("-", func() {
+							BeforeEach(func() {
+								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
+							})
+							It("should take Snapshot successfully", shouldInitializeFromStash)
+						})
 
 						Context("with SSL", func() {
 
@@ -1708,6 +1729,9 @@ var _ = Describe("MongoDB", func() {
 
 									anotherMongoDB.Spec.ClusterAuthMode = api.ClusterAuthModeX509
 									anotherMongoDB.Spec.SSLMode = api.SSLModeRequireSSL
+
+									mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+									anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 								})
 
 								It("should initialize database successfully", shouldInitializeFromStash)
@@ -1720,6 +1744,9 @@ var _ = Describe("MongoDB", func() {
 
 									anotherMongoDB.Spec.ClusterAuthMode = api.ClusterAuthModeKeyFile
 									anotherMongoDB.Spec.SSLMode = api.SSLModeAllowSSL
+
+									mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+									anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 								})
 
 								It("should initialize database successfully", shouldInitializeFromStash)
@@ -1732,6 +1759,9 @@ var _ = Describe("MongoDB", func() {
 
 									anotherMongoDB.Spec.ClusterAuthMode = api.ClusterAuthModeX509
 									anotherMongoDB.Spec.SSLMode = api.SSLModePreferSSL
+
+									mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+									anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 								})
 
 								It("should initialize database successfully", shouldInitializeFromStash)
@@ -2271,6 +2301,7 @@ var _ = Describe("MongoDB", func() {
 						mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 						anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 					})
+
 					It("should take Snapshot successfully", shouldResumeWithSnapshot)
 				})
 			})

@@ -155,17 +155,15 @@ func (i *Invocation) MongoDBWithFlexibleProbeTimeout(db *api.MongoDB) *api.Mongo
 	db.SetDefaults(dbVersion)
 
 	if db.Spec.ShardTopology != nil {
-		if db.Spec.ShardTopology.Mongos.PodTemplate.Spec.ReadinessProbe != nil {
-			db.Spec.ShardTopology.Mongos.PodTemplate.Spec.ReadinessProbe.TimeoutSeconds = 3
-		}
-		if db.Spec.ShardTopology.Shard.PodTemplate.Spec.ReadinessProbe != nil {
-			db.Spec.ShardTopology.Shard.PodTemplate.Spec.ReadinessProbe.TimeoutSeconds = 3
-		}
-		if db.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.ReadinessProbe != nil {
-			db.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.ReadinessProbe.TimeoutSeconds = 3
-		}
+		db.Spec.ShardTopology.Mongos.PodTemplate.Spec.ReadinessProbe = &core.Probe{}
+		db.Spec.ShardTopology.Mongos.PodTemplate.Spec.LivenessProbe = &core.Probe{}
+		db.Spec.ShardTopology.Shard.PodTemplate.Spec.ReadinessProbe = &core.Probe{}
+		db.Spec.ShardTopology.Shard.PodTemplate.Spec.LivenessProbe = &core.Probe{}
+		db.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.ReadinessProbe = &core.Probe{}
+		db.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.LivenessProbe = &core.Probe{}
 	} else if db.Spec.PodTemplate != nil && db.Spec.PodTemplate.Spec.ReadinessProbe != nil {
-		db.Spec.PodTemplate.Spec.ReadinessProbe.TimeoutSeconds = 3
+		db.Spec.PodTemplate.Spec.ReadinessProbe = &core.Probe{}
+		db.Spec.PodTemplate.Spec.LivenessProbe = &core.Probe{}
 	}
 	return db
 }
