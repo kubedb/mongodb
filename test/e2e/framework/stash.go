@@ -183,6 +183,9 @@ func (f *Framework) getStashMGBackupTaskName() string {
 func (f *Framework) getStashMGRestoreTaskName() string {
 	esVersion, err := f.dbClient.CatalogV1alpha1().MongoDBVersions().Get(DBCatalogName, metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
-
+	if esVersion.Spec.Version == "4.0.3" {
+		// ongorestore may not work for Replicaset and Sharding for 4.0.3. Use `4.0.11` image for restore purpose. issue link: http://mongodb.2344371.n4.nabble.com/mongorestore-oplogReplay-looping-forever-td25243.html
+		esVersion.Spec.Version = "4.0.11"
+	}
 	return "mongodb-restore-" + esVersion.Spec.Version
 }

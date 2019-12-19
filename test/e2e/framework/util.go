@@ -65,22 +65,27 @@ func (f *Framework) CleanWorkloadLeftOvers() {
 func (f *Framework) PrintDebugHelpers() {
 	sh := shell.NewSession()
 	fmt.Println("\n======================================[ Describe Job ]===================================================")
-	if err := sh.Command("/usr/bin/kubectl", "describe", "job", "-n", fmt.Sprintf("%v", f.Namespace())).Run(); err != nil {
+	if err := sh.Command("/usr/bin/kubectl", "describe", "job", "-n", f.Namespace()).Run(); err != nil {
 		fmt.Println(err)
 	}
 
 	fmt.Println("\n======================================[ Describe Pod ]===================================================")
-	if err := sh.Command("/usr/bin/kubectl", "describe", "po", "-n", fmt.Sprintf("%v", f.Namespace())).Run(); err != nil {
+	if err := sh.Command("/usr/bin/kubectl", "describe", "po", "-n", f.Namespace()).Run(); err != nil {
 		fmt.Println(err)
 	}
 
 	fmt.Println("\n======================================[ Describe Mongo ]===================================================")
-	if err := sh.Command("/usr/bin/kubectl", "describe", "mg", "-n", fmt.Sprintf("%v", f.Namespace())).Run(); err != nil {
+	if err := sh.Command("/usr/bin/kubectl", "describe", "mg", "-n", f.Namespace()).Run(); err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("\n======================================[ Describe BackupSession ]==========================================")
+	if err := sh.Command("/usr/bin/kubectl", "describe", "backupsession", "-n", f.Namespace()).Run(); err != nil {
 		fmt.Println(err)
 	}
 
 	fmt.Println("\n======================================[ Describe RestoreSession ]==========================================")
-	if err := sh.Command("/usr/bin/kubectl", "describe", "restoresession", "-n", fmt.Sprintf("%v", f.Namespace())).Run(); err != nil {
+	if err := sh.Command("/usr/bin/kubectl", "describe", "restoresession", "-n", f.Namespace()).Run(); err != nil {
 		fmt.Println(err)
 	}
 
