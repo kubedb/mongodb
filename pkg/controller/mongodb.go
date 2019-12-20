@@ -70,11 +70,9 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 		return fmt.Errorf(`failed to create governing Service for "%v/%v". Reason: %v`, mongodb.Namespace, mongodb.Name, err)
 	}
 
-	if c.EnableRBAC {
-		// Ensure Service account, role, rolebinding, and PSP for database statefulsets
-		if err := c.ensureDatabaseRBAC(mongodb); err != nil {
-			return err
-		}
+	// Ensure Service account, role, rolebinding, and PSP for database statefulsets
+	if err := c.ensureDatabaseRBAC(mongodb); err != nil {
+		return err
 	}
 
 	// ensure database Service

@@ -534,11 +534,7 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB, opts workloadOption
 		in.Spec.Template.Spec.PriorityClassName = pt.Spec.PriorityClassName
 		in.Spec.Template.Spec.Priority = pt.Spec.Priority
 		in.Spec.Template.Spec.SecurityContext = pt.Spec.SecurityContext
-
-		if c.EnableRBAC {
-			in.Spec.Template.Spec.ServiceAccountName = pt.Spec.ServiceAccountName
-		}
-
+		in.Spec.Template.Spec.ServiceAccountName = pt.Spec.ServiceAccountName
 		in.Spec.UpdateStrategy = mongodb.Spec.UpdateStrategy
 		return in
 	})
