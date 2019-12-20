@@ -22,11 +22,11 @@ import (
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	cs "kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1"
 
+	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/golang/glog"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/jsonmergepatch"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kutil "kmodules.xyz/client-go"
 )
@@ -64,7 +64,7 @@ func PatchRedisObject(c cs.KubedbV1alpha1Interface, cur, mod *api.Redis) (*api.R
 		return nil, kutil.VerbUnchanged, err
 	}
 
-	patch, err := jsonmergepatch.CreateThreeWayJSONMergePatch(curJson, modJson, curJson)
+	patch, err := jsonpatch.CreateMergePatch(curJson, modJson)
 	if err != nil {
 		return nil, kutil.VerbUnchanged, err
 	}

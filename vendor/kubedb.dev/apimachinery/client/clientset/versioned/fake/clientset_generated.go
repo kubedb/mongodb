@@ -24,6 +24,8 @@ import (
 	fakecatalogv1alpha1 "kubedb.dev/apimachinery/client/clientset/versioned/typed/catalog/v1alpha1/fake"
 	configv1alpha1 "kubedb.dev/apimachinery/client/clientset/versioned/typed/config/v1alpha1"
 	fakeconfigv1alpha1 "kubedb.dev/apimachinery/client/clientset/versioned/typed/config/v1alpha1/fake"
+	dbav1alpha1 "kubedb.dev/apimachinery/client/clientset/versioned/typed/dba/v1alpha1"
+	fakedbav1alpha1 "kubedb.dev/apimachinery/client/clientset/versioned/typed/dba/v1alpha1/fake"
 	kubedbv1alpha1 "kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1"
 	fakekubedbv1alpha1 "kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/fake"
 
@@ -89,6 +91,11 @@ func (c *Clientset) CatalogV1alpha1() catalogv1alpha1.CatalogV1alpha1Interface {
 // ConfigV1alpha1 retrieves the ConfigV1alpha1Client
 func (c *Clientset) ConfigV1alpha1() configv1alpha1.ConfigV1alpha1Interface {
 	return &fakeconfigv1alpha1.FakeConfigV1alpha1{Fake: &c.Fake}
+}
+
+// DbaV1alpha1 retrieves the DbaV1alpha1Client
+func (c *Clientset) DbaV1alpha1() dbav1alpha1.DbaV1alpha1Interface {
+	return &fakedbav1alpha1.FakeDbaV1alpha1{Fake: &c.Fake}
 }
 
 // KubedbV1alpha1 retrieves the KubedbV1alpha1Client

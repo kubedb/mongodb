@@ -418,7 +418,7 @@ func (m *MongoDBSpec) setDefaultProbes(podTemplate *ofst.PodTemplateSpec, mgVers
 	cmd := []string{
 		"bash",
 		"-c",
-		fmt.Sprintf(`set -x; if [[ $(mongo admin --host=localhost %v --username=$MONGO_INITDB_ROOT_USERNAME --password=$MONGO_INITDB_ROOT_PASSWORD --authenticationDatabase=admin --quiet --eval "db.adminCommand('ping').ok" ) -eq "1" ]]; then 
+		fmt.Sprintf(`if [[ $(mongo admin --host=localhost %v --username=$MONGO_INITDB_ROOT_USERNAME --password=$MONGO_INITDB_ROOT_PASSWORD --authenticationDatabase=admin --quiet --eval "db.adminCommand('ping').ok" ) -eq "1" ]]; then 
           exit 0
         fi
         exit 1`, sslArgs),

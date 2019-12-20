@@ -29,6 +29,8 @@ import (
 	api_v1beta1 "stash.appscode.dev/stash/apis/stash/v1beta1"
 )
 
+const FileModeRWXAll = 0777
+
 type BackupOutput struct {
 	// HostBackupStats shows backup statistics of a host
 	HostBackupStats []api_v1beta1.HostBackupStats `json:"hostBackupStats,omitempty"`
@@ -59,11 +61,21 @@ func (out *BackupOutput) WriteOutput(fileName string) error {
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Dir(fileName), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(fileName), FileModeRWXAll); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(fileName, jsonOutput, 0755); err != nil {
+	// check if the output file already exist. if it does not, then owner should chmod to make the file writable to other users
+	newFile := false
+	if _, err := os.Stat(fileName); os.IsNotExist(err) {
+		newFile = true
+	}
+
+	if err := ioutil.WriteFile(fileName, jsonOutput, FileModeRWXAll); err != nil { // this does not make the file writable to other users
 		return err
+	}
+	// change the file permission to make it writable to other users
+	if newFile {
+		return os.Chmod(fileName, FileModeRWXAll)
 	}
 	return nil
 }
@@ -73,11 +85,21 @@ func (out *RestoreOutput) WriteOutput(fileName string) error {
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Dir(fileName), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(fileName), FileModeRWXAll); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(fileName, jsonOutput, 0755); err != nil {
+	// check if the output file already exist. if it does not, then owner should chmod to make the file writable to other users
+	newFile := false
+	if _, err := os.Stat(fileName); os.IsNotExist(err) {
+		newFile = true
+	}
+
+	if err := ioutil.WriteFile(fileName, jsonOutput, FileModeRWXAll); err != nil { // this does not make the file writable to other users
 		return err
+	}
+	// change the file permission to make it writable to other users
+	if newFile {
+		return os.Chmod(fileName, FileModeRWXAll)
 	}
 	return nil
 }
