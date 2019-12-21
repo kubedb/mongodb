@@ -21,7 +21,6 @@ import (
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/pkg/controller"
 
-	"github.com/appscode/go/crypto/rand"
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,6 +28,7 @@ import (
 	"stash.appscode.dev/stash/apis/stash/v1alpha1"
 	stashV1alpha1 "stash.appscode.dev/stash/apis/stash/v1alpha1"
 	"stash.appscode.dev/stash/apis/stash/v1beta1"
+	v1beta1_util "stash.appscode.dev/stash/client/clientset/versioned/typed/stash/v1beta1/util"
 )
 
 func (f *Framework) FoundStashCRDs() bool {
@@ -49,11 +49,11 @@ func (i *Invocation) BackupConfiguration(meta metav1.ObjectMeta) *v1beta1.Backup
 				KeepLast: 5,
 				Prune:    true,
 			},
+			Schedule: "*/2 * * * *",
 			BackupConfigurationTemplateSpec: v1beta1.BackupConfigurationTemplateSpec{
 				Task: v1beta1.TaskRef{
-					Name: StashMgBackupTask,
+					Name: i.getStashMGBackupTaskName(),
 				},
-				//Schedule: "*/3 * * * *",
 				Target: &v1beta1.BackupTarget{
 					Ref: v1beta1.TargetRef{
 						APIVersion: v1alpha13.SchemeGroupVersion.String(),
@@ -75,23 +75,19 @@ func (f *Framework) DeleteBackupConfiguration(meta metav1.ObjectMeta) error {
 	return f.stashClient.StashV1beta1().BackupConfigurations(meta.Namespace).Delete(meta.Name, &metav1.DeleteOptions{})
 }
 
-func (f *Framework) EventuallyBackupSessionPhase(meta metav1.ObjectMeta) GomegaAsyncAssertion {
-	return Eventually(
-		func() (phase v1beta1.BackupSessionPhase) {
-			bs, err := f.stashClient.StashV1beta1().BackupSessions(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
-			Expect(err).NotTo(HaveOccurred())
-			return bs.Status.Phase
-		},
-		time.Minute*13,
-		time.Second*5,
-	)
+func (f *Framework) PauseBackupConfiguration(meta metav1.ObjectMeta) error {
+	_, err := v1beta1_util.TryUpdateBackupConfiguration(f.stashClient.StashV1beta1(), meta, func(in *v1beta1.BackupConfiguration) *v1beta1.BackupConfiguration {
+		in.Spec.Paused = true
+		return in
+	})
+	return err
 }
 
-func (i *Invocation) Repository(meta metav1.ObjectMeta, secretName string) *stashV1alpha1.Repository {
+func (f *Framework) Repository(meta metav1.ObjectMeta, secretName string) *stashV1alpha1.Repository {
 	return &stashV1alpha1.Repository{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      meta.Name,
-			Namespace: i.namespace,
+			Namespace: f.namespace,
 		},
 		Spec: stashV1alpha1.RepositorySpec{
 			WipeOut: true,
@@ -110,30 +106,17 @@ func (f *Framework) DeleteRepository(meta metav1.ObjectMeta) error {
 	return err
 }
 
-func (i *Invocation) BackupSession(meta metav1.ObjectMeta) *v1beta1.BackupSession {
-	return &v1beta1.BackupSession{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      rand.WithUniqSuffix("mg-backup"),
-			Namespace: i.namespace,
-		},
-		Spec: v1beta1.BackupSessionSpec{
-			Invoker: v1beta1.BackupInvokerRef{
-				APIGroup: v1beta1.SchemeGroupVersion.Group,
-				Kind:     v1beta1.ResourceKindBackupConfiguration,
-				Name:     meta.Name,
-			},
-		},
-	}
-}
+func (f *Framework) EventuallySnapshotInRepository(meta metav1.ObjectMeta) GomegaAsyncAssertion {
+	return Eventually(
+		func() int64 {
+			repository, err := f.stashClient.StashV1alpha1().Repositories(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
 
-func (f *Framework) CreateBackupSession(bc *v1beta1.BackupSession) error {
-	_, err := f.stashClient.StashV1beta1().BackupSessions(bc.Namespace).Create(bc)
-	return err
-}
-
-func (f *Framework) DeleteBackupSession(meta metav1.ObjectMeta) error {
-	err := f.stashClient.StashV1beta1().BackupSessions(meta.Namespace).Delete(meta.Name, deleteInForeground())
-	return err
+			return repository.Status.SnapshotCount
+		},
+		time.Minute*13,
+		time.Second*5,
+	)
 }
 
 func (i *Invocation) RestoreSession(meta, oldMeta metav1.ObjectMeta) *v1beta1.RestoreSession {
@@ -148,7 +131,7 @@ func (i *Invocation) RestoreSession(meta, oldMeta metav1.ObjectMeta) *v1beta1.Re
 		},
 		Spec: v1beta1.RestoreSessionSpec{
 			Task: v1beta1.TaskRef{
-				Name: StashMgRestoreTask,
+				Name: i.getStashMGRestoreTaskName(),
 			},
 			Repository: core.LocalObjectReference{
 				Name: oldMeta.Name,
@@ -188,4 +171,21 @@ func (f *Framework) EventuallyRestoreSessionPhase(meta metav1.ObjectMeta) Gomega
 		time.Minute*13,
 		time.Second*5,
 	)
+}
+
+func (f *Framework) getStashMGBackupTaskName() string {
+	esVersion, err := f.dbClient.CatalogV1alpha1().MongoDBVersions().Get(DBCatalogName, metav1.GetOptions{})
+	Expect(err).NotTo(HaveOccurred())
+
+	return "mongodb-backup-" + esVersion.Spec.Version
+}
+
+func (f *Framework) getStashMGRestoreTaskName() string {
+	esVersion, err := f.dbClient.CatalogV1alpha1().MongoDBVersions().Get(DBCatalogName, metav1.GetOptions{})
+	Expect(err).NotTo(HaveOccurred())
+	if esVersion.Spec.Version == "4.0.3" {
+		// ongorestore may not work for Replicaset and Sharding for 4.0.3. Use `4.0.11` image for restore purpose. issue link: http://mongodb.2344371.n4.nabble.com/mongorestore-oplogReplay-looping-forever-td25243.html
+		esVersion.Spec.Version = "4.0.11"
+	}
+	return "mongodb-restore-" + esVersion.Spec.Version
 }

@@ -67,8 +67,8 @@ TAG              := $(VERSION)_$(OS)_$(ARCH)
 TAG_PROD         := $(TAG)
 TAG_DBG          := $(VERSION)-dbg_$(OS)_$(ARCH)
 
-GO_VERSION       ?= 1.12.12
-BUILD_IMAGE      ?= appscode/golang-dev:$(GO_VERSION)-stretch
+GO_VERSION       ?= 1.13.4
+BUILD_IMAGE      ?= appscode/golang-dev:$(GO_VERSION)
 
 OUTBIN = bin/$(OS)_$(ARCH)/$(BIN)
 ifeq ($(OS),windows)
@@ -93,6 +93,8 @@ DOCKER_REPO_ROOT := /go/src/$(GO_PKG)/$(REPO)
 # If you want to build all containers, see the 'all-container' rule.
 # If you want to build AND push all containers, see the 'all-push' rule.
 all: fmt build
+
+include Makefile.stash
 
 # For the following OS/ARCH expansions, we transform OS/ARCH into OS_ARCH
 # because make pattern rules don't match with embedded '/' characters.
@@ -330,27 +332,56 @@ lint: $(BUILD_DIRS)
 $(BUILD_DIRS):
 	@mkdir -p $@
 
+REGISTRY_SECRET ?=
+
+ifeq ($(strip $(REGISTRY_SECRET)),)
+	IMAGE_PULL_SECRETS =
+else
+	IMAGE_PULL_SECRETS = --set imagePullSecrets[0]=$(REGISTRY_SECRET)
+endif
+
 .PHONY: install
 install:
 	@cd ../installer; \
-	APPSCODE_ENV=dev KUBEDB_OPERATOR_TAG=$(TAG) KUBEDB_CATALOG=mongo ./deploy/kubedb.sh --operator-name=$(BIN) --docker-registry=$(REGISTRY) --image-pull-secret=$(REGISTRY_SECRET)
+	helm install kubedb charts/kubedb \
+		--namespace=kube-system \
+		--set kubedb.registry=$(REGISTRY) \
+		--set kubedb.repository=mg-operator \
+		--set kubedb.tag=$(TAG) \
+		--set imagePullPolicy=Always \
+		$(IMAGE_PULL_SECRETS); \
+	kubectl wait --for=condition=Ready pods -n kube-system -l app=kubedb --timeout=5m; \
+	kubectl wait --for=condition=Available apiservice -l app=kubedb --timeout=5m; \
+	helm install kubedb-catalog charts/kubedb-catalog \
+		--namespace=kube-system \
+		--set catalog.elasticsearch=false \
+		--set catalog.etcd=false \
+		--set catalog.memcached=false \
+		--set catalog.mongo=true \
+		--set catalog.mysql=false \
+		--set catalog.perconaxtradb=false \
+		--set catalog.pgbouncer=false \
+		--set catalog.postgres=false \
+		--set catalog.proxysql=false \
+		--set catalog.redis=false
 
 .PHONY: uninstall
 uninstall:
 	@cd ../installer; \
-	./deploy/kubedb.sh --uninstall
+	helm uninstall kubedb-catalog --namespace=kube-system || true; \
+	helm uninstall kubedb --namespace=kube-system || true
 
 .PHONY: purge
-purge:
-	@cd ../installer; \
-	./deploy/kubedb.sh --uninstall --purge
+purge: uninstall
+	kubectl delete crds -l app=kubedb
 
 .PHONY: dev
 dev: gen fmt push
 
 
 .PHONY: verify
-verify: verify-modules verify-gen
+verify: # verify-modules verify-gen
+	true
 
 .PHONY: verify-modules
 verify-modules:
@@ -422,19 +453,3 @@ release:
 .PHONY: clean
 clean:
 	rm -rf .go bin
-
-# To test stash integration
-.PHONY: stash-install
-stash-install:
-	@curl -fsSL https://github.com/stashed/installer/raw/v0.9.0-rc.2/deploy/stash.sh | bash
-	@curl -fsSL https://github.com/stashed/catalog/raw/master/deploy/script.sh | bash -s -- --catalog=stash-mongodb --docker-registry=stashed
-
-.PHONY: stash-uninstall
-stash-uninstall:
-	@curl -fsSL https://github.com/stashed/catalog/raw/v0.9.0-rc.2/deploy/script.sh | bash -s -- --catalog=stash-mongodb --uninstall || true
-	@curl -fsSL https://github.com/stashed/installer/raw/master/deploy/stash.sh | bash -s -- --uninstall
-
-.PHONY: stash-purge
-stash-purge:
-	@cd /tmp
-	@curl -fsSL https://github.com/stashed/installer/raw/master/deploy/stash.sh | bash -s -- --uninstall --purge

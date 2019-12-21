@@ -20,11 +20,11 @@ import (
 	"strconv"
 	"time"
 
+	"kubedb.dev/apimachinery/apis/catalog/v1alpha1"
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 
 	"github.com/appscode/go/crypto/rand"
-	jsonTypes "github.com/appscode/go/encoding/json/types"
 	"github.com/appscode/go/types"
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
@@ -55,7 +55,7 @@ func (i *Invocation) MongoDBStandalone() *api.MongoDB {
 			},
 		},
 		Spec: api.MongoDBSpec{
-			Version: jsonTypes.StrYo(DBCatalogName),
+			Version: DBCatalogName,
 			Storage: &core.PersistentVolumeClaimSpec{
 				Resources: core.ResourceRequirements{
 					Requests: core.ResourceList{
@@ -80,7 +80,7 @@ func (i *Invocation) MongoDBRS() *api.MongoDB {
 			},
 		},
 		Spec: api.MongoDBSpec{
-			Version:  jsonTypes.StrYo(DBCatalogName),
+			Version:  DBCatalogName,
 			Replicas: types.Int32P(2),
 			ReplicaSet: &api.MongoDBReplicaSet{
 				Name: dbName,
@@ -109,7 +109,7 @@ func (i *Invocation) MongoDBShard() *api.MongoDB {
 			},
 		},
 		Spec: api.MongoDBSpec{
-			Version: jsonTypes.StrYo(DBCatalogName),
+			Version: DBCatalogName,
 			ShardTopology: &api.MongoDBShardingTopology{
 				Shard: api.MongoDBShardNode{
 					Shards: 2,
@@ -150,20 +150,20 @@ func (i *Invocation) MongoDBShard() *api.MongoDB {
 }
 
 func (i *Invocation) MongoDBWithFlexibleProbeTimeout(db *api.MongoDB) *api.MongoDB {
-	db.SetDefaults()
+	dbVersion, err := i.GetMongoDBVersion(DBCatalogName)
+	Expect(err).NotTo(HaveOccurred())
+	db.SetDefaults(dbVersion)
 
 	if db.Spec.ShardTopology != nil {
-		if db.Spec.ShardTopology.Mongos.PodTemplate.Spec.ReadinessProbe != nil {
-			db.Spec.ShardTopology.Mongos.PodTemplate.Spec.ReadinessProbe.TimeoutSeconds = 3
-		}
-		if db.Spec.ShardTopology.Shard.PodTemplate.Spec.ReadinessProbe != nil {
-			db.Spec.ShardTopology.Shard.PodTemplate.Spec.ReadinessProbe.TimeoutSeconds = 3
-		}
-		if db.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.ReadinessProbe != nil {
-			db.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.ReadinessProbe.TimeoutSeconds = 3
-		}
+		db.Spec.ShardTopology.Mongos.PodTemplate.Spec.ReadinessProbe = &core.Probe{}
+		db.Spec.ShardTopology.Mongos.PodTemplate.Spec.LivenessProbe = &core.Probe{}
+		db.Spec.ShardTopology.Shard.PodTemplate.Spec.ReadinessProbe = &core.Probe{}
+		db.Spec.ShardTopology.Shard.PodTemplate.Spec.LivenessProbe = &core.Probe{}
+		db.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.ReadinessProbe = &core.Probe{}
+		db.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.LivenessProbe = &core.Probe{}
 	} else if db.Spec.PodTemplate != nil && db.Spec.PodTemplate.Spec.ReadinessProbe != nil {
-		db.Spec.PodTemplate.Spec.ReadinessProbe.TimeoutSeconds = 3
+		db.Spec.PodTemplate.Spec.ReadinessProbe = &core.Probe{}
+		db.Spec.PodTemplate.Spec.LivenessProbe = &core.Probe{}
 	}
 	return db
 }
@@ -202,6 +202,10 @@ func (f *Framework) PatchMongoDB(meta metav1.ObjectMeta, transform func(*api.Mon
 
 func (f *Framework) DeleteMongoDB(meta metav1.ObjectMeta) error {
 	return f.dbClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Delete(meta.Name, deleteInForeground())
+}
+
+func (f *Framework) GetMongoDBVersion(name string) (*v1alpha1.MongoDBVersion, error) {
+	return f.dbClient.CatalogV1alpha1().MongoDBVersions().Get(name, metav1.GetOptions{})
 }
 
 func (f *Framework) EvictPodsFromStatefulSet(meta metav1.ObjectMeta) error {

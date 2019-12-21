@@ -24,7 +24,6 @@ import (
 	extFake "kubedb.dev/apimachinery/client/clientset/versioned/fake"
 	"kubedb.dev/apimachinery/client/clientset/versioned/scheme"
 
-	types2 "github.com/appscode/go/encoding/json/types"
 	"github.com/appscode/go/types"
 	admission "k8s.io/api/admission/v1beta1"
 	apps "k8s.io/api/apps/v1"
@@ -323,7 +322,7 @@ func sampleShardMongo() api.MongoDB {
 			},
 		},
 		Spec: api.MongoDBSpec{
-			Version: types2.StrYo("3.6-v2"),
+			Version: "3.6-v2",
 			ShardTopology: &api.MongoDBShardingTopology{
 				Shard: api.MongoDBShardNode{
 					Shards: 3,

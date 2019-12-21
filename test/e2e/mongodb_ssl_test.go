@@ -86,6 +86,12 @@ var _ = Describe("MongoDB SSL", func() {
 		}
 	})
 
+	JustAfterEach(func() {
+		if CurrentGinkgoTestDescription().Failed {
+			f.PrintDebugHelpers()
+		}
+	})
+
 	var createAndWaitForRunning = func() {
 		By("Create MongoDB: " + mongodb.Name)
 		err = f.CreateMongoDB(mongodb)
