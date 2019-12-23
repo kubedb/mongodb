@@ -1525,10 +1525,6 @@ var _ = Describe("MongoDB", func() {
 				})
 
 				AfterEach(func() {
-					By("Deleting BackupConfiguration")
-					err := f.DeleteBackupConfiguration(bc.ObjectMeta)
-					Expect(err).NotTo(HaveOccurred())
-
 					By("Deleting RestoreSession")
 					err = f.DeleteRestoreSession(rs.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
@@ -1588,8 +1584,8 @@ var _ = Describe("MongoDB", func() {
 					By("Check for snapshot count in stash-repository")
 					f.EventuallySnapshotInRepository(repo.ObjectMeta).Should(matcher.MoreThan(2))
 
-					By("Pause BackupConfiguration scheduling")
-					err = f.PauseBackupConfiguration(bc.ObjectMeta)
+					By("Delete BackupConfiguration to stop backup scheduling")
+					err = f.DeleteBackupConfiguration(bc.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
 					oldMongoDB, err := f.GetMongoDB(mongodb.ObjectMeta)
@@ -1599,7 +1595,7 @@ var _ = Describe("MongoDB", func() {
 
 					By("Create mongodb from stash")
 					mongodb = anotherMongoDB // without value?
-					rs = f.RestoreSession(mongodb.ObjectMeta, oldMongoDB.ObjectMeta)
+					rs = f.RestoreSession(mongodb.ObjectMeta, repo)
 					mongodb.Spec.DatabaseSecret = oldMongoDB.Spec.DatabaseSecret
 					mongodb.Spec.Init = &api.InitSpec{
 						StashRestoreSession: &core.LocalObjectReference{
@@ -1635,8 +1631,8 @@ var _ = Describe("MongoDB", func() {
 					BeforeEach(func() {
 						secret = f.SecretForGCSBackend()
 						secret = f.PatchSecretForRestic(secret)
-						bc = f.BackupConfiguration(mongodb.ObjectMeta)
-						repo = f.Repository(mongodb.ObjectMeta, secret.Name)
+						repo = f.Repository(mongodb.ObjectMeta)
+						bc = f.BackupConfiguration(mongodb.ObjectMeta, repo)
 
 						repo.Spec.Backend = store.Backend{
 							GCS: &store.GCSSpec{
@@ -1700,8 +1696,8 @@ var _ = Describe("MongoDB", func() {
 							anotherMongoDB = f.MongoDBRS()
 							secret = f.SecretForGCSBackend()
 							secret = f.PatchSecretForRestic(secret)
-							bc = f.BackupConfiguration(mongodb.ObjectMeta)
-							repo = f.Repository(mongodb.ObjectMeta, secret.Name)
+							repo = f.Repository(mongodb.ObjectMeta)
+							bc = f.BackupConfiguration(mongodb.ObjectMeta, repo)
 
 							repo.Spec.Backend = store.Backend{
 								GCS: &store.GCSSpec{
@@ -1776,8 +1772,8 @@ var _ = Describe("MongoDB", func() {
 							mongodb = f.MongoDBShard()
 							secret = f.SecretForGCSBackend()
 							secret = f.PatchSecretForRestic(secret)
-							bc = f.BackupConfiguration(mongodb.ObjectMeta)
-							repo = f.Repository(mongodb.ObjectMeta, secret.Name)
+							repo = f.Repository(mongodb.ObjectMeta)
+							bc = f.BackupConfiguration(mongodb.ObjectMeta, repo)
 
 							repo.Spec.Backend = store.Backend{
 								GCS: &store.GCSSpec{
@@ -1867,8 +1863,8 @@ var _ = Describe("MongoDB", func() {
 							mongodb = f.MongoDBShard()
 							anotherMongoDB = f.MongoDBStandalone()
 							customAppBindingName = mongodb.Name + "custom"
-							bc = f.BackupConfiguration(mongodb.ObjectMeta)
-							repo = f.Repository(mongodb.ObjectMeta, secret.Name)
+							repo = f.Repository(mongodb.ObjectMeta)
+							bc = f.BackupConfiguration(mongodb.ObjectMeta, repo)
 
 							repo.Spec.Backend = store.Backend{
 								GCS: &store.GCSSpec{
@@ -1927,8 +1923,8 @@ var _ = Describe("MongoDB", func() {
 							By("Check for snapshot count in stash-repository")
 							f.EventuallySnapshotInRepository(repo.ObjectMeta).Should(matcher.MoreThan(2))
 
-							By("Pause BackupConfiguration scheduling")
-							err = f.PauseBackupConfiguration(bc.ObjectMeta)
+							By("Delete BackupConfiguration to stop backup scheduling")
+							err = f.DeleteBackupConfiguration(bc.ObjectMeta)
 							Expect(err).NotTo(HaveOccurred())
 
 							oldMongoDB, err := f.GetMongoDB(mongodb.ObjectMeta)
@@ -1938,7 +1934,7 @@ var _ = Describe("MongoDB", func() {
 
 							By("Create mongodb from stash")
 							mongodb = anotherMongoDB // without value?
-							rs = f.RestoreSession(mongodb.ObjectMeta, oldMongoDB.ObjectMeta)
+							rs = f.RestoreSession(mongodb.ObjectMeta, repo)
 							mongodb.Spec.DatabaseSecret = oldMongoDB.Spec.DatabaseSecret
 							mongodb.Spec.Init = &api.InitSpec{
 								StashRestoreSession: &core.LocalObjectReference{
