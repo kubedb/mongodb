@@ -106,6 +106,9 @@ var _ = Describe("MongoDB SSL", func() {
 		By("Check valid AppBinding Specs")
 		err := f.CheckAppBindingSpec(mongodb.ObjectMeta)
 		Expect(err).NotTo(HaveOccurred())
+
+		By("Ping mongodb database")
+		f.EventuallyPingMongo(mongodb.ObjectMeta)
 	}
 
 	var deleteTestResource = func() {
@@ -199,6 +202,9 @@ var _ = Describe("MongoDB SSL", func() {
 
 		By("Wait for Running mongodb")
 		f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+
+		By("Ping mongodb database")
+		f.EventuallyPingMongo(mongodb.ObjectMeta)
 
 		if verifySharding {
 			By("Check if db " + dbName + " is set to partitioned")

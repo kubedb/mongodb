@@ -119,6 +119,9 @@ var _ = Describe("MongoDB", func() {
 		By("Check valid AppBinding Specs")
 		err := f.CheckAppBindingSpec(mongodb.ObjectMeta)
 		Expect(err).NotTo(HaveOccurred())
+
+		By("Ping mongodb database")
+		f.EventuallyPingMongo(mongodb.ObjectMeta)
 	}
 
 	var deleteTestResource = func() {
@@ -244,6 +247,9 @@ var _ = Describe("MongoDB", func() {
 
 					By("Wait for Running mongodb")
 					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+
+					By("Ping mongodb database")
+					f.EventuallyPingMongo(mongodb.ObjectMeta)
 
 					if verifySharding {
 						By("Check if db " + dbName + " is set to partitioned")
@@ -1548,6 +1554,9 @@ var _ = Describe("MongoDB", func() {
 					By("Check valid AppBinding Specs")
 					err = f.CheckAppBindingSpec(mongodb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
+
+					By("Ping mongodb database")
+					f.EventuallyPingMongo(mongodb.ObjectMeta)
 				}
 
 				var shouldInitializeFromStash = func() {
@@ -2019,6 +2028,9 @@ var _ = Describe("MongoDB", func() {
 					By("Wait for Running mongodb")
 					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
 
+					By("Ping mongodb database")
+					f.EventuallyPingMongo(mongodb.ObjectMeta)
+
 					By("Checking Inserted Document")
 					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
 
@@ -2056,6 +2068,9 @@ var _ = Describe("MongoDB", func() {
 
 					By("Wait for Running mongodb")
 					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+
+					By("Ping mongodb database")
+					f.EventuallyPingMongo(mongodb.ObjectMeta)
 
 					By("Checking Inserted Document")
 					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
@@ -2134,6 +2149,9 @@ var _ = Describe("MongoDB", func() {
 
 					By("Wait for Running mongodb")
 					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+
+					By("Ping mongodb database")
+					f.EventuallyPingMongo(mongodb.ObjectMeta)
 
 					By("Checking Inserted Document")
 					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
@@ -2268,6 +2286,9 @@ var _ = Describe("MongoDB", func() {
 					mongodb, err = f.GetMongoDB(mongodb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
+					By("Ping mongodb database")
+					f.EventuallyPingMongo(mongodb.ObjectMeta)
+
 					By("Checking Inserted Document")
 					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
 
@@ -2359,6 +2380,9 @@ var _ = Describe("MongoDB", func() {
 
 						_, err := f.GetMongoDB(mongodb.ObjectMeta)
 						Expect(err).NotTo(HaveOccurred())
+
+						By("Ping mongodb database")
+						f.EventuallyPingMongo(mongodb.ObjectMeta)
 
 						By("Checking Inserted Document")
 						f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
@@ -2638,6 +2662,9 @@ var _ = Describe("MongoDB", func() {
 					By("Wait for Running mongodb")
 					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
 
+					By("Ping mongodb database")
+					f.EventuallyPingMongo(mongodb.ObjectMeta)
+
 					By("Checking Inserted Document")
 					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
 
@@ -2808,6 +2835,9 @@ var _ = Describe("MongoDB", func() {
 
 					mongodb, err = f.GetMongoDB(mongodb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
+
+					By("Ping mongodb database")
+					f.EventuallyPingMongo(mongodb.ObjectMeta)
 
 					By("Checking Inserted Document")
 					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
