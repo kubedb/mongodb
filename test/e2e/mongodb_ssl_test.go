@@ -611,18 +611,16 @@ var _ = Describe("MongoDB SSL", func() {
 						Context("Initialization - script & snapshot", func() {
 							var configMap *core.ConfigMap
 
-							BeforeEach(func() {
-								configMap = f.ConfigMapForInitialization()
-								err := f.CreateConfigMap(configMap)
-								Expect(err).NotTo(HaveOccurred())
-							})
-
 							AfterEach(func() {
 								err := f.DeleteConfigMap(configMap.ObjectMeta)
 								Expect(err).NotTo(HaveOccurred())
 							})
 
 							BeforeEach(func() {
+								configMap = f.ConfigMapForInitialization()
+								err := f.CreateConfigMap(configMap)
+								Expect(err).NotTo(HaveOccurred())
+
 								skipConfig = true
 								skipSnapshotDataChecking = false
 								verifySharding = true
@@ -653,6 +651,9 @@ var _ = Describe("MongoDB SSL", func() {
 										},
 									},
 								}
+
+								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 							})
 
 							It("should initialize database successfully", shouldInitializeSnapshot)
@@ -692,18 +693,16 @@ var _ = Describe("MongoDB SSL", func() {
 						Context("Initialization - script & snapshot", func() {
 							var configMap *core.ConfigMap
 
-							BeforeEach(func() {
-								configMap = f.ConfigMapForInitialization()
-								err := f.CreateConfigMap(configMap)
-								Expect(err).NotTo(HaveOccurred())
-							})
-
 							AfterEach(func() {
 								err := f.DeleteConfigMap(configMap.ObjectMeta)
 								Expect(err).NotTo(HaveOccurred())
 							})
 
 							BeforeEach(func() {
+								configMap = f.ConfigMapForInitialization()
+								err := f.CreateConfigMap(configMap)
+								Expect(err).NotTo(HaveOccurred())
+
 								skipConfig = true
 								skipSnapshotDataChecking = false
 								verifySharding = true
@@ -734,6 +733,9 @@ var _ = Describe("MongoDB SSL", func() {
 										},
 									},
 								}
+
+								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 							})
 
 							It("should initialize database successfully", shouldInitializeSnapshot)
@@ -820,18 +822,16 @@ var _ = Describe("MongoDB SSL", func() {
 						Context("Initialization - script & snapshot", func() {
 							var configMap *core.ConfigMap
 
-							BeforeEach(func() {
-								configMap = f.ConfigMapForInitialization()
-								err := f.CreateConfigMap(configMap)
-								Expect(err).NotTo(HaveOccurred())
-							})
-
 							AfterEach(func() {
 								err := f.DeleteConfigMap(configMap.ObjectMeta)
 								Expect(err).NotTo(HaveOccurred())
 							})
 
 							BeforeEach(func() {
+								configMap = f.ConfigMapForInitialization()
+								err := f.CreateConfigMap(configMap)
+								Expect(err).NotTo(HaveOccurred())
+
 								skipConfig = true
 								skipSnapshotDataChecking = false
 								verifySharding = true
@@ -862,6 +862,9 @@ var _ = Describe("MongoDB SSL", func() {
 										},
 									},
 								}
+
+								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 							})
 
 							It("should initialize database successfully", shouldInitializeSnapshot)
@@ -948,18 +951,16 @@ var _ = Describe("MongoDB SSL", func() {
 						Context("Initialization - script & snapshot", func() {
 							var configMap *core.ConfigMap
 
-							BeforeEach(func() {
-								configMap = f.ConfigMapForInitialization()
-								err := f.CreateConfigMap(configMap)
-								Expect(err).NotTo(HaveOccurred())
-							})
-
 							AfterEach(func() {
 								err := f.DeleteConfigMap(configMap.ObjectMeta)
 								Expect(err).NotTo(HaveOccurred())
 							})
 
 							BeforeEach(func() {
+								configMap = f.ConfigMapForInitialization()
+								err := f.CreateConfigMap(configMap)
+								Expect(err).NotTo(HaveOccurred())
+
 								skipConfig = true
 								skipSnapshotDataChecking = false
 								verifySharding = true
@@ -990,6 +991,9 @@ var _ = Describe("MongoDB SSL", func() {
 										},
 									},
 								}
+
+								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 							})
 
 							It("should initialize database successfully", shouldInitializeSnapshot)
@@ -1138,18 +1142,16 @@ var _ = Describe("MongoDB SSL", func() {
 						Context("Initialization - script & snapshot", func() {
 							var configMap *core.ConfigMap
 
-							BeforeEach(func() {
-								configMap = f.ConfigMapForInitialization()
-								err := f.CreateConfigMap(configMap)
-								Expect(err).NotTo(HaveOccurred())
-							})
-
 							AfterEach(func() {
 								err := f.DeleteConfigMap(configMap.ObjectMeta)
 								Expect(err).NotTo(HaveOccurred())
 							})
 
 							BeforeEach(func() {
+								configMap = f.ConfigMapForInitialization()
+								err := f.CreateConfigMap(configMap)
+								Expect(err).NotTo(HaveOccurred())
+
 								skipConfig = true
 								skipSnapshotDataChecking = false
 								verifySharding = true
@@ -1180,6 +1182,9 @@ var _ = Describe("MongoDB SSL", func() {
 										},
 									},
 								}
+
+								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 							})
 
 							It("should initialize database successfully", shouldInitializeSnapshot)
@@ -1298,18 +1303,16 @@ var _ = Describe("MongoDB SSL", func() {
 						Context("Initialization - script & snapshot", func() {
 							var configMap *core.ConfigMap
 
-							BeforeEach(func() {
-								configMap = f.ConfigMapForInitialization()
-								err := f.CreateConfigMap(configMap)
-								Expect(err).NotTo(HaveOccurred())
-							})
-
 							AfterEach(func() {
 								err := f.DeleteConfigMap(configMap.ObjectMeta)
 								Expect(err).NotTo(HaveOccurred())
 							})
 
 							BeforeEach(func() {
+								configMap = f.ConfigMapForInitialization()
+								err := f.CreateConfigMap(configMap)
+								Expect(err).NotTo(HaveOccurred())
+
 								skipConfig = true
 								skipSnapshotDataChecking = false
 								verifySharding = true
@@ -1340,6 +1343,9 @@ var _ = Describe("MongoDB SSL", func() {
 										},
 									},
 								}
+
+								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 							})
 
 							It("should initialize database successfully", shouldInitializeSnapshot)
@@ -1398,18 +1404,16 @@ var _ = Describe("MongoDB SSL", func() {
 					Context("Initialization - script & snapshot", func() {
 						var configMap *core.ConfigMap
 
-						BeforeEach(func() {
-							configMap = f.ConfigMapForInitialization()
-							err := f.CreateConfigMap(configMap)
-							Expect(err).NotTo(HaveOccurred())
-						})
-
 						AfterEach(func() {
 							err := f.DeleteConfigMap(configMap.ObjectMeta)
 							Expect(err).NotTo(HaveOccurred())
 						})
 
 						BeforeEach(func() {
+							configMap = f.ConfigMapForInitialization()
+							err := f.CreateConfigMap(configMap)
+							Expect(err).NotTo(HaveOccurred())
+
 							skipConfig = true
 							anotherMongoDB = f.MongoDBStandalone()
 							anotherMongoDB.Spec.Init = &api.InitSpec{
@@ -1436,6 +1440,9 @@ var _ = Describe("MongoDB SSL", func() {
 									},
 								},
 							}
+
+							mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+							anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 						})
 
 						It("should run successfully", shouldInitializeSnapshot)
@@ -1461,18 +1468,16 @@ var _ = Describe("MongoDB SSL", func() {
 						Context("Initialization - script & snapshot", func() {
 							var configMap *core.ConfigMap
 
-							BeforeEach(func() {
-								configMap = f.ConfigMapForInitialization()
-								err := f.CreateConfigMap(configMap)
-								Expect(err).NotTo(HaveOccurred())
-							})
-
 							AfterEach(func() {
 								err := f.DeleteConfigMap(configMap.ObjectMeta)
 								Expect(err).NotTo(HaveOccurred())
 							})
 
 							BeforeEach(func() {
+								configMap = f.ConfigMapForInitialization()
+								err := f.CreateConfigMap(configMap)
+								Expect(err).NotTo(HaveOccurred())
+
 								skipConfig = true
 								skipSnapshotDataChecking = false
 								anotherMongoDB = f.MongoDBRS()
@@ -1499,6 +1504,9 @@ var _ = Describe("MongoDB SSL", func() {
 										},
 									},
 								}
+
+								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 							})
 
 							It("should initialize database successfully", shouldInitializeSnapshot)
@@ -1521,18 +1529,16 @@ var _ = Describe("MongoDB SSL", func() {
 						Context("Initialization - script & snapshot", func() {
 							var configMap *core.ConfigMap
 
-							BeforeEach(func() {
-								configMap = f.ConfigMapForInitialization()
-								err := f.CreateConfigMap(configMap)
-								Expect(err).NotTo(HaveOccurred())
-							})
-
 							AfterEach(func() {
 								err := f.DeleteConfigMap(configMap.ObjectMeta)
 								Expect(err).NotTo(HaveOccurred())
 							})
 
 							BeforeEach(func() {
+								configMap = f.ConfigMapForInitialization()
+								err := f.CreateConfigMap(configMap)
+								Expect(err).NotTo(HaveOccurred())
+
 								skipConfig = true
 								skipSnapshotDataChecking = false
 								verifySharding = true
@@ -1563,6 +1569,9 @@ var _ = Describe("MongoDB SSL", func() {
 										},
 									},
 								}
+
+								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 							})
 
 							It("should initialize database successfully", shouldInitializeSnapshot)
