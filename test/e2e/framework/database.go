@@ -168,6 +168,28 @@ func (f *Framework) GetPrimaryInstance(meta metav1.ObjectMeta) (string, error) {
 	return f.GetReplicaMasterNode(meta, mongodb.RepSetName(), mongodb.Spec.Replicas)
 }
 
+func (f *Framework) EventuallyPingMongo(meta metav1.ObjectMeta) GomegaAsyncAssertion {
+	return Eventually(
+		func() bool {
+			podName, err := f.GetPrimaryInstance(meta)
+			if err != nil {
+				log.Errorln("GetPrimaryInstance error:", err)
+				return false
+			}
+
+			_, tunnel, err := f.ConnectAndPing(meta, podName)
+			if err != nil {
+				log.Errorln("Failed to ConnectAndPing. Reason: ", err)
+				return false
+			}
+			defer tunnel.Close()
+			return true
+		},
+		time.Minute*5,
+		time.Second*5,
+	)
+}
+
 func (f *Framework) EventuallyInsertDocument(meta metav1.ObjectMeta, dbName string, collectionCount int) GomegaAsyncAssertion {
 	return Eventually(
 		func() (bool, error) {
