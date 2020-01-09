@@ -171,11 +171,10 @@ func (c *Controller) createDormantDatabase(mongodb *api.MongoDB) (*api.DormantDa
 		Spec: api.DormantDatabaseSpec{
 			Origin: api.Origin{
 				PartialObjectMeta: v1.PartialObjectMeta{
-					Name:              mongodb.Name,
-					Namespace:         mongodb.Namespace,
-					Labels:            mongodb.Labels,
-					Annotations:       mongodb.Annotations,
-					CreationTimestamp: mongodb.CreationTimestamp,
+					Name:        mongodb.Name,
+					Namespace:   mongodb.Namespace,
+					Labels:      mongodb.Labels,
+					Annotations: mongodb.Annotations,
 				},
 				Spec: api.OriginSpec{
 					MongoDB: &mongodb.Spec,
