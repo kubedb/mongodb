@@ -45,6 +45,7 @@ func (c *Controller) runMongoDB(key string) error {
 		// Note that you also have to check the uid if you have a local controlled resource, which
 		// is dependent on the actual instance, to detect that a MongoDB was recreated with the same name
 		mongodb := obj.(*api.MongoDB).DeepCopy()
+
 		if mongodb.DeletionTimestamp != nil {
 			if core_util.HasFinalizer(mongodb.ObjectMeta, api.GenericKey) {
 				if err := c.terminate(mongodb); err != nil {
@@ -58,6 +59,10 @@ func (c *Controller) runMongoDB(key string) error {
 				return err
 			}
 		} else {
+			if mongodb.Spec.Paused {
+				return nil
+			}
+
 			mongodb, _, err = util.PatchMongoDB(c.ExtClient.KubedbV1alpha1(), mongodb, func(in *api.MongoDB) *api.MongoDB {
 				in.ObjectMeta = core_util.AddFinalizer(in.ObjectMeta, api.GenericKey)
 				return in

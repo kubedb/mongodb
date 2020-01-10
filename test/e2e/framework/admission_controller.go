@@ -91,7 +91,7 @@ func (f *Framework) RunOperatorAndServer(config *restclient.Config, kubeconfigPa
 	crds := []*crd_api.CustomResourceDefinition{
 		catlog.MongoDBVersion{}.CustomResourceDefinition(),
 	}
-	err := apiext_util.RegisterCRDs(f.apiExtKubeClient, crds)
+	err := apiext_util.RegisterCRDs(f.kubeClient.Discovery(), f.apiExtKubeClient, crds)
 	Expect(err).NotTo(HaveOccurred())
 
 	sh := shell.NewSession()
