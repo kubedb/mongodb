@@ -59,10 +59,6 @@ func (c *Controller) runMongoDB(key string) error {
 				return err
 			}
 		} else {
-			if mongodb.Spec.Paused {
-				return nil
-			}
-
 			mongodb, _, err = util.PatchMongoDB(c.ExtClient.KubedbV1alpha1(), mongodb, func(in *api.MongoDB) *api.MongoDB {
 				in.ObjectMeta = core_util.AddFinalizer(in.ObjectMeta, api.GenericKey)
 				return in
@@ -70,6 +66,11 @@ func (c *Controller) runMongoDB(key string) error {
 			if err != nil {
 				return err
 			}
+
+			if mongodb.Spec.Paused {
+				return nil
+			}
+
 			if err := c.create(mongodb); err != nil {
 				log.Errorln(err)
 				c.pushFailureEvent(mongodb, err.Error())
