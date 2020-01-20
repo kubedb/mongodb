@@ -106,15 +106,14 @@ func (c *Controller) createRoleBinding(db *api.MongoDB, roleName string, saName 
 	return err
 }
 
-func (c *Controller) getPolicyNames(db *api.MongoDB) (string, string, error) {
+func (c *Controller) getPolicyNames(db *api.MongoDB) (string, error) {
 	dbVersion, err := c.ExtClient.CatalogV1alpha1().MongoDBVersions().Get(string(db.Spec.Version), metav1.GetOptions{})
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 	dbPolicyName := dbVersion.Spec.PodSecurityPolicies.DatabasePolicyName
-	snapshotPolicyName := dbVersion.Spec.PodSecurityPolicies.SnapshotterPolicyName
 
-	return dbPolicyName, snapshotPolicyName, nil
+	return dbPolicyName, nil
 }
 
 func (c *Controller) ensureDatabaseRBAC(mongodb *api.MongoDB) error {
@@ -144,7 +143,7 @@ func (c *Controller) ensureDatabaseRBAC(mongodb *api.MongoDB) error {
 		}
 
 		// Create New Role
-		pspName, _, err := c.getPolicyNames(mongodb)
+		pspName, err := c.getPolicyNames(mongodb)
 		if err != nil {
 			return err
 		}
@@ -173,31 +172,6 @@ func (c *Controller) ensureDatabaseRBAC(mongodb *api.MongoDB) error {
 		if err := createDatabaseRBAC(mongodb.Spec.PodTemplate); err != nil {
 			return err
 		}
-	}
-
-	return nil
-}
-
-func (c *Controller) ensureSnapshotRBAC(mongodb *api.MongoDB) error {
-	_, snapshotPolicyName, err := c.getPolicyNames(mongodb)
-	if err != nil {
-		return err
-	}
-	// Create New Snapshot ServiceAccount
-	if err := c.createServiceAccount(mongodb, mongodb.SnapshotSAName()); err != nil {
-		if !kerr.IsAlreadyExists(err) {
-			return err
-		}
-	}
-
-	// Create New Role for Snapshot
-	if err := c.ensureRole(mongodb, mongodb.SnapshotSAName(), snapshotPolicyName); err != nil {
-		return err
-	}
-
-	// Create New RoleBinding for Snapshot
-	if err := c.createRoleBinding(mongodb, mongodb.SnapshotSAName(), mongodb.SnapshotSAName()); err != nil {
-		return err
 	}
 
 	return nil

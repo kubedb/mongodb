@@ -777,12 +777,13 @@ func upsertEnv(template core.PodTemplateSpec, mongodb *api.MongoDB) core.PodTemp
 	return template
 }
 
-func (c *Controller) checkStatefulSetPodStatus(statefulSet *apps.StatefulSet) error {
+func (c *Controller) checkStatefulSetPodStatus(sts *apps.StatefulSet) error {
+	log.Infof("Waiting for running phase for statefulset %v/%v.", sts.Namespace, sts.Name)
 	err := core_util.WaitUntilPodRunningBySelector(
 		c.Client,
-		statefulSet.Namespace,
-		statefulSet.Spec.Selector,
-		int(types.Int32(statefulSet.Spec.Replicas)),
+		sts.Namespace,
+		sts.Spec.Selector,
+		int(types.Int32(sts.Spec.Replicas)),
 	)
 	if err != nil {
 		return err

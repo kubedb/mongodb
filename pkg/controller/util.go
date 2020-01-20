@@ -16,16 +16,19 @@ limitations under the License.
 package controller
 
 import (
-	"fmt"
-
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
-	amv "kubedb.dev/apimachinery/pkg/validator"
 
-	batch "k8s.io/api/batch/v1"
+	"github.com/pkg/errors"
+	core "k8s.io/api/core/v1"
+	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 	core_util "kmodules.xyz/client-go/core/v1"
+	dynamic_util "kmodules.xyz/client-go/dynamic"
+	meta_util "kmodules.xyz/client-go/meta"
 )
 
 func (c *Controller) GetDatabase(meta metav1.ObjectMeta) (runtime.Object, error) {
@@ -63,29 +66,50 @@ func (c *Controller) UpsertDatabaseAnnotation(meta metav1.ObjectMeta, annotation
 	return err
 }
 
-func (c *Controller) ValidateSnapshot(snapshot *api.Snapshot) error {
-	// Database name can't empty
-	databaseName := snapshot.Spec.DatabaseName
-	if databaseName == "" {
-		return fmt.Errorf(`object 'DatabaseName' is missing in '%v'`, snapshot.Spec)
+// wipeOutDatabase is a generic function to call from WipeOutDatabase and mongodb terminate method.
+func (c *Controller) wipeOutDatabase(meta metav1.ObjectMeta, secrets []string, owner *metav1.OwnerReference) error {
+	secretUsed, err := c.secretsUsedByPeers(meta)
+	if err != nil {
+		return errors.Wrap(err, "error in getting used secret list")
+	}
+	unusedSecrets := sets.NewString(secrets...).Difference(secretUsed)
+
+	//Dont delete unused secrets that are not owned by kubeDB
+	for _, unusedSecret := range unusedSecrets.List() {
+		secret, err := c.Client.CoreV1().Secrets(meta.Namespace).Get(unusedSecret, metav1.GetOptions{})
+		//Maybe user has delete this secret
+		if kerr.IsNotFound(err) {
+			unusedSecrets.Delete(secret.Name)
+			continue
+		}
+		if err != nil {
+			return errors.Wrap(err, "error in getting db secret")
+		}
+		genericKey, ok := secret.Labels[meta_util.ManagedByLabelKey]
+		if !ok || genericKey != api.GenericKey {
+			unusedSecrets.Delete(secret.Name)
+		}
 	}
 
-	if _, err := c.mgLister.MongoDBs(snapshot.Namespace).Get(databaseName); err != nil {
-		return err
-	}
-
-	return amv.ValidateSnapshotSpec(snapshot.Spec.Backend)
+	return dynamic_util.EnsureOwnerReferenceForItems(
+		c.DynamicClient,
+		core.SchemeGroupVersion.WithResource("secrets"),
+		meta.Namespace,
+		unusedSecrets.List(),
+		owner)
 }
 
-func (c *Controller) GetSnapshotter(snapshot *api.Snapshot) (*batch.Job, error) {
-	return c.getSnapshotterJob(snapshot)
-}
-
-func (c *Controller) WipeOutSnapshot(snapshot *api.Snapshot) error {
-	// wipeOut not possible for local backend.
-	// Ref: https://github.com/kubedb/project/issues/261
-	if snapshot.Spec.Local != nil {
-		return nil
+// isSecretUsed gets the DBList of same kind, then checks if our required secret is used by those.
+func (c *Controller) secretsUsedByPeers(meta metav1.ObjectMeta) (sets.String, error) {
+	secretUsed := sets.NewString()
+	dbList, err := c.mgLister.MongoDBs(meta.Namespace).List(labels.Everything())
+	if err != nil {
+		return nil, err
 	}
-	return c.DeleteSnapshotData(snapshot)
+	for _, db := range dbList {
+		if db.Name != meta.Name {
+			secretUsed.Insert(db.Spec.GetSecrets()...)
+		}
+	}
+	return secretUsed, nil
 }

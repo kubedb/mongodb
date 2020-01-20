@@ -19,7 +19,6 @@ require (
 	github.com/xdg/stringprep v1.0.0 // indirect
 	go.mongodb.org/mongo-driver v1.2.0
 	gomodules.xyz/cert v1.0.2
-	gomodules.xyz/stow v0.2.4
 	k8s.io/api v0.0.0-20191122220107-b5267f2975e0
 	k8s.io/apiextensions-apiserver v0.0.0-20191114105449-027877536833
 	k8s.io/apimachinery v0.16.5-beta.1
@@ -33,7 +32,7 @@ require (
 	kmodules.xyz/objectstore-api v0.0.0-20191127144749-5881939b57f0
 	kmodules.xyz/offshoot-api v0.0.0-20200103145223-2c4f520520d2
 	kmodules.xyz/webhook-runtime v0.0.0-20191127075323-d4bfdee6974d
-	kubedb.dev/apimachinery v0.13.0-rc.2.0.20200111104535-722f0b216a67
+	kubedb.dev/apimachinery v0.13.0-rc.3.0.20200114104836-b93778c17cf6
 	stash.appscode.dev/stash v0.9.0-rc.3
 )
 

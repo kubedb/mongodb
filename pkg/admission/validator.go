@@ -24,7 +24,6 @@ import (
 	cs "kubedb.dev/apimachinery/client/clientset/versioned"
 	amv "kubedb.dev/apimachinery/pkg/validator"
 
-	"github.com/appscode/go/log"
 	"github.com/pkg/errors"
 	admission "k8s.io/api/admission/v1beta1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
@@ -280,13 +279,6 @@ func ValidateMongoDB(client kubernetes.Interface, extClient cs.Interface, mongod
 		}
 	}
 
-	backupScheduleSpec := mongodb.Spec.BackupSchedule
-	if backupScheduleSpec != nil {
-		if err := amv.ValidateBackupSchedule(client, backupScheduleSpec, mongodb.Namespace); err != nil {
-			return err
-		}
-	}
-
 	if mongodb.Spec.UpdateStrategy.Type == "" {
 		return fmt.Errorf(`'spec.updateStrategy.type' is missing`)
 	}
@@ -295,7 +287,7 @@ func ValidateMongoDB(client kubernetes.Interface, extClient cs.Interface, mongod
 		return fmt.Errorf(`'spec.terminationPolicy' is missing`)
 	}
 
-	if mongodb.Spec.StorageType == api.StorageTypeEphemeral && mongodb.Spec.TerminationPolicy == api.TerminationPolicyPause {
+	if mongodb.Spec.StorageType == api.StorageTypeEphemeral && mongodb.Spec.TerminationPolicy == api.TerminationPolicyHalt {
 		return fmt.Errorf(`'spec.terminationPolicy: Pause' can not be used for 'Ephemeral' storage`)
 	}
 
@@ -304,70 +296,6 @@ func ValidateMongoDB(client kubernetes.Interface, extClient cs.Interface, mongod
 		if err := amv.ValidateMonitorSpec(monitorSpec); err != nil {
 			return err
 		}
-	}
-
-	if err := matchWithDormantDatabase(extClient, mongodb); err != nil {
-		return err
-	}
-	return nil
-}
-
-func matchWithDormantDatabase(extClient cs.Interface, mongodb *api.MongoDB) error {
-	// Check if DormantDatabase exists or not
-	dormantDb, err := extClient.KubedbV1alpha1().DormantDatabases(mongodb.Namespace).Get(mongodb.Name, metav1.GetOptions{})
-	if err != nil {
-		if !kerr.IsNotFound(err) {
-			return err
-		}
-		return nil
-	}
-
-	// Check DatabaseKind
-	if value, _ := meta_util.GetStringValue(dormantDb.Labels, api.LabelDatabaseKind); value != api.ResourceKindMongoDB {
-		return errors.New(fmt.Sprintf(`invalid MongoDB: "%v/%v". Exists DormantDatabase "%v" of different Kind`, mongodb.Namespace, mongodb.Name, dormantDb.Name))
-	}
-
-	// Check Origin Spec
-	drmnOriginSpec := dormantDb.Spec.Origin.Spec.MongoDB
-	mgVersion, err := getMongoDBVersion(extClient, drmnOriginSpec.Version)
-	if err != nil {
-		return err
-	}
-	drmnOriginSpec.SetDefaults(mgVersion)
-	originalSpec := mongodb.Spec
-
-	// Skip checking UpdateStrategy
-	drmnOriginSpec.UpdateStrategy = originalSpec.UpdateStrategy
-
-	// Skip checking TerminationPolicy
-	drmnOriginSpec.TerminationPolicy = originalSpec.TerminationPolicy
-
-	// Skip checking Monitoring
-	drmnOriginSpec.Monitor = originalSpec.Monitor
-
-	// Skip Checking BackUP Scheduler
-	drmnOriginSpec.BackupSchedule = originalSpec.BackupSchedule
-
-	if drmnOriginSpec.ShardTopology != nil && originalSpec.ShardTopology != nil {
-		// Skip checking Mongos deployment strategy
-		drmnOriginSpec.ShardTopology.Mongos.Strategy = originalSpec.ShardTopology.Mongos.Strategy
-		// Skip checking ServiceAccountName of ConfigServer
-		drmnOriginSpec.ShardTopology.ConfigServer.PodTemplate.Spec.ServiceAccountName = originalSpec.ShardTopology.ConfigServer.PodTemplate.Spec.ServiceAccountName
-		// Skip checking ServiceAccountName of Mongos
-		drmnOriginSpec.ShardTopology.Mongos.PodTemplate.Spec.ServiceAccountName = originalSpec.ShardTopology.Mongos.PodTemplate.Spec.ServiceAccountName
-		// Skip checking ServiceAccountName of Shard
-		drmnOriginSpec.ShardTopology.Shard.PodTemplate.Spec.ServiceAccountName = originalSpec.ShardTopology.Shard.PodTemplate.Spec.ServiceAccountName
-	}
-
-	if drmnOriginSpec.PodTemplate != nil && originalSpec.PodTemplate != nil {
-		// Skip checking ServiceAccountName
-		drmnOriginSpec.PodTemplate.Spec.ServiceAccountName = originalSpec.PodTemplate.Spec.ServiceAccountName
-	}
-
-	if !meta_util.Equal(drmnOriginSpec, &originalSpec) {
-		diff := meta_util.Diff(drmnOriginSpec, &originalSpec)
-		log.Errorf("mongodb spec mismatches with OriginSpec in DormantDatabases. Diff: %v", diff)
-		return errors.New(fmt.Sprintf("mongodb spec mismatches with OriginSpec in DormantDatabases. Diff: %v", diff))
 	}
 
 	return nil
