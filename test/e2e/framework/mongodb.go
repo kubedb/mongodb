@@ -64,7 +64,7 @@ func (i *Invocation) MongoDBStandalone() *api.MongoDB {
 				},
 				StorageClassName: types.StringP(i.StorageClass),
 			},
-			TerminationPolicy: api.TerminationPolicyPause,
+			TerminationPolicy: api.TerminationPolicyHalt,
 		},
 	}
 }
@@ -93,7 +93,7 @@ func (i *Invocation) MongoDBRS() *api.MongoDB {
 				},
 				StorageClassName: types.StringP(i.StorageClass),
 			},
-			TerminationPolicy: api.TerminationPolicyPause,
+			TerminationPolicy: api.TerminationPolicyHalt,
 		},
 	}
 }
@@ -144,7 +144,7 @@ func (i *Invocation) MongoDBShard() *api.MongoDB {
 					},
 				},
 			},
-			TerminationPolicy: api.TerminationPolicyPause,
+			TerminationPolicy: api.TerminationPolicyHalt,
 		},
 	}
 }
@@ -378,4 +378,62 @@ func (f *Framework) CleanMongoDB() {
 	if err := f.dbClient.KubedbV1alpha1().MongoDBs(f.namespace).DeleteCollection(deleteInForeground(), metav1.ListOptions{}); err != nil {
 		fmt.Printf("error in deletion of MongoDB. Error: %v", err)
 	}
+}
+
+func (f *Framework) EventuallyWipedOut(meta metav1.ObjectMeta) GomegaAsyncAssertion {
+	return Eventually(
+		func() error {
+			labelMap := map[string]string{
+				api.LabelDatabaseName: meta.Name,
+				api.LabelDatabaseKind: api.ResourceKindMongoDB,
+			}
+			labelSelector := labels.SelectorFromSet(labelMap)
+
+			// check if pvcs is wiped out
+			pvcList, err := f.kubeClient.CoreV1().PersistentVolumeClaims(meta.Namespace).List(
+				metav1.ListOptions{
+					LabelSelector: labelSelector.String(),
+				},
+			)
+			if err != nil {
+				return err
+			}
+			if len(pvcList.Items) > 0 {
+				fmt.Println("PVCs have not wiped out yet")
+				return fmt.Errorf("PVCs have not wiped out yet")
+			}
+
+			// check if secrets are wiped out
+			secretList, err := f.kubeClient.CoreV1().Secrets(meta.Namespace).List(
+				metav1.ListOptions{
+					LabelSelector: labelSelector.String(),
+				},
+			)
+			if err != nil {
+				return err
+			}
+			if len(secretList.Items) > 0 {
+				fmt.Println("secrets have not wiped out yet")
+				return fmt.Errorf("secrets have not wiped out yet")
+			}
+
+			// check if appbinds are wiped out
+			appBindingList, err := f.appCatalogClient.AppBindings(meta.Namespace).List(
+				metav1.ListOptions{
+					LabelSelector: labelSelector.String(),
+				},
+			)
+			if err != nil {
+				return err
+			}
+			if len(appBindingList.Items) > 0 {
+				fmt.Println("appBindings have not wiped out yet")
+				return fmt.Errorf("appBindings have not wiped out yet")
+			}
+
+			return nil
+		},
+		time.Minute*5,
+		time.Second*5,
+	)
 }

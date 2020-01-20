@@ -23,6 +23,7 @@ import (
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/pkg/eventer"
 
+	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
 	"github.com/fatih/structs"
 	apps "k8s.io/api/apps/v1"
@@ -180,6 +181,7 @@ func (c *Controller) ensureDeployment(
 
 	// Check StatefulSet Pod status
 	if vt != kutil.VerbUnchanged {
+		log.Infof("Waiting for running phase for deployment %v/%v.", deployment.Namespace, deployment.Name)
 		if err := app_util.WaitUntilDeploymentReady(c.Client, deployment.ObjectMeta); err != nil {
 			return kutil.VerbUnchanged, err
 		}

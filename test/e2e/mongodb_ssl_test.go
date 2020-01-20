@@ -16,49 +16,38 @@ limitations under the License.
 package e2e_test
 
 import (
-	"fmt"
-	"os"
-
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/mongodb/test/e2e/framework"
-	"kubedb.dev/mongodb/test/e2e/matcher"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
-	store "kmodules.xyz/objectstore-api/api/v1"
 )
 
 var _ = Describe("MongoDB SSL", func() {
 
 	var (
-		err                      error
-		f                        *framework.Invocation
-		mongodb                  *api.MongoDB
-		garbageMongoDB           *api.MongoDBList
-		snapshot                 *api.Snapshot
-		snapshotPVC              *core.PersistentVolumeClaim
-		secret                   *core.Secret
-		skipMessage              string
-		skipSnapshotDataChecking bool
-		verifySharding           bool
-		enableSharding           bool
-		dbName                   string
-		clusterAuthMode          *api.ClusterAuthMode
-		sslMode                  *api.SSLMode
-		anotherMongoDB           *api.MongoDB
-		skipConfig               bool
+		err             error
+		f               *framework.Invocation
+		mongodb         *api.MongoDB
+		garbageMongoDB  *api.MongoDBList
+		snapshotPVC     *core.PersistentVolumeClaim
+		secret          *core.Secret
+		skipMessage     string
+		verifySharding  bool
+		enableSharding  bool
+		dbName          string
+		clusterAuthMode *api.ClusterAuthMode
+		sslMode         *api.SSLMode
 	)
 
 	BeforeEach(func() {
 		f = root.Invoke()
 		mongodb = f.MongoDBStandalone()
 		garbageMongoDB = new(api.MongoDBList)
-		snapshot = f.Snapshot()
 		secret = nil
 		skipMessage = ""
-		skipSnapshotDataChecking = true
 		verifySharding = false
 		enableSharding = false
 		dbName = "kubedb"
@@ -71,10 +60,6 @@ var _ = Describe("MongoDB SSL", func() {
 		By("Cleanup Left Overs")
 		By("Delete left over MongoDB objects")
 		root.CleanMongoDB()
-		By("Delete left over Dormant Database objects")
-		root.CleanDormantDatabase()
-		By("Delete left over Snapshot objects")
-		root.CleanSnapshot()
 		By("Delete left over workloads if exists any")
 		root.CleanWorkloadLeftOvers()
 
@@ -118,43 +103,29 @@ var _ = Describe("MongoDB SSL", func() {
 
 		By("Check if mongodb " + mongodb.Name + " exists.")
 		mg, err := f.GetMongoDB(mongodb.ObjectMeta)
-		if err != nil {
-			if kerr.IsNotFound(err) {
-				// MongoDB was not created. Hence, rest of cleanup is not necessary.
-				return
-			}
-			Expect(err).NotTo(HaveOccurred())
+		if err != nil && kerr.IsNotFound(err) {
+			// MongoDB was not created. Hence, rest of cleanup is not necessary.
+			return
 		}
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Update mongodb to set spec.terminationPolicy = WipeOut")
+		_, err = f.PatchMongoDB(mg.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
+			in.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
+			return in
+		})
+		Expect(err).NotTo(HaveOccurred())
 
 		By("Delete mongodb")
 		err = f.DeleteMongoDB(mongodb.ObjectMeta)
-		if err != nil {
-			if kerr.IsNotFound(err) {
-				// MongoDB was not created. Hence, rest of cleanup is not necessary.
-				return
-			}
-			Expect(err).NotTo(HaveOccurred())
+		if err != nil && kerr.IsNotFound(err) {
+			// MongoDB was not created. Hence, rest of cleanup is not necessary.
+			return
 		}
+		Expect(err).NotTo(HaveOccurred())
 
-		if mg.Spec.TerminationPolicy == api.TerminationPolicyPause {
-
-			By("Wait for mongodb to be paused")
-			f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
-
-			By("Set DormantDatabase Spec.WipeOut to true")
-			_, err = f.PatchDormantDatabase(mongodb.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
-				in.Spec.WipeOut = true
-				return in
-			})
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Delete Dormant Database")
-			err = f.DeleteDormantDatabase(mongodb.ObjectMeta)
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Eventually dormant database is deleted")
-			f.EventuallyDormantDatabase(mongodb.ObjectMeta).Should(BeFalse())
-		}
+		By("Wait for mongodb to be deleted")
+		f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeFalse())
 
 		By("Wait for mongodb resources to be wipedOut")
 		f.EventuallyWipedOut(mongodb.ObjectMeta).Should(Succeed())
@@ -190,15 +161,12 @@ var _ = Describe("MongoDB SSL", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Wait for mongodb to be paused")
-		f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
+		f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeFalse())
 
 		// Create MongoDB object again to resume it
 		By("Create MongoDB: " + mongodb.Name)
 		err = f.CreateMongoDB(mongodb)
 		Expect(err).NotTo(HaveOccurred())
-
-		By("Wait for DormantDatabase to be deleted")
-		f.EventuallyDormantDatabase(mongodb.ObjectMeta).Should(BeFalse())
 
 		By("Wait for Running mongodb")
 		f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
@@ -221,7 +189,7 @@ var _ = Describe("MongoDB SSL", func() {
 		Expect(err).To(HaveOccurred())
 	}
 
-	var shouldInitializeSnapshot = func() {
+	var shouldInitializeFromScript = func() {
 		// Create and wait for running MongoDB
 		createAndWaitForRunning()
 
@@ -245,42 +213,6 @@ var _ = Describe("MongoDB SSL", func() {
 
 		By("Checking Inserted Document")
 		f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 50).Should(BeTrue())
-
-		By("Create Secret")
-		err := f.CreateSecret(secret)
-		Expect(err).NotTo(HaveOccurred())
-
-		By("Create Snapshot")
-		err = f.CreateSnapshot(snapshot)
-		Expect(err).NotTo(HaveOccurred())
-
-		By("Check for Succeeded snapshot")
-		f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
-
-		if !skipSnapshotDataChecking {
-			By("Check for snapshot data")
-			f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-		}
-
-		oldMongoDB, err := f.GetMongoDB(mongodb.ObjectMeta)
-		Expect(err).NotTo(HaveOccurred())
-
-		garbageMongoDB.Items = append(garbageMongoDB.Items, *oldMongoDB)
-
-		By("Create mongodb from snapshot")
-		mongodb = anotherMongoDB
-		mongodb.Spec.DatabaseSecret = oldMongoDB.Spec.DatabaseSecret
-
-		// Create and wait for running MongoDB
-		createAndWaitForRunning()
-
-		if verifySharding {
-			By("Check if db " + dbName + " is set to partitioned")
-			f.EventuallyCollectionPartitioned(mongodb.ObjectMeta, dbName).Should(Equal(!skipConfig))
-		}
-
-		By("Checking previously Inserted Document")
-		f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 50).Should(BeTrue())
 	}
 
 	Describe("Test", func() {
@@ -288,13 +220,6 @@ var _ = Describe("MongoDB SSL", func() {
 		BeforeEach(func() {
 			if f.StorageClass == "" {
 				Skip("Missing StorageClassName. Provide as flag to test this.")
-			}
-		})
-
-		// if secret is empty (no .env file) then skip
-		JustBeforeEach(func() {
-			if secret != nil && len(secret.Data) == 0 && (snapshot != nil && snapshot.Spec.Local == nil) {
-				Skip("Missing repository credential")
 			}
 		})
 
@@ -306,11 +231,6 @@ var _ = Describe("MongoDB SSL", func() {
 				*mongodb = mg
 				// Delete test resource
 				deleteTestResource()
-			}
-
-			if !skipSnapshotDataChecking {
-				By("Check for snapshot data")
-				f.EventuallySnapshotDataFound(snapshot).Should(BeFalse())
 			}
 
 			if secret != nil {
@@ -500,21 +420,7 @@ var _ = Describe("MongoDB SSL", func() {
 						})
 
 						BeforeEach(func() {
-							skipConfig = true
-							anotherMongoDB = f.MongoDBStandalone()
-							anotherMongoDB.Spec.Init = &api.InitSpec{
-								SnapshotSource: &api.SnapshotSourceSpec{
-									Namespace: snapshot.Namespace,
-									Name:      snapshot.Name,
-								},
-							}
-							skipSnapshotDataChecking = false
 							secret = f.SecretForGCSBackend()
-							snapshot.Spec.StorageSecretName = secret.Name
-							snapshot.Spec.GCS = &store.GCSSpec{
-								Bucket: os.Getenv(GCS_BUCKET_NAME),
-							}
-							snapshot.Spec.DatabaseName = mongodb.Name
 							mongodb.Spec.Init = &api.InitSpec{
 								ScriptSource: &api.ScriptSourceSpec{
 									VolumeSource: core.VolumeSource{
@@ -528,7 +434,7 @@ var _ = Describe("MongoDB SSL", func() {
 							}
 						})
 
-						It("should run successfully", shouldInitializeSnapshot)
+						It("should run successfully", shouldInitializeFromScript)
 					})
 				})
 
@@ -563,21 +469,7 @@ var _ = Describe("MongoDB SSL", func() {
 							})
 
 							BeforeEach(func() {
-								skipConfig = true
-								skipSnapshotDataChecking = false
-								anotherMongoDB = f.MongoDBRS()
-								anotherMongoDB.Spec.Init = &api.InitSpec{
-									SnapshotSource: &api.SnapshotSourceSpec{
-										Namespace: snapshot.Namespace,
-										Name:      snapshot.Name,
-									},
-								}
 								secret = f.SecretForGCSBackend()
-								snapshot.Spec.StorageSecretName = secret.Name
-								snapshot.Spec.GCS = &store.GCSSpec{
-									Bucket: os.Getenv(GCS_BUCKET_NAME),
-								}
-								snapshot.Spec.DatabaseName = mongodb.Name
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -591,7 +483,7 @@ var _ = Describe("MongoDB SSL", func() {
 								}
 							})
 
-							It("should initialize database successfully", shouldInitializeSnapshot)
+							It("should initialize database successfully", shouldInitializeFromScript)
 						})
 					})
 
@@ -621,25 +513,9 @@ var _ = Describe("MongoDB SSL", func() {
 								err := f.CreateConfigMap(configMap)
 								Expect(err).NotTo(HaveOccurred())
 
-								skipConfig = true
-								skipSnapshotDataChecking = false
 								verifySharding = true
 								enableSharding = true
-								snapshot.Spec.DatabaseName = mongodb.Name
-								anotherMongoDB = f.MongoDBShard()
-								anotherMongoDB.Spec.Init = &api.InitSpec{
-									SnapshotSource: &api.SnapshotSourceSpec{
-										Namespace: snapshot.Namespace,
-										Name:      snapshot.Name,
-										Args:      []string{fmt.Sprintf("--skip-config=%v", skipConfig)},
-									},
-								}
 								secret = f.SecretForGCSBackend()
-								snapshot.Spec.StorageSecretName = secret.Name
-								snapshot.Spec.GCS = &store.GCSSpec{
-									Bucket: os.Getenv(GCS_BUCKET_NAME),
-								}
-								snapshot.Spec.DatabaseName = mongodb.Name
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -653,10 +529,9 @@ var _ = Describe("MongoDB SSL", func() {
 								}
 
 								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
-								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 							})
 
-							It("should initialize database successfully", shouldInitializeSnapshot)
+							It("should initialize database successfully", shouldInitializeFromScript)
 						})
 					})
 				})
@@ -703,25 +578,9 @@ var _ = Describe("MongoDB SSL", func() {
 								err := f.CreateConfigMap(configMap)
 								Expect(err).NotTo(HaveOccurred())
 
-								skipConfig = true
-								skipSnapshotDataChecking = false
 								verifySharding = true
 								enableSharding = true
-								snapshot.Spec.DatabaseName = mongodb.Name
-								anotherMongoDB = f.MongoDBShard()
-								anotherMongoDB.Spec.Init = &api.InitSpec{
-									SnapshotSource: &api.SnapshotSourceSpec{
-										Namespace: snapshot.Namespace,
-										Name:      snapshot.Name,
-										Args:      []string{fmt.Sprintf("--skip-config=%v", skipConfig)},
-									},
-								}
 								secret = f.SecretForGCSBackend()
-								snapshot.Spec.StorageSecretName = secret.Name
-								snapshot.Spec.GCS = &store.GCSSpec{
-									Bucket: os.Getenv(GCS_BUCKET_NAME),
-								}
-								snapshot.Spec.DatabaseName = mongodb.Name
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -735,10 +594,9 @@ var _ = Describe("MongoDB SSL", func() {
 								}
 
 								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
-								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 							})
 
-							It("should initialize database successfully", shouldInitializeSnapshot)
+							It("should initialize database successfully", shouldInitializeFromScript)
 						})
 					})
 				})
@@ -774,21 +632,7 @@ var _ = Describe("MongoDB SSL", func() {
 							})
 
 							BeforeEach(func() {
-								skipConfig = true
-								skipSnapshotDataChecking = false
-								anotherMongoDB = f.MongoDBRS()
-								anotherMongoDB.Spec.Init = &api.InitSpec{
-									SnapshotSource: &api.SnapshotSourceSpec{
-										Namespace: snapshot.Namespace,
-										Name:      snapshot.Name,
-									},
-								}
 								secret = f.SecretForGCSBackend()
-								snapshot.Spec.StorageSecretName = secret.Name
-								snapshot.Spec.GCS = &store.GCSSpec{
-									Bucket: os.Getenv(GCS_BUCKET_NAME),
-								}
-								snapshot.Spec.DatabaseName = mongodb.Name
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -802,7 +646,7 @@ var _ = Describe("MongoDB SSL", func() {
 								}
 							})
 
-							It("should initialize database successfully", shouldInitializeSnapshot)
+							It("should initialize database successfully", shouldInitializeFromScript)
 						})
 					})
 
@@ -832,25 +676,9 @@ var _ = Describe("MongoDB SSL", func() {
 								err := f.CreateConfigMap(configMap)
 								Expect(err).NotTo(HaveOccurred())
 
-								skipConfig = true
-								skipSnapshotDataChecking = false
 								verifySharding = true
 								enableSharding = true
-								snapshot.Spec.DatabaseName = mongodb.Name
-								anotherMongoDB = f.MongoDBShard()
-								anotherMongoDB.Spec.Init = &api.InitSpec{
-									SnapshotSource: &api.SnapshotSourceSpec{
-										Namespace: snapshot.Namespace,
-										Name:      snapshot.Name,
-										Args:      []string{fmt.Sprintf("--skip-config=%v", skipConfig)},
-									},
-								}
 								secret = f.SecretForGCSBackend()
-								snapshot.Spec.StorageSecretName = secret.Name
-								snapshot.Spec.GCS = &store.GCSSpec{
-									Bucket: os.Getenv(GCS_BUCKET_NAME),
-								}
-								snapshot.Spec.DatabaseName = mongodb.Name
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -864,10 +692,9 @@ var _ = Describe("MongoDB SSL", func() {
 								}
 
 								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
-								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 							})
 
-							It("should initialize database successfully", shouldInitializeSnapshot)
+							It("should initialize database successfully", shouldInitializeFromScript)
 						})
 					})
 				})
@@ -903,21 +730,7 @@ var _ = Describe("MongoDB SSL", func() {
 							})
 
 							BeforeEach(func() {
-								skipConfig = true
-								skipSnapshotDataChecking = false
-								anotherMongoDB = f.MongoDBRS()
-								anotherMongoDB.Spec.Init = &api.InitSpec{
-									SnapshotSource: &api.SnapshotSourceSpec{
-										Namespace: snapshot.Namespace,
-										Name:      snapshot.Name,
-									},
-								}
 								secret = f.SecretForGCSBackend()
-								snapshot.Spec.StorageSecretName = secret.Name
-								snapshot.Spec.GCS = &store.GCSSpec{
-									Bucket: os.Getenv(GCS_BUCKET_NAME),
-								}
-								snapshot.Spec.DatabaseName = mongodb.Name
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -931,7 +744,7 @@ var _ = Describe("MongoDB SSL", func() {
 								}
 							})
 
-							It("should initialize database successfully", shouldInitializeSnapshot)
+							It("should initialize database successfully", shouldInitializeFromScript)
 						})
 					})
 
@@ -961,25 +774,9 @@ var _ = Describe("MongoDB SSL", func() {
 								err := f.CreateConfigMap(configMap)
 								Expect(err).NotTo(HaveOccurred())
 
-								skipConfig = true
-								skipSnapshotDataChecking = false
 								verifySharding = true
 								enableSharding = true
-								snapshot.Spec.DatabaseName = mongodb.Name
-								anotherMongoDB = f.MongoDBShard()
-								anotherMongoDB.Spec.Init = &api.InitSpec{
-									SnapshotSource: &api.SnapshotSourceSpec{
-										Namespace: snapshot.Namespace,
-										Name:      snapshot.Name,
-										Args:      []string{fmt.Sprintf("--skip-config=%v", skipConfig)},
-									},
-								}
 								secret = f.SecretForGCSBackend()
-								snapshot.Spec.StorageSecretName = secret.Name
-								snapshot.Spec.GCS = &store.GCSSpec{
-									Bucket: os.Getenv(GCS_BUCKET_NAME),
-								}
-								snapshot.Spec.DatabaseName = mongodb.Name
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -993,10 +790,9 @@ var _ = Describe("MongoDB SSL", func() {
 								}
 
 								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
-								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 							})
 
-							It("should initialize database successfully", shouldInitializeSnapshot)
+							It("should initialize database successfully", shouldInitializeFromScript)
 						})
 					})
 				})
@@ -1031,21 +827,7 @@ var _ = Describe("MongoDB SSL", func() {
 							Expect(err).NotTo(HaveOccurred())
 						})
 						BeforeEach(func() {
-							skipConfig = true
-							anotherMongoDB = f.MongoDBStandalone()
-							anotherMongoDB.Spec.Init = &api.InitSpec{
-								SnapshotSource: &api.SnapshotSourceSpec{
-									Namespace: snapshot.Namespace,
-									Name:      snapshot.Name,
-								},
-							}
-							skipSnapshotDataChecking = false
 							secret = f.SecretForGCSBackend()
-							snapshot.Spec.StorageSecretName = secret.Name
-							snapshot.Spec.GCS = &store.GCSSpec{
-								Bucket: os.Getenv(GCS_BUCKET_NAME),
-							}
-							snapshot.Spec.DatabaseName = mongodb.Name
 							mongodb.Spec.Init = &api.InitSpec{
 								ScriptSource: &api.ScriptSourceSpec{
 									VolumeSource: core.VolumeSource{
@@ -1059,7 +841,7 @@ var _ = Describe("MongoDB SSL", func() {
 							}
 						})
 
-						It("should run successfully", shouldInitializeSnapshot)
+						It("should run successfully", shouldInitializeFromScript)
 					})
 				})
 
@@ -1094,21 +876,7 @@ var _ = Describe("MongoDB SSL", func() {
 							})
 
 							BeforeEach(func() {
-								skipConfig = true
-								skipSnapshotDataChecking = false
-								anotherMongoDB = f.MongoDBRS()
-								anotherMongoDB.Spec.Init = &api.InitSpec{
-									SnapshotSource: &api.SnapshotSourceSpec{
-										Namespace: snapshot.Namespace,
-										Name:      snapshot.Name,
-									},
-								}
 								secret = f.SecretForGCSBackend()
-								snapshot.Spec.StorageSecretName = secret.Name
-								snapshot.Spec.GCS = &store.GCSSpec{
-									Bucket: os.Getenv(GCS_BUCKET_NAME),
-								}
-								snapshot.Spec.DatabaseName = mongodb.Name
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -1122,7 +890,7 @@ var _ = Describe("MongoDB SSL", func() {
 								}
 							})
 
-							It("should initialize database successfully", shouldInitializeSnapshot)
+							It("should initialize database successfully", shouldInitializeFromScript)
 						})
 					})
 
@@ -1152,25 +920,9 @@ var _ = Describe("MongoDB SSL", func() {
 								err := f.CreateConfigMap(configMap)
 								Expect(err).NotTo(HaveOccurred())
 
-								skipConfig = true
-								skipSnapshotDataChecking = false
 								verifySharding = true
 								enableSharding = true
-								snapshot.Spec.DatabaseName = mongodb.Name
-								anotherMongoDB = f.MongoDBShard()
-								anotherMongoDB.Spec.Init = &api.InitSpec{
-									SnapshotSource: &api.SnapshotSourceSpec{
-										Namespace: snapshot.Namespace,
-										Name:      snapshot.Name,
-										Args:      []string{fmt.Sprintf("--skip-config=%v", skipConfig)},
-									},
-								}
 								secret = f.SecretForGCSBackend()
-								snapshot.Spec.StorageSecretName = secret.Name
-								snapshot.Spec.GCS = &store.GCSSpec{
-									Bucket: os.Getenv(GCS_BUCKET_NAME),
-								}
-								snapshot.Spec.DatabaseName = mongodb.Name
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -1184,10 +936,9 @@ var _ = Describe("MongoDB SSL", func() {
 								}
 
 								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
-								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 							})
 
-							It("should initialize database successfully", shouldInitializeSnapshot)
+							It("should initialize database successfully", shouldInitializeFromScript)
 						})
 					})
 				})
@@ -1255,21 +1006,7 @@ var _ = Describe("MongoDB SSL", func() {
 							})
 
 							BeforeEach(func() {
-								skipConfig = true
-								skipSnapshotDataChecking = false
-								anotherMongoDB = f.MongoDBRS()
-								anotherMongoDB.Spec.Init = &api.InitSpec{
-									SnapshotSource: &api.SnapshotSourceSpec{
-										Namespace: snapshot.Namespace,
-										Name:      snapshot.Name,
-									},
-								}
 								secret = f.SecretForGCSBackend()
-								snapshot.Spec.StorageSecretName = secret.Name
-								snapshot.Spec.GCS = &store.GCSSpec{
-									Bucket: os.Getenv(GCS_BUCKET_NAME),
-								}
-								snapshot.Spec.DatabaseName = mongodb.Name
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -1283,7 +1020,7 @@ var _ = Describe("MongoDB SSL", func() {
 								}
 							})
 
-							It("should initialize database successfully", shouldInitializeSnapshot)
+							It("should initialize database successfully", shouldInitializeFromScript)
 						})
 					})
 
@@ -1313,25 +1050,9 @@ var _ = Describe("MongoDB SSL", func() {
 								err := f.CreateConfigMap(configMap)
 								Expect(err).NotTo(HaveOccurred())
 
-								skipConfig = true
-								skipSnapshotDataChecking = false
 								verifySharding = true
 								enableSharding = true
-								snapshot.Spec.DatabaseName = mongodb.Name
-								anotherMongoDB = f.MongoDBShard()
-								anotherMongoDB.Spec.Init = &api.InitSpec{
-									SnapshotSource: &api.SnapshotSourceSpec{
-										Namespace: snapshot.Namespace,
-										Name:      snapshot.Name,
-										Args:      []string{fmt.Sprintf("--skip-config=%v", skipConfig)},
-									},
-								}
 								secret = f.SecretForGCSBackend()
-								snapshot.Spec.StorageSecretName = secret.Name
-								snapshot.Spec.GCS = &store.GCSSpec{
-									Bucket: os.Getenv(GCS_BUCKET_NAME),
-								}
-								snapshot.Spec.DatabaseName = mongodb.Name
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -1345,10 +1066,9 @@ var _ = Describe("MongoDB SSL", func() {
 								}
 
 								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
-								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 							})
 
-							It("should initialize database successfully", shouldInitializeSnapshot)
+							It("should initialize database successfully", shouldInitializeFromScript)
 						})
 					})
 				})
@@ -1414,21 +1134,7 @@ var _ = Describe("MongoDB SSL", func() {
 							err := f.CreateConfigMap(configMap)
 							Expect(err).NotTo(HaveOccurred())
 
-							skipConfig = true
-							anotherMongoDB = f.MongoDBStandalone()
-							anotherMongoDB.Spec.Init = &api.InitSpec{
-								SnapshotSource: &api.SnapshotSourceSpec{
-									Namespace: snapshot.Namespace,
-									Name:      snapshot.Name,
-								},
-							}
-							skipSnapshotDataChecking = false
 							secret = f.SecretForGCSBackend()
-							snapshot.Spec.StorageSecretName = secret.Name
-							snapshot.Spec.GCS = &store.GCSSpec{
-								Bucket: os.Getenv(GCS_BUCKET_NAME),
-							}
-							snapshot.Spec.DatabaseName = mongodb.Name
 							mongodb.Spec.Init = &api.InitSpec{
 								ScriptSource: &api.ScriptSourceSpec{
 									VolumeSource: core.VolumeSource{
@@ -1442,10 +1148,9 @@ var _ = Describe("MongoDB SSL", func() {
 							}
 
 							mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
-							anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 						})
 
-						It("should run successfully", shouldInitializeSnapshot)
+						It("should run successfully", shouldInitializeFromScript)
 					})
 				})
 
@@ -1478,21 +1183,7 @@ var _ = Describe("MongoDB SSL", func() {
 								err := f.CreateConfigMap(configMap)
 								Expect(err).NotTo(HaveOccurred())
 
-								skipConfig = true
-								skipSnapshotDataChecking = false
-								anotherMongoDB = f.MongoDBRS()
-								anotherMongoDB.Spec.Init = &api.InitSpec{
-									SnapshotSource: &api.SnapshotSourceSpec{
-										Namespace: snapshot.Namespace,
-										Name:      snapshot.Name,
-									},
-								}
 								secret = f.SecretForGCSBackend()
-								snapshot.Spec.StorageSecretName = secret.Name
-								snapshot.Spec.GCS = &store.GCSSpec{
-									Bucket: os.Getenv(GCS_BUCKET_NAME),
-								}
-								snapshot.Spec.DatabaseName = mongodb.Name
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -1506,10 +1197,9 @@ var _ = Describe("MongoDB SSL", func() {
 								}
 
 								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
-								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 							})
 
-							It("should initialize database successfully", shouldInitializeSnapshot)
+							It("should initialize database successfully", shouldInitializeFromScript)
 						})
 					})
 
@@ -1539,25 +1229,9 @@ var _ = Describe("MongoDB SSL", func() {
 								err := f.CreateConfigMap(configMap)
 								Expect(err).NotTo(HaveOccurred())
 
-								skipConfig = true
-								skipSnapshotDataChecking = false
 								verifySharding = true
 								enableSharding = true
-								snapshot.Spec.DatabaseName = mongodb.Name
-								anotherMongoDB = f.MongoDBShard()
-								anotherMongoDB.Spec.Init = &api.InitSpec{
-									SnapshotSource: &api.SnapshotSourceSpec{
-										Namespace: snapshot.Namespace,
-										Name:      snapshot.Name,
-										Args:      []string{fmt.Sprintf("--skip-config=%v", skipConfig)},
-									},
-								}
 								secret = f.SecretForGCSBackend()
-								snapshot.Spec.StorageSecretName = secret.Name
-								snapshot.Spec.GCS = &store.GCSSpec{
-									Bucket: os.Getenv(GCS_BUCKET_NAME),
-								}
-								snapshot.Spec.DatabaseName = mongodb.Name
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -1571,10 +1245,9 @@ var _ = Describe("MongoDB SSL", func() {
 								}
 
 								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
-								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 							})
 
-							It("should initialize database successfully", shouldInitializeSnapshot)
+							It("should initialize database successfully", shouldInitializeFromScript)
 						})
 					})
 				})
