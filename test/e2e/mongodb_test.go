@@ -1358,8 +1358,9 @@ var _ = Describe("MongoDB", func() {
 			})
 
 			Context("with TerminationPolicyHalt", func() {
-				var shouldRunWithTerminationPause = func() {
+				var shouldRunWithTerminationHalt = func() {
 					shouldRunWithSnapshot()
+
 					By("Halt MongoDB: Update mongodb to set spec.halted = true")
 					_, err := f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
 						in.Spec.Halted = true
@@ -1389,16 +1390,37 @@ var _ = Describe("MongoDB", func() {
 					By("Checking Inserted Document")
 					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
 
+					By("Delete mongodb")
+					err = f.DeleteMongoDB(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("wait until mongodb is deleted")
+					f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeFalse())
+
+					// create mongodb object again to resume it
+					By("Create (pause) MongoDB: " + mongodb.Name)
+					err = f.CreateMongoDB(mongodb)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Wait for Running mongodb")
+					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+
+					By("Ping mongodb database")
+					f.EventuallyPingMongo(mongodb.ObjectMeta)
+
+					By("Checking Inserted Document")
+					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
+
 				}
 
-				It("should create dormantdatabase successfully", shouldRunWithTerminationPause)
+				It("should create dormantdatabase successfully", shouldRunWithTerminationHalt)
 
 				Context("with Replica Set", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
 					})
 
-					It("should create dormantdatabase successfully", shouldRunWithTerminationPause)
+					It("should create dormantdatabase successfully", shouldRunWithTerminationHalt)
 				})
 
 				Context("with Sharding", func() {
@@ -1407,7 +1429,7 @@ var _ = Describe("MongoDB", func() {
 						//mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 					})
 
-					It("should create dormantdatabase successfully", shouldRunWithTerminationPause)
+					It("should create dormantdatabase successfully", shouldRunWithTerminationHalt)
 				})
 			})
 
