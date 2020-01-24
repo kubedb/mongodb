@@ -30,6 +30,7 @@ import (
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "kmodules.xyz/client-go/core/v1"
 	meta_util "kmodules.xyz/client-go/meta"
 	appcat "kmodules.xyz/custom-resources/apis/appcatalog/v1alpha1"
@@ -52,6 +53,8 @@ const (
 	MongoDBShardLabelKey  = "mongodb.kubedb.com/node.shard"
 	MongoDBConfigLabelKey = "mongodb.kubedb.com/node.config"
 	MongoDBMongosLabelKey = "mongodb.kubedb.com/node.mongos"
+
+	ShardAffinityTemplateVar = "SHARD_INDEX"
 )
 
 func (m MongoDB) OffshootName() string {
@@ -62,7 +65,21 @@ func (m MongoDB) ShardNodeName(nodeNum int32) string {
 	if m.Spec.ShardTopology == nil {
 		return ""
 	}
-	shardName := fmt.Sprintf("%v-shard%v", m.OffshootName(), nodeNum)
+	return fmt.Sprintf("%v%v", m.ShardCommonNodeName(), nodeNum)
+}
+
+func (m MongoDB) ShardNodeTemplate() string {
+	if m.Spec.ShardTopology == nil {
+		return ""
+	}
+	return fmt.Sprintf("%v${%v}", m.ShardCommonNodeName(), ShardAffinityTemplateVar)
+}
+
+func (m MongoDB) ShardCommonNodeName() string {
+	if m.Spec.ShardTopology == nil {
+		return ""
+	}
+	shardName := fmt.Sprintf("%v-shard", m.OffshootName())
 	return m.Spec.ShardTopology.Shard.Prefix + shardName
 }
 
@@ -296,8 +313,44 @@ func (m *MongoDB) SetDefaults(mgVersion *v1alpha1.MongoDBVersion) {
 	if m == nil {
 		return
 	}
-	m.Spec.SetDefaults(mgVersion)
+	if m == nil {
+		return
+	}
+
+	if m.Spec.StorageType == "" {
+		m.Spec.StorageType = StorageTypeDurable
+	}
+	if m.Spec.UpdateStrategy.Type == "" {
+		m.Spec.UpdateStrategy.Type = apps.RollingUpdateStatefulSetStrategyType
+	}
+	if m.Spec.TerminationPolicy == "" {
+		m.Spec.TerminationPolicy = TerminationPolicyDelete
+	}
+
+	if m.Spec.SSLMode == "" {
+		m.Spec.SSLMode = SSLModeDisabled
+	}
+
+	if (m.Spec.ReplicaSet != nil || m.Spec.ShardTopology != nil) && m.Spec.ClusterAuthMode == "" {
+		if m.Spec.SSLMode == SSLModeDisabled || m.Spec.SSLMode == SSLModeAllowSSL {
+			m.Spec.ClusterAuthMode = ClusterAuthModeKeyFile
+		} else {
+			m.Spec.ClusterAuthMode = ClusterAuthModeX509
+		}
+	}
+
+	// required to upgrade operator from 0.11.0 to 0.12.0
+	if m.Spec.ReplicaSet != nil && m.Spec.ReplicaSet.KeyFile != nil {
+		if m.Spec.CertificateSecret == nil {
+			m.Spec.CertificateSecret = m.Spec.ReplicaSet.KeyFile
+		}
+		m.Spec.ReplicaSet.KeyFile = nil
+	}
+
 	if m.Spec.ShardTopology != nil {
+		if m.Spec.ShardTopology.Mongos.Strategy.Type == "" {
+			m.Spec.ShardTopology.Mongos.Strategy.Type = apps.RollingUpdateDeploymentStrategyType
+		}
 		if m.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.ServiceAccountName == "" {
 			m.Spec.ShardTopology.ConfigServer.PodTemplate.Spec.ServiceAccountName = m.OffshootName()
 		}
@@ -307,85 +360,46 @@ func (m *MongoDB) SetDefaults(mgVersion *v1alpha1.MongoDBVersion) {
 		if m.Spec.ShardTopology.Shard.PodTemplate.Spec.ServiceAccountName == "" {
 			m.Spec.ShardTopology.Shard.PodTemplate.Spec.ServiceAccountName = m.OffshootName()
 		}
+
+		// set default probes
+		m.setDefaultProbes(&m.Spec.ShardTopology.Shard.PodTemplate, mgVersion)
+		m.setDefaultProbes(&m.Spec.ShardTopology.ConfigServer.PodTemplate, mgVersion)
+		m.setDefaultProbes(&m.Spec.ShardTopology.Mongos.PodTemplate, mgVersion)
+
+		// set default affinity (PodAntiAffinity)
+		m.setDefaultAffinity(&m.Spec.ShardTopology.Shard.PodTemplate, MongoDBShardLabelKey, m.ShardNodeTemplate())
+		m.setDefaultAffinity(&m.Spec.ShardTopology.ConfigServer.PodTemplate, MongoDBConfigLabelKey, m.ConfigSvrNodeName())
+		m.setDefaultAffinity(&m.Spec.ShardTopology.Mongos.PodTemplate, MongoDBMongosLabelKey, m.MongosNodeName())
 	} else {
+		if m.Spec.Replicas == nil {
+			m.Spec.Replicas = types.Int32P(1)
+		}
+
 		if m.Spec.PodTemplate == nil {
 			m.Spec.PodTemplate = new(ofst.PodTemplateSpec)
 		}
 		if m.Spec.PodTemplate.Spec.ServiceAccountName == "" {
 			m.Spec.PodTemplate.Spec.ServiceAccountName = m.OffshootName()
 		}
-	}
-}
-
-func (m *MongoDBSpec) SetDefaults(mgVersion *v1alpha1.MongoDBVersion) {
-	if m == nil {
-		return
-	}
-
-	if m.StorageType == "" {
-		m.StorageType = StorageTypeDurable
-	}
-	if m.UpdateStrategy.Type == "" {
-		m.UpdateStrategy.Type = apps.RollingUpdateStatefulSetStrategyType
-	}
-	if m.TerminationPolicy == "" {
-		m.TerminationPolicy = TerminationPolicyDelete
-	}
-
-	if m.SSLMode == "" {
-		m.SSLMode = SSLModeDisabled
-	}
-
-	if (m.ReplicaSet != nil || m.ShardTopology != nil) && m.ClusterAuthMode == "" {
-		if m.SSLMode == SSLModeDisabled || m.SSLMode == SSLModeAllowSSL {
-			m.ClusterAuthMode = ClusterAuthModeKeyFile
-		} else {
-			m.ClusterAuthMode = ClusterAuthModeX509
-		}
-	}
-
-	// required to upgrade operator from 0.11.0 to 0.12.0
-	if m.ReplicaSet != nil && m.ReplicaSet.KeyFile != nil {
-		if m.CertificateSecret == nil {
-			m.CertificateSecret = m.ReplicaSet.KeyFile
-		}
-		m.ReplicaSet.KeyFile = nil
-	}
-
-	if m.ShardTopology != nil {
-		if m.ShardTopology.Mongos.Strategy.Type == "" {
-			m.ShardTopology.Mongos.Strategy.Type = apps.RollingUpdateDeploymentStrategyType
-		}
 
 		// set default probes
-		m.setDefaultProbes(&m.ShardTopology.Shard.PodTemplate, mgVersion)
-		m.setDefaultProbes(&m.ShardTopology.ConfigServer.PodTemplate, mgVersion)
-		m.setDefaultProbes(&m.ShardTopology.Mongos.PodTemplate, mgVersion)
-	} else {
-		if m.Replicas == nil {
-			m.Replicas = types.Int32P(1)
-		}
-
-		if m.PodTemplate == nil {
-			m.PodTemplate = new(ofst.PodTemplateSpec)
-		}
-		// set default probes
-		m.setDefaultProbes(m.PodTemplate, mgVersion)
+		m.setDefaultProbes(m.Spec.PodTemplate, mgVersion)
+		// set default affinity (PodAntiAffinity)
+		m.setDefaultAffinity(m.Spec.PodTemplate, LabelDatabaseName, m.OffshootName())
 	}
-
 }
 
 // setDefaultProbes sets defaults only when probe fields are nil.
 // In operator, check if the value of probe fields is "{}".
 // For "{}", ignore readinessprobe or livenessprobe in statefulset.
 // ref: https://github.com/helm/charts/blob/345ba987722350ffde56ec34d2928c0b383940aa/stable/mongodb/templates/deployment-standalone.yaml#L93
-func (m *MongoDBSpec) setDefaultProbes(podTemplate *ofst.PodTemplateSpec, mgVersion *v1alpha1.MongoDBVersion) {
+func (m *MongoDB) setDefaultProbes(podTemplate *ofst.PodTemplateSpec, mgVersion *v1alpha1.MongoDBVersion) {
 	if podTemplate == nil {
 		return
 	}
 
 	var sslArgs string
-	if m.SSLMode == SSLModeRequireSSL {
+	if m.Spec.SSLMode == SSLModeRequireSSL {
 		sslArgs = fmt.Sprintf("--tls --tlsCAFile=/data/configdb/%v --tlsCertificateKeyFile=/data/configdb/%v", MongoTLSCertFileName, MongoClientPemFileName)
 
 		breakingVer, err := version.NewVersion("4.1")
@@ -442,6 +456,36 @@ func (m *MongoDBSpec) setDefaultProbes(podTemplate *ofst.PodTemplateSpec, mgVers
 			TimeoutSeconds:   1,
 		}
 	}
+}
+
+// setDefaultAffinity
+func (m *MongoDB) setDefaultAffinity(podTemplate *ofst.PodTemplateSpec, key, value string) *ofst.PodTemplateSpec {
+	if podTemplate == nil || podTemplate.Spec.Affinity != nil {
+		return podTemplate
+	}
+
+	podTemplate.Spec.Affinity = &core.Affinity{
+		PodAntiAffinity: &core.PodAntiAffinity{
+			PreferredDuringSchedulingIgnoredDuringExecution: []core.WeightedPodAffinityTerm{
+				{
+					Weight: 100,
+					PodAffinityTerm: core.PodAffinityTerm{
+						LabelSelector: &metav1.LabelSelector{
+							MatchExpressions: []metav1.LabelSelectorRequirement{
+								{
+									Key:      key,
+									Operator: metav1.LabelSelectorOpIn,
+									Values:   []string{value},
+								},
+							},
+						},
+						TopologyKey: "failure-domain.beta.kubernetes.io/zone",
+					},
+				},
+			},
+		},
+	}
+	return podTemplate
 }
 
 // setSecurityContext will set default PodSecurityContext.
