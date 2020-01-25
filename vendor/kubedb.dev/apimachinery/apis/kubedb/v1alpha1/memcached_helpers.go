@@ -138,25 +138,20 @@ func (m *Memcached) SetDefaults() {
 	if m == nil {
 		return
 	}
-	m.Spec.SetDefaults()
+
+	// perform defaulting
+	if m.Spec.UpdateStrategy.Type == "" {
+		m.Spec.UpdateStrategy.Type = apps.RollingUpdateDeploymentStrategyType
+	}
+	if m.Spec.TerminationPolicy == "" {
+		m.Spec.TerminationPolicy = TerminationPolicyDelete
+	}
 
 	if m.Spec.PodTemplate.Spec.ServiceAccountName == "" {
 		m.Spec.PodTemplate.Spec.ServiceAccountName = m.OffshootName()
 	}
-}
 
-func (m *MemcachedSpec) SetDefaults() {
-	if m == nil {
-		return
-	}
-
-	// perform defaulting
-	if m.UpdateStrategy.Type == "" {
-		m.UpdateStrategy.Type = apps.RollingUpdateDeploymentStrategyType
-	}
-	if m.TerminationPolicy == "" {
-		m.TerminationPolicy = TerminationPolicyDelete
-	}
+	m.Spec.Monitor.SetDefaults()
 }
 
 func (e *MemcachedSpec) GetSecrets() []string {
