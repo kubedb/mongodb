@@ -160,6 +160,8 @@ func (m *MySQL) SetDefaults() {
 	}
 	if m.Spec.TerminationPolicy == "" {
 		m.Spec.TerminationPolicy = TerminationPolicyDelete
+	} else if m.Spec.TerminationPolicy == TerminationPolicyPause {
+		m.Spec.TerminationPolicy = TerminationPolicyHalt
 	}
 
 	if m.Spec.Topology != nil && m.Spec.Topology.Mode != nil && *m.Spec.Topology.Mode == MySQLClusterModeGroup {
@@ -176,6 +178,8 @@ func (m *MySQL) SetDefaults() {
 	if m.Spec.PodTemplate.Spec.ServiceAccountName == "" {
 		m.Spec.PodTemplate.Spec.ServiceAccountName = m.OffshootName()
 	}
+
+	m.Spec.Monitor.SetDefaults()
 }
 
 // setDefaultProbes sets defaults only when probe fields are nil.

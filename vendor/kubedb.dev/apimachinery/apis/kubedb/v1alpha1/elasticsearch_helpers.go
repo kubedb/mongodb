@@ -82,6 +82,11 @@ func (e *Elasticsearch) MasterServiceName() string {
 	return fmt.Sprintf("%v-master", e.ServiceName())
 }
 
+// Governing Service Name
+func (e Elasticsearch) GvrSvcName() string {
+	return e.OffshootName() + "-gvr"
+}
+
 func (e *Elasticsearch) GetConnectionScheme() string {
 	scheme := "http"
 	if e.Spec.EnableSSL {
@@ -167,11 +172,15 @@ func (e *Elasticsearch) SetDefaults() {
 	}
 	if e.Spec.TerminationPolicy == "" {
 		e.Spec.TerminationPolicy = TerminationPolicyDelete
+	} else if e.Spec.TerminationPolicy == TerminationPolicyPause {
+		e.Spec.TerminationPolicy = TerminationPolicyHalt
 	}
 
 	if e.Spec.PodTemplate.Spec.ServiceAccountName == "" {
 		e.Spec.PodTemplate.Spec.ServiceAccountName = e.OffshootName()
 	}
+
+	e.Spec.Monitor.SetDefaults()
 }
 
 func (e *ElasticsearchSpec) GetSecrets() []string {

@@ -141,4 +141,5 @@ func (p *PgBouncer) SetDefaults() {
 	if p == nil {
 		return
 	}
+	p.Spec.Monitor.SetDefaults()
 }

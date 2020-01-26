@@ -31,6 +31,7 @@ import (
 	core "k8s.io/api/core/v1"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	core_util "kmodules.xyz/client-go/core/v1"
 	v1 "kmodules.xyz/client-go/core/v1"
 	meta_util "kmodules.xyz/client-go/meta"
 	appcat "kmodules.xyz/custom-resources/apis/appcatalog/v1alpha1"
@@ -72,7 +73,7 @@ func (m MongoDB) ShardNodeTemplate() string {
 	if m.Spec.ShardTopology == nil {
 		return ""
 	}
-	return fmt.Sprintf("%v${%v}", m.ShardCommonNodeName(), ShardAffinityTemplateVar)
+	return fmt.Sprintf("%s${%s}", m.ShardCommonNodeName(), ShardAffinityTemplateVar)
 }
 
 func (m MongoDB) ShardCommonNodeName() string {
@@ -309,7 +310,7 @@ func (m *MongoDB) GetMonitoringVendor() string {
 	return ""
 }
 
-func (m *MongoDB) SetDefaults(mgVersion *v1alpha1.MongoDBVersion) {
+func (m *MongoDB) SetDefaults(mgVersion *v1alpha1.MongoDBVersion, topology *core_util.Topology) {
 	if m == nil {
 		return
 	}
@@ -325,6 +326,8 @@ func (m *MongoDB) SetDefaults(mgVersion *v1alpha1.MongoDBVersion) {
 	}
 	if m.Spec.TerminationPolicy == "" {
 		m.Spec.TerminationPolicy = TerminationPolicyDelete
+	} else if m.Spec.TerminationPolicy == TerminationPolicyPause {
+		m.Spec.TerminationPolicy = TerminationPolicyHalt
 	}
 
 	if m.Spec.SSLMode == "" {
@@ -367,9 +370,17 @@ func (m *MongoDB) SetDefaults(mgVersion *v1alpha1.MongoDBVersion) {
 		m.setDefaultProbes(&m.Spec.ShardTopology.Mongos.PodTemplate, mgVersion)
 
 		// set default affinity (PodAntiAffinity)
-		m.setDefaultAffinity(&m.Spec.ShardTopology.Shard.PodTemplate, MongoDBShardLabelKey, m.ShardNodeTemplate())
-		m.setDefaultAffinity(&m.Spec.ShardTopology.ConfigServer.PodTemplate, MongoDBConfigLabelKey, m.ConfigSvrNodeName())
-		m.setDefaultAffinity(&m.Spec.ShardTopology.Mongos.PodTemplate, MongoDBMongosLabelKey, m.MongosNodeName())
+		shardLabels := m.OffshootSelectors()
+		shardLabels[MongoDBShardLabelKey] = m.ShardNodeTemplate()
+		m.setDefaultAffinity(&m.Spec.ShardTopology.Shard.PodTemplate, shardLabels, topology, int(m.Spec.ShardTopology.Shard.Replicas)*int(m.Spec.ShardTopology.Shard.Shards))
+
+		configServerLabels := m.OffshootSelectors()
+		configServerLabels[MongoDBConfigLabelKey] = m.ConfigSvrNodeName()
+		m.setDefaultAffinity(&m.Spec.ShardTopology.ConfigServer.PodTemplate, configServerLabels, topology, int(m.Spec.ShardTopology.ConfigServer.Replicas))
+
+		mongosLabels := m.OffshootSelectors()
+		mongosLabels[MongoDBMongosLabelKey] = m.MongosNodeName()
+		m.setDefaultAffinity(&m.Spec.ShardTopology.Mongos.PodTemplate, mongosLabels, topology, int(m.Spec.ShardTopology.Mongos.Replicas))
 	} else {
 		if m.Spec.Replicas == nil {
 			m.Spec.Replicas = types.Int32P(1)
@@ -385,7 +396,7 @@ func (m *MongoDB) SetDefaults(mgVersion *v1alpha1.MongoDBVersion) {
 		// set default probes
 		m.setDefaultProbes(m.Spec.PodTemplate, mgVersion)
 		// set default affinity (PodAntiAffinity)
-		m.setDefaultAffinity(m.Spec.PodTemplate, LabelDatabaseName, m.OffshootName())
+		m.setDefaultAffinity(m.Spec.PodTemplate, m.OffshootSelectors(), topology, int(*m.Spec.Replicas))
 	}
 }
 
@@ -459,33 +470,43 @@ func (m *MongoDB) setDefaultProbes(podTemplate *ofst.PodTemplateSpec, mgVersion 
 }
 
 // setDefaultAffinity
-func (m *MongoDB) setDefaultAffinity(podTemplate *ofst.PodTemplateSpec, key, value string) *ofst.PodTemplateSpec {
+func (m *MongoDB) setDefaultAffinity(podTemplate *ofst.PodTemplateSpec, labels map[string]string, topology *core_util.Topology, totalPods int) {
 	if podTemplate == nil || podTemplate.Spec.Affinity != nil {
-		return podTemplate
+		// Update topologyKey fields according to Kubernetes version
+		topology.ConvertAffinity(podTemplate.Spec.Affinity)
+		return
 	}
 
 	podTemplate.Spec.Affinity = &core.Affinity{
 		PodAntiAffinity: &core.PodAntiAffinity{
+			// Prefer to not schedule multiple pods on the node with same zone
 			PreferredDuringSchedulingIgnoredDuringExecution: []core.WeightedPodAffinityTerm{
 				{
 					Weight: 100,
 					PodAffinityTerm: core.PodAffinityTerm{
+						Namespaces: []string{m.Namespace},
 						LabelSelector: &metav1.LabelSelector{
-							MatchExpressions: []metav1.LabelSelectorRequirement{
-								{
-									Key:      key,
-									Operator: metav1.LabelSelectorOpIn,
-									Values:   []string{value},
-								},
-							},
+							MatchLabels: labels,
 						},
-						TopologyKey: "failure-domain.beta.kubernetes.io/zone",
+						TopologyKey: topology.LabelZone,
 					},
 				},
 			},
 		},
 	}
-	return podTemplate
+
+	// If there are more nodes than pods, don't schedule multiple pods on the same node
+	if topology.TotalNodes > totalPods {
+		podTemplate.Spec.Affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution = []core.PodAffinityTerm{
+			{
+				Namespaces: []string{m.Namespace},
+				LabelSelector: &metav1.LabelSelector{
+					MatchLabels: labels,
+				},
+				TopologyKey: core.LabelHostname,
+			},
+		}
+	}
 }
 
 // setSecurityContext will set default PodSecurityContext.

@@ -152,6 +152,8 @@ func (p *Postgres) SetDefaults() {
 	}
 	if p.Spec.TerminationPolicy == "" {
 		p.Spec.TerminationPolicy = TerminationPolicyDelete
+	} else if p.Spec.TerminationPolicy == TerminationPolicyPause {
+		p.Spec.TerminationPolicy = TerminationPolicyHalt
 	}
 	if p.Spec.Init != nil && p.Spec.Init.PostgresWAL != nil && p.Spec.Init.PostgresWAL.PITR != nil {
 		pitr := p.Spec.Init.PostgresWAL.PITR
@@ -175,6 +177,8 @@ func (p *Postgres) SetDefaults() {
 	if p.Spec.PodTemplate.Spec.ServiceAccountName == "" {
 		p.Spec.PodTemplate.Spec.ServiceAccountName = p.OffshootName()
 	}
+
+	p.Spec.Monitor.SetDefaults()
 }
 
 func (e *PostgresSpec) GetSecrets() []string {
