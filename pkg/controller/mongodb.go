@@ -178,18 +178,18 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 
 func (c *Controller) halt(db *api.MongoDB) error {
 	if db.Spec.Halted && db.Spec.TerminationPolicy != api.TerminationPolicyHalt {
-		return errors.New("can't halt db. 'spec.terminationPolicy' is not 'Pause'")
+		return errors.New("can't halt db. 'spec.terminationPolicy' is not 'Halt'")
 	}
 	log.Infof("Halting MongoDB %v/%v", db.Namespace, db.Name)
-	if err := c.pauseDatabase(db); err != nil {
+	if err := c.haltDatabase(db); err != nil {
 		return err
 	}
 	if err := c.waitUntilPaused(db); err != nil {
 		return err
 	}
-	log.Infof("update status of MongoDB %v/%v to Paused.", db.Namespace, db.Name)
+	log.Infof("update status of MongoDB %v/%v to Halted.", db.Namespace, db.Name)
 	if _, err := util.UpdateMongoDBStatus(c.ExtClient.KubedbV1alpha1(), db, func(in *api.MongoDBStatus) *api.MongoDBStatus {
-		in.Phase = api.DatabasePhasePaused
+		in.Phase = api.DatabasePhaseHalted
 		in.ObservedGeneration = db.Generation
 		return in
 	}); err != nil {

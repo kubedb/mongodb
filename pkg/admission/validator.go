@@ -101,7 +101,7 @@ func (a *MongoDBValidator) Admit(req *admission.AdmissionRequest) *admission.Adm
 			if err != nil && !kerr.IsNotFound(err) {
 				return hookapi.StatusInternalServerError(err)
 			} else if err == nil && obj.Spec.TerminationPolicy == api.TerminationPolicyDoNotTerminate {
-				return hookapi.StatusBadRequest(fmt.Errorf(`mongodb "%v/%v" can't be paused. To delete, change spec.terminationPolicy`, req.Namespace, req.Name))
+				return hookapi.StatusBadRequest(fmt.Errorf(`mongodb "%v/%v" can't be terminated. To delete, change spec.terminationPolicy`, req.Namespace, req.Name))
 			}
 		}
 	default:
@@ -288,7 +288,7 @@ func ValidateMongoDB(client kubernetes.Interface, extClient cs.Interface, mongod
 	}
 
 	if mongodb.Spec.StorageType == api.StorageTypeEphemeral && mongodb.Spec.TerminationPolicy == api.TerminationPolicyHalt {
-		return fmt.Errorf(`'spec.terminationPolicy: Pause' can not be used for 'Ephemeral' storage`)
+		return fmt.Errorf(`'spec.terminationPolicy: Halt' can not be used for 'Ephemeral' storage`)
 	}
 
 	monitorSpec := mongodb.Spec.Monitor

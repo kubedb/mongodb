@@ -232,7 +232,7 @@ var cases = []struct {
 		"foo",
 		"default",
 		admission.Update,
-		pauseDatabase(sampleMongoDB()),
+		haltDatabase(sampleMongoDB()),
 		sampleMongoDB(),
 		false,
 		true,
@@ -252,7 +252,7 @@ var cases = []struct {
 		"foo",
 		"default",
 		admission.Delete,
-		pauseDatabase(sampleMongoDB()),
+		haltDatabase(sampleMongoDB()),
 		api.MongoDB{},
 		true,
 		true,
@@ -406,8 +406,8 @@ func editSpecInvalidMonitor(old api.MongoDB) api.MongoDB {
 	return old
 }
 
-func pauseDatabase(old api.MongoDB) api.MongoDB {
-	old.Spec.TerminationPolicy = api.TerminationPolicyPause
+func haltDatabase(old api.MongoDB) api.MongoDB {
+	old.Spec.TerminationPolicy = api.TerminationPolicyHalt
 	return old
 }
 
