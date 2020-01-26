@@ -813,20 +813,20 @@ func getExporterContainer(mongodb *api.MongoDB, mongodbVersion *v1alpha1.MongoDB
 		Name: "exporter",
 		Args: append([]string{
 			"--mongodb.uri=mongodb://$(MONGO_INITDB_ROOT_USERNAME):$(MONGO_INITDB_ROOT_PASSWORD)@localhost:27017/admin",
-			fmt.Sprintf("--web.listen-address=:%d", mongodb.Spec.Monitor.Prometheus.Port),
+			fmt.Sprintf("--web.listen-address=:%d", mongodb.Spec.Monitor.Prometheus.Exporter.Port),
 			metricsPath,
-		}, mongodb.Spec.Monitor.Args...),
+		}, mongodb.Spec.Monitor.Prometheus.Exporter.Args...),
 		Image: mongodbVersion.Spec.Exporter.Image,
 		Ports: []core.ContainerPort{
 			{
 				Name:          api.PrometheusExporterPortName,
 				Protocol:      core.ProtocolTCP,
-				ContainerPort: mongodb.Spec.Monitor.Prometheus.Port,
+				ContainerPort: mongodb.Spec.Monitor.Prometheus.Exporter.Port,
 			},
 		},
-		Env:             mongodb.Spec.Monitor.Env,
-		Resources:       mongodb.Spec.Monitor.Resources,
-		SecurityContext: mongodb.Spec.Monitor.SecurityContext,
+		Env:             mongodb.Spec.Monitor.Prometheus.Exporter.Env,
+		Resources:       mongodb.Spec.Monitor.Prometheus.Exporter.Resources,
+		SecurityContext: mongodb.Spec.Monitor.Prometheus.Exporter.SecurityContext,
 	}
 }
 

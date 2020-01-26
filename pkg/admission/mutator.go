@@ -118,7 +118,7 @@ func (a *MongoDBMutator) setDefaultValues(extClient cs.Interface, mongodb *api.M
 
 	if mongodb.Spec.Halted {
 		if mongodb.Spec.TerminationPolicy == api.TerminationPolicyDoNotTerminate {
-			return nil, errors.New(`'spec.halted'' can not be true. If you want to halt the database, Unset terminationPolicy to 'DoNotTerminate' `)
+			return nil, errors.New(`Can't halt, since termination policy is 'DoNotTerminate'`)
 		}
 		mongodb.Spec.TerminationPolicy = api.TerminationPolicyHalt
 	}
@@ -155,8 +155,11 @@ func setMonitoringPort(mongodb *api.MongoDB) {
 		if mongodb.Spec.Monitor.Prometheus == nil {
 			mongodb.Spec.Monitor.Prometheus = &mona.PrometheusSpec{}
 		}
-		if mongodb.Spec.Monitor.Prometheus.Port == 0 {
-			mongodb.Spec.Monitor.Prometheus.Port = api.PrometheusExporterPortNumber
+		if mongodb.Spec.Monitor.Prometheus.Exporter == nil {
+			mongodb.Spec.Monitor.Prometheus.Exporter = &mona.PrometheusExporterSpec{}
+		}
+		if mongodb.Spec.Monitor.Prometheus.Exporter.Port == 0 {
+			mongodb.Spec.Monitor.Prometheus.Exporter.Port = api.PrometheusExporterPortNumber
 		}
 	}
 }
