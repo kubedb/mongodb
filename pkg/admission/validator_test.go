@@ -37,12 +37,26 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	clientSetScheme "k8s.io/client-go/kubernetes/scheme"
+	core_util "kmodules.xyz/client-go/core/v1"
 	"kmodules.xyz/client-go/meta"
 	mona "kmodules.xyz/monitoring-agent-api/api/v1"
 )
 
 func init() {
 	utilruntime.Must(scheme.AddToScheme(clientSetScheme.Scheme))
+}
+
+var testTopology = &core_util.Topology{
+	Regions: map[string][]string{
+		"us-east-1": {"us-east-1a", "us-east-1b", "us-east-1c"},
+	},
+	TotalNodes: 100,
+	InstanceTypes: map[string]int{
+		"n1-standard-4": 100,
+	},
+	LabelZone:         core.LabelZoneFailureDomain,
+	LabelRegion:       core.LabelZoneRegion,
+	LabelInstanceType: core.LabelInstanceType,
 }
 
 var requestKind = metaV1.GroupVersionKind{
@@ -54,9 +68,9 @@ var requestKind = metaV1.GroupVersionKind{
 func TestMongoDBValidator_Admit(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.testName, func(t *testing.T) {
-			//c.object.SetDefaults()
-
-			validator := MongoDBValidator{}
+			validator := MongoDBValidator{
+				ClusterTopology: testTopology,
+			}
 
 			validator.initialized = true
 			validator.extClient = extFake.NewSimpleClientset(
@@ -392,7 +406,9 @@ func editSpecMonitor(old api.MongoDB) api.MongoDB {
 	old.Spec.Monitor = &mona.AgentSpec{
 		Agent: mona.AgentPrometheusBuiltin,
 		Prometheus: &mona.PrometheusSpec{
-			Port: 1289,
+			Exporter: &mona.PrometheusExporterSpec{
+				Port: 1289,
+			},
 		},
 	}
 	return old
@@ -401,7 +417,7 @@ func editSpecMonitor(old api.MongoDB) api.MongoDB {
 // should be failed because more fields required for COreOS Monitoring
 func editSpecInvalidMonitor(old api.MongoDB) api.MongoDB {
 	old.Spec.Monitor = &mona.AgentSpec{
-		Agent: mona.AgentCoreOSPrometheus,
+		Agent: mona.AgentPrometheusOperator,
 	}
 	return old
 }
