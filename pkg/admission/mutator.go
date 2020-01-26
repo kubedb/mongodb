@@ -30,12 +30,15 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	core_util "kmodules.xyz/client-go/core/v1"
 	meta_util "kmodules.xyz/client-go/meta"
 	mona "kmodules.xyz/monitoring-agent-api/api/v1"
 	hookapi "kmodules.xyz/webhook-runtime/admission/v1beta1"
 )
 
 type MongoDBMutator struct {
+	ClusterTopology *core_util.Topology
+
 	client      kubernetes.Interface
 	extClient   cs.Interface
 	lock        sync.RWMutex
@@ -90,7 +93,7 @@ func (a *MongoDBMutator) Admit(req *admission.AdmissionRequest) *admission.Admis
 	if err != nil {
 		return hookapi.StatusBadRequest(err)
 	}
-	mongoMod, err := setDefaultValues(a.extClient, obj.(*api.MongoDB).DeepCopy())
+	mongoMod, err := a.setDefaultValues(a.extClient, obj.(*api.MongoDB).DeepCopy())
 	if err != nil {
 		return hookapi.StatusForbidden(err)
 	} else if mongoMod != nil {
@@ -108,7 +111,7 @@ func (a *MongoDBMutator) Admit(req *admission.AdmissionRequest) *admission.Admis
 }
 
 // setDefaultValues provides the defaulting that is performed in mutating stage of creating/updating a MongoDB database
-func setDefaultValues(extClient cs.Interface, mongodb *api.MongoDB) (runtime.Object, error) {
+func (a *MongoDBMutator) setDefaultValues(extClient cs.Interface, mongodb *api.MongoDB) (runtime.Object, error) {
 	if mongodb.Spec.Version == "" {
 		return nil, errors.New(`'spec.version' is missing`)
 	}
@@ -125,7 +128,7 @@ func setDefaultValues(extClient cs.Interface, mongodb *api.MongoDB) (runtime.Obj
 		return nil, err
 	}
 
-	mongodb.SetDefaults(mgVersion)
+	mongodb.SetDefaults(mgVersion, a.ClusterTopology)
 
 	// If monitoring spec is given without port,
 	// set default Listening port

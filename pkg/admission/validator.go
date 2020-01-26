@@ -33,11 +33,14 @@ import (
 	"k8s.io/apimachinery/pkg/util/mergepatch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	core_util "kmodules.xyz/client-go/core/v1"
 	meta_util "kmodules.xyz/client-go/meta"
 	hookapi "kmodules.xyz/webhook-runtime/admission/v1beta1"
 )
 
 type MongoDBValidator struct {
+	ClusterTopology *core_util.Topology
+
 	client      kubernetes.Interface
 	extClient   cs.Interface
 	lock        sync.RWMutex
@@ -122,7 +125,7 @@ func (a *MongoDBValidator) Admit(req *admission.AdmissionRequest) *admission.Adm
 			if err != nil {
 				return hookapi.StatusInternalServerError(err)
 			}
-			oldMongoDB.SetDefaults(mgVersion)
+			oldMongoDB.SetDefaults(mgVersion, a.ClusterTopology)
 			// Allow changing Database Secret only if there was no secret have set up yet.
 			if oldMongoDB.Spec.DatabaseSecret == nil {
 				oldMongoDB.Spec.DatabaseSecret = mongodb.Spec.DatabaseSecret
@@ -219,7 +222,7 @@ func ValidateMongoDB(client kubernetes.Interface, extClient cs.Interface, mongod
 	if mongodb.Spec.StorageType != api.StorageTypeDurable && mongodb.Spec.StorageType != api.StorageTypeEphemeral {
 		return fmt.Errorf(`'spec.storageType' %s is invalid`, mongodb.Spec.StorageType)
 	}
-	// Validate storage for topology or non-topology
+	// Validate storage for ClusterTopology or non-ClusterTopology
 	if top != nil {
 		if mongodb.Spec.Storage != nil {
 			return fmt.Errorf("doesn't support 'spec.storage' when spec.shardTopology is set")

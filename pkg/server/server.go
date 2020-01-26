@@ -125,22 +125,26 @@ func (c completedConfig) New() (*MongoDBServer, error) {
 		return nil, err
 	}
 
+	ctrl, err := c.OperatorConfig.New()
+	if err != nil {
+		return nil, err
+	}
+
 	if c.OperatorConfig.EnableMutatingWebhook {
 		c.ExtraConfig.AdmissionHooks = []hooks.AdmissionHook{
-			&mgAdmsn.MongoDBMutator{},
+			&mgAdmsn.MongoDBMutator{
+				ClusterTopology: ctrl.ClusterTopology,
+			},
 		}
 	}
 	if c.OperatorConfig.EnableValidatingWebhook {
 		c.ExtraConfig.AdmissionHooks = append(c.ExtraConfig.AdmissionHooks,
-			&mgAdmsn.MongoDBValidator{},
+			&mgAdmsn.MongoDBValidator{
+				ClusterTopology: ctrl.ClusterTopology,
+			},
 			&namespace.NamespaceValidator{
 				Resources: []string{api.ResourcePluralMongoDB},
 			})
-	}
-
-	ctrl, err := c.OperatorConfig.New()
-	if err != nil {
-		return nil, err
 	}
 
 	s := &MongoDBServer{

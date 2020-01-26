@@ -152,7 +152,7 @@ func (i *Invocation) MongoDBShard() *api.MongoDB {
 func (i *Invocation) MongoDBWithFlexibleProbeTimeout(db *api.MongoDB) *api.MongoDB {
 	dbVersion, err := i.GetMongoDBVersion(DBCatalogName)
 	Expect(err).NotTo(HaveOccurred())
-	db.SetDefaults(dbVersion)
+	db.SetDefaults(dbVersion, i.topology)
 
 	if db.Spec.ShardTopology != nil {
 		db.Spec.ShardTopology.Mongos.PodTemplate.Spec.ReadinessProbe = &core.Probe{}
