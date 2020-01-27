@@ -209,7 +209,7 @@ var _ = Describe("MongoDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for halted/paused mongodb")
-					f.EventuallyMongoDBPhase(mongodb.ObjectMeta).Should(Equal(api.DatabasePhasePaused))
+					f.EventuallyMongoDBPhase(mongodb.ObjectMeta).Should(Equal(api.DatabasePhaseHalted))
 
 					By("Resume MongoDB: Update mongodb to set spec.halted = false")
 					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
@@ -1369,7 +1369,7 @@ var _ = Describe("MongoDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for halted/paused mongodb")
-					f.EventuallyMongoDBPhase(mongodb.ObjectMeta).Should(Equal(api.DatabasePhasePaused))
+					f.EventuallyMongoDBPhase(mongodb.ObjectMeta).Should(Equal(api.DatabasePhaseHalted))
 
 					By("Resume MongoDB: Update mongodb to set spec.halted = false")
 					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
