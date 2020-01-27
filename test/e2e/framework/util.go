@@ -64,6 +64,11 @@ func (f *Framework) CleanWorkloadLeftOvers() {
 
 func (f *Framework) PrintDebugHelpers() {
 	sh := shell.NewSession()
+	fmt.Println("\n======================================[ Describe Nodes ]===================================================")
+	if err := sh.Command("/usr/bin/kubectl", "get", "nodes").Run(); err != nil {
+		fmt.Println(err)
+	}
+
 	fmt.Println("\n======================================[ Describe Job ]===================================================")
 	if err := sh.Command("/usr/bin/kubectl", "describe", "job", "-n", f.Namespace()).Run(); err != nil {
 		fmt.Println(err)
