@@ -54,6 +54,10 @@ func topologyInitContainer(
 			clusterAuth = api.ClusterAuthModeX509
 		}
 	}
+	initScript := fmt.Sprintf("-on-start=/usr/local/bin/%v", scriptName)
+	if mongodb.Spec.StorageEngine == api.StorageEngineInMemory {
+		initScript = fmt.Sprintf("-on-start=/data/configdb/%v", scriptName)
+	}
 
 	bootstrapContainer := core.Container{
 		Name:            InitBootstrapContainerName,
@@ -61,7 +65,7 @@ func topologyInitContainer(
 		ImagePullPolicy: core.PullIfNotPresent,
 		Command:         []string{"peer-finder"},
 		Args: []string{
-			fmt.Sprintf("-on-start=/usr/local/bin/%v", scriptName),
+			initScript,
 			"-service=" + gvrSvc,
 		},
 		Env: core_util.UpsertEnvVars([]core.EnvVar{

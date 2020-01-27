@@ -26951,6 +26951,8 @@ spec:
                             volumeName:
                               type: string
                           type: object
+                        storageEngine:
+                          type: string
                         storageType:
                           type: string
                         terminationPolicy:

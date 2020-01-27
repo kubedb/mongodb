@@ -70,6 +70,7 @@ replace (
 	k8s.io/metrics => k8s.io/metrics v0.0.0-20191114105837-a4a2842dc51b
 	k8s.io/repo-infra => k8s.io/repo-infra v0.0.0-20181204233714-00fe14e3d1a3
 	k8s.io/utils => k8s.io/utils v0.0.0-20190801114015-581e00157fb1
+	kubedb.dev/apimachinery => github.com/apu1111/apimachinery v0.13.0-rc.3.0.20200121130936-11eb9fe1fb4c
 	sigs.k8s.io/kustomize => sigs.k8s.io/kustomize v2.0.3+incompatible
 	sigs.k8s.io/structured-merge-diff => sigs.k8s.io/structured-merge-diff v0.0.0-20190817042607-6149e4549fca
 	sigs.k8s.io/yaml => sigs.k8s.io/yaml v1.1.0

@@ -55,6 +55,8 @@ github.com/appscode/go v0.0.0-20191119085241-0887d8ec2ecc h1:Q5jwbRq/a1Tien+Is8Z
 github.com/appscode/go v0.0.0-20191119085241-0887d8ec2ecc/go.mod h1:OawnOmAL4ZX3YaPdN+8HTNwBveT1jMsqP74moa9XUbE=
 github.com/appscode/osm v0.13.0 h1:LNmnruRQoi731JXvMPNbJzNLeCzzYK9b9EnhieonUIU=
 github.com/appscode/osm v0.13.0/go.mod h1:4UxQXV4+RFLd0r6olIFLwsZnCcevBFIzsE88w1+9SOk=
+github.com/apu1111/apimachinery v0.13.0-rc.3.0.20200121130936-11eb9fe1fb4c h1:bOF4CboL6hc+bzs/9I/CUctytUkM+jKWff2lqzvSLs0=
+github.com/apu1111/apimachinery v0.13.0-rc.3.0.20200121130936-11eb9fe1fb4c/go.mod h1:E7vyf5egSHPkJtCXStcIOz85AiSHB1NffLNXMI3VSiU=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e h1:QEF07wC0T1rKkctt1RINW/+RMTVmiwxETico2l3gxJA=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
 github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6/go.mod h1:grANhF5doyWs3UAsr3K4I6qtAmlQcZDesFNEHPZAzj8=
@@ -850,8 +852,6 @@ kmodules.xyz/prober v0.0.0-20191216013129-7c91e2b0edb2 h1:wxHidC0FZfaHTRG8ADG9qd
 kmodules.xyz/prober v0.0.0-20191216013129-7c91e2b0edb2/go.mod h1:YdapXw+AMO1U/yYZloDA0dTiha89Rv1iqK05Jh7qQQY=
 kmodules.xyz/webhook-runtime v0.0.0-20191127075323-d4bfdee6974d h1:qLWf0Xk2sAWT9qWBcodkinrzt0jkYTKhuHCsbwpXutE=
 kmodules.xyz/webhook-runtime v0.0.0-20191127075323-d4bfdee6974d/go.mod h1:aaaxyAmKOpw0ey3LrpBkqWq0LTl35f9PW6mhwVDBMow=
-kubedb.dev/apimachinery v0.13.0-rc.2.0.20200111104535-722f0b216a67 h1:FYq1T1rYf1dgA7IK+OeszHbCYNtcxJv7FVCAKMVOU0Q=
-kubedb.dev/apimachinery v0.13.0-rc.2.0.20200111104535-722f0b216a67/go.mod h1:E7vyf5egSHPkJtCXStcIOz85AiSHB1NffLNXMI3VSiU=
 launchpad.net/gocheck v0.0.0-20140225173054-000000000087/go.mod h1:hj7XX3B/0A+80Vse0e+BUHsHMTEhd0O4cpUHr/e/BUM=
 modernc.org/cc v1.0.0/go.mod h1:1Sk4//wdnYJiUIxnW8ddKpaOJCF37yAdqYnkxUpaYxw=
 modernc.org/golex v1.0.0/go.mod h1:b/QX9oBD/LhixY6NDh+IdGv17hgB+51fET1i2kPSmvk=

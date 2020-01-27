@@ -348,6 +348,10 @@ func mongosInitContainer(
 			clusterAuth = api.ClusterAuthModeX509
 		}
 	}
+	initScript := fmt.Sprintf("/usr/local/bin/%v", scriptName)
+	if mongodb.Spec.StorageEngine == api.StorageEngineInMemory {
+		initScript = fmt.Sprintf("/data/configdb/%v", scriptName)
+	}
 
 	bootstrapContainer := core.Container{
 		Name:            InitBootstrapContainerName,
@@ -356,7 +360,7 @@ func mongosInitContainer(
 		Command:         []string{"/bin/sh"},
 		Args: []string{
 			"-c",
-			fmt.Sprintf("/usr/local/bin/%v", scriptName),
+			initScript,
 		},
 		Env: core_util.UpsertEnvVars([]core.EnvVar{
 			{

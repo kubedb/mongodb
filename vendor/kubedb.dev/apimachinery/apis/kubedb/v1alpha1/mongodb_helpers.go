@@ -333,6 +333,9 @@ func (m *MongoDBSpec) SetDefaults(mgVersion *v1alpha1.MongoDBVersion) {
 	if m.StorageType == "" {
 		m.StorageType = StorageTypeDurable
 	}
+	if m.StorageEngine == "" {
+		m.StorageEngine = StorageEngineWiredTiger
+	}
 	if m.UpdateStrategy.Type == "" {
 		m.UpdateStrategy.Type = apps.RollingUpdateStatefulSetStrategyType
 	}

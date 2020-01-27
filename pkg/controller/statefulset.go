@@ -55,8 +55,14 @@ const (
 	initialKeyDirectoryName = "keydir"
 	initialKeyDirectoryPath = "/keydir-readonly"
 
-	InitInstallContainerName   = "copy-config"
-	InitBootstrapContainerName = "bootstrap"
+	InitInstallContainerName    = "copy-config"
+	InitBootstrapContainerName  = "bootstrap"
+	InitDisableTHPContainerName = "disable-thp"
+	PeerFinderScriptName        = "/data/configdb/peer-finder"
+	InMemoryShardScriptName     = "/data/configdb/sharding-inmemory.sh"
+	InMemoryReplScriptName      = "/data/configdb/replicaset-inmemory.sh"
+	DisableTHPScriptName        = "/data/configdb/disable-thp.sh"
+	CopyConfigScriptName        = "/usr/local/bin/copy-config.sh"
 )
 
 type workloadOptions struct {
@@ -181,29 +187,127 @@ func (c *Controller) ensureShardNode(mongodb *api.MongoDB) ([]*apps.StatefulSet,
 		var initContainers []core.Container
 		var volumes []core.Volume
 		var volumeMounts []core.VolumeMount
+		var opts workloadOptions
+		var envs []core.EnvVar
 		cmds := []string{"mongod"}
 
 		initContainers = append(initContainers, initContnr)
 		volumes = core_util.UpsertVolume(volumes, initvolumes...)
 
-		bootstrpContnr, bootstrpVol := topologyInitContainer(
-			mongodb,
-			mongodbVersion,
-			&mongodb.Spec.ShardTopology.Shard.PodTemplate,
-			mongodb.ShardRepSetName(nodeNum),
-			mongodb.GvrSvcName(mongodb.ShardNodeName(nodeNum)),
-			"sharding.sh",
-		)
-		initContainers = append(initContainers, bootstrpContnr)
-		volumes = core_util.UpsertVolume(volumes, bootstrpVol...)
+		if mongodb.Spec.StorageEngine == api.StorageEngineInMemory {
+			podTemplate := &mongodb.Spec.ShardTopology.Shard.PodTemplate
 
-		opts := workloadOptions{
+			// Init Container to disable THP
+			initContnrTHP, initvolumesTHP := installInitContainerTHP(
+				mongodb,
+				mongodbVersion,
+				podTemplate,
+			)
+			initContainers = append(initContainers, initContnrTHP)
+			volumes = core_util.UpsertVolume(volumes, initvolumesTHP...)
+
+			args = append(args, []string{
+				"--storageEngine=inMemory",
+			}...)
+
+			envs = core_util.UpsertEnvVars([]core.EnvVar{
+				{
+					Name: "POD_NAMESPACE",
+					ValueFrom: &core.EnvVarSource{
+						FieldRef: &core.ObjectFieldSelector{
+							APIVersion: "v1",
+							FieldPath:  "metadata.namespace",
+						},
+					},
+				},
+				{
+					Name:  "REPLICA_SET",
+					Value: mongodb.ShardRepSetName(nodeNum),
+				},
+				{
+					Name:  "AUTH",
+					Value: "true",
+				},
+				{
+					Name:  "SSL_MODE",
+					Value: string(sslMode),
+				},
+				{
+					Name:  "CLUSTER_AUTH_MODE",
+					Value: string(clusterAuth),
+				},
+				{
+					Name: "MONGO_INITDB_ROOT_USERNAME",
+					ValueFrom: &core.EnvVarSource{
+						SecretKeyRef: &core.SecretKeySelector{
+							LocalObjectReference: core.LocalObjectReference{
+								Name: mongodb.Spec.DatabaseSecret.SecretName,
+							},
+							Key: KeyMongoDBUser,
+						},
+					},
+				},
+				{
+					Name: "MONGO_INITDB_ROOT_PASSWORD",
+					ValueFrom: &core.EnvVarSource{
+						SecretKeyRef: &core.SecretKeySelector{
+							LocalObjectReference: core.LocalObjectReference{
+								Name: mongodb.Spec.DatabaseSecret.SecretName,
+							},
+							Key: KeyMongoDBPassword,
+						},
+					},
+				},
+			}, podTemplate.Spec.Env...)
+
+			cmd := func(envList []core.EnvVar) string {
+				var sb strings.Builder
+				sb.WriteString("export ")
+				for _, envVar := range envList {
+					sb.WriteString(envVar.Name + "=" + "${" + envVar.Name + "} ")
+				}
+				sb.WriteString("; " + PeerFinderScriptName + " -on-start=" + InMemoryShardScriptName + " -service=" + mongodb.GvrSvcName(mongodb.ShardNodeName(nodeNum)))
+				return sb.String()
+			}
+
+			podTemplate.Spec.Lifecycle = &core.Lifecycle{
+				PostStart: &core.Handler{
+					Exec: &core.ExecAction{
+						Command: []string{
+							"/bin/bash",
+							"-c",
+							cmd(envs),
+						},
+					},
+				},
+			}
+
+			volumeMounts = core_util.UpsertVolumeMount(
+				volumeMounts,
+				core.VolumeMount{
+					Name:      workDirectoryName,
+					MountPath: workDirectoryPath,
+				})
+		} else {
+			bootstrpContnr, bootstrpVol := topologyInitContainer(
+				mongodb,
+				mongodbVersion,
+				&mongodb.Spec.ShardTopology.Shard.PodTemplate,
+				mongodb.ShardRepSetName(nodeNum),
+				mongodb.GvrSvcName(mongodb.ShardNodeName(nodeNum)),
+				"sharding.sh",
+			)
+			initContainers = append(initContainers, bootstrpContnr)
+			volumes = core_util.UpsertVolume(volumes, bootstrpVol...)
+		}
+
+		opts = workloadOptions{
 			stsName:        mongodb.ShardNodeName(nodeNum),
 			labels:         mongodb.ShardLabels(nodeNum),
 			selectors:      mongodb.ShardSelectors(nodeNum),
 			args:           args,
 			cmd:            cmds,
-			envList:        nil,
+			envList:        envs,
 			initContainers: initContainers,
 			gvrSvcName:     mongodb.GvrSvcName(mongodb.ShardNodeName(nodeNum)),
 			podTemplate:    &mongodb.Spec.ShardTopology.Shard.PodTemplate,
@@ -286,6 +390,17 @@ func (c *Controller) ensureConfigNode(mongodb *api.MongoDB) (*apps.StatefulSet, 
 	initContainers = append(initContainers, initContnr)
 	volumes = core_util.UpsertVolume(volumes, initvolumes...)
 
+	if mongodb.Spec.StorageEngine == api.StorageEngineInMemory {
+		// Init Container to disable THP
+		initContnrTHP, initvolumesTHP := installInitContainerTHP(
+			mongodb,
+			mongodbVersion,
+			&mongodb.Spec.ShardTopology.ConfigServer.PodTemplate,
+		)
+		initContainers = append(initContainers, initContnrTHP)
+		volumes = core_util.UpsertVolume(volumes, initvolumesTHP...)
+	}
+
 	bootstrpContnr, bootstrpVol := topologyInitContainer(
 		mongodb,
 		mongodbVersion,
@@ -358,6 +473,7 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 	var volumes []core.Volume
 	var volumeMounts []core.VolumeMount
 	var cmds []string
+	var envs []core.EnvVar
 
 	initContainers = append(initContainers, initContnr)
 	volumes = core_util.UpsertVolume(volumes, initvolumes...)
@@ -383,16 +499,114 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 			"--keyFile=" + configDirectoryPath + "/" + KeyForKeyFile,
 			"--clusterAuthMode=" + string(clusterAuth),
 		})
-		bootstrpContnr, bootstrpVol := topologyInitContainer(
-			mongodb,
-			mongodbVersion,
-			mongodb.Spec.PodTemplate,
-			mongodb.RepSetName(),
-			mongodb.GvrSvcName(mongodb.OffshootName()),
-			"replicaset.sh",
-		)
-		initContainers = append(initContainers, bootstrpContnr)
-		volumes = core_util.UpsertVolume(volumes, bootstrpVol...)
+
+		if mongodb.Spec.StorageEngine == api.StorageEngineInMemory {
+			podTemplate := mongodb.Spec.PodTemplate
+
+			// Init Container to disable THP
+			initContnrTHP, initvolumesTHP := installInitContainerTHP(
+				mongodb,
+				mongodbVersion,
+				podTemplate,
+			)
+			initContainers = append(initContainers, initContnrTHP)
+			volumes = core_util.UpsertVolume(volumes, initvolumesTHP...)
+
+			args = append(args, []string{
+				"--storageEngine=inMemory",
+			}...)
+
+			envs = core_util.UpsertEnvVars([]core.EnvVar{
+				{
+					Name: "POD_NAMESPACE",
+					ValueFrom: &core.EnvVarSource{
+						FieldRef: &core.ObjectFieldSelector{
+							APIVersion: "v1",
+							FieldPath:  "metadata.namespace",
+						},
+					},
+				},
+				{
+					Name:  "REPLICA_SET",
+					Value: mongodb.RepSetName(),
+				},
+				{
+					Name:  "AUTH",
+					Value: "true",
+				},
+				{
+					Name:  "SSL_MODE",
+					Value: string(sslMode),
+				},
+				{
+					Name:  "CLUSTER_AUTH_MODE",
+					Value: string(clusterAuth),
+				},
+				{
+					Name: "MONGO_INITDB_ROOT_USERNAME",
+					ValueFrom: &core.EnvVarSource{
+						SecretKeyRef: &core.SecretKeySelector{
+							LocalObjectReference: core.LocalObjectReference{
+								Name: mongodb.Spec.DatabaseSecret.SecretName,
+							},
+							Key: KeyMongoDBUser,
+						},
+					},
+				},
+				{
+					Name: "MONGO_INITDB_ROOT_PASSWORD",
+					ValueFrom: &core.EnvVarSource{
+						SecretKeyRef: &core.SecretKeySelector{
+							LocalObjectReference: core.LocalObjectReference{
+								Name: mongodb.Spec.DatabaseSecret.SecretName,
+							},
+							Key: KeyMongoDBPassword,
+						},
+					},
+				},
+			}, podTemplate.Spec.Env...)
+
+			cmd := func(envList []core.EnvVar) string {
+				var sb strings.Builder
+				sb.WriteString("export ")
+				for _, envVar := range envList {
+					sb.WriteString(envVar.Name + "=" + "${" + envVar.Name + "} ")
+				}
+				sb.WriteString("; " + PeerFinderScriptName + " -on-start=" + InMemoryReplScriptName + " -service=" + mongodb.GvrSvcName(mongodb.OffshootName()))
+				return sb.String()
+			}
+
+			podTemplate.Spec.Lifecycle = &core.Lifecycle{
+				PostStart: &core.Handler{
+					Exec: &core.ExecAction{
+						Command: []string{
+							"/bin/bash",
+							"-c",
+							cmd(envs),
+						},
+					},
+				},
+			}
+
+			volumeMounts = core_util.UpsertVolumeMount(
+				volumeMounts,
+				core.VolumeMount{
+					Name:      workDirectoryName,
+					MountPath: workDirectoryPath,
+				})
+
+		} else {
+			bootstrpContnr, bootstrpVol := topologyInitContainer(
+				mongodb,
+				mongodbVersion,
+				mongodb.Spec.PodTemplate,
+				mongodb.RepSetName(),
+				mongodb.GvrSvcName(mongodb.OffshootName()),
+				"replicaset.sh",
+			)
+			initContainers = append(initContainers, bootstrpContnr)
+			volumes = core_util.UpsertVolume(volumes, bootstrpVol...)
+		}
 	}
 
 	opts := workloadOptions{
@@ -401,7 +615,7 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 		selectors:      mongodb.OffshootSelectors(),
 		args:           args,
 		cmd:            cmds,
-		envList:        nil,
+		envList:        envs,
 		initContainers: initContainers,
 		gvrSvcName:     mongodb.GvrSvcName(mongodb.OffshootName()),
 		podTemplate:    mongodb.Spec.PodTemplate,
@@ -578,56 +792,77 @@ func installInitContainer(
 ) (core.Container, []core.Volume) {
 	// Take value of podTemplate
 	var pt ofst.PodTemplateSpec
+	var installContainer core.Container
 	if podTemplate != nil {
 		pt = *podTemplate
 	}
 
-	installContainer := core.Container{
-		Name:            InitInstallContainerName,
-		Image:           mongodbVersion.Spec.InitContainer.Image,
-		ImagePullPolicy: core.PullIfNotPresent,
-		Command:         []string{"sh"},
-		Args: []string{
-			"-c",
-			`set -xe
-			if [ -f "/configdb-readonly/mongod.conf" ]; then
-  				cp /configdb-readonly/mongod.conf /data/configdb/mongod.conf
-			else
-				touch /data/configdb/mongod.conf
-			fi
-			
-			if [ -f "/keydir-readonly/key.txt" ]; then
-  				cp /keydir-readonly/key.txt /data/configdb/key.txt
-  				chmod 600 /data/configdb/key.txt
-			fi
-
-			if [ -f "/keydir-readonly/ca.cert" ]; then
-				cp /keydir-readonly/ca.cert /data/configdb/ca.cert
-				chmod 600 /data/configdb/ca.cert
-			fi
-
-			if [ -f "/keydir-readonly/ca.key" ]; then
-				cp /keydir-readonly/ca.key /data/configdb/ca.key
-				chmod 600 /data/configdb/ca.key
-			fi
-
-			if [ -f "/keydir-readonly/mongo.pem" ]; then
-  				cp /keydir-readonly/mongo.pem /data/configdb/mongo.pem
-  				chmod 600 /data/configdb/mongo.pem
-			fi
-
-			if [ -f "/keydir-readonly/client.pem" ]; then
-  				cp /keydir-readonly/client.pem /data/configdb/client.pem
-  				chmod 600 /data/configdb/client.pem
-			fi`,
-		},
-		VolumeMounts: []core.VolumeMount{
-			{
-				Name:      configDirectoryName,
-				MountPath: configDirectoryPath,
+	if mongodb.Spec.StorageEngine == api.StorageEngineInMemory {
+		installContainer = core.Container{
+			Name:            InitInstallContainerName,
+			Image:           mongodbVersion.Spec.InitContainer.Image,
+			ImagePullPolicy: core.PullIfNotPresent,
+			Command:         []string{"sh"},
+			Args: []string{
+				"-c",
+				CopyConfigScriptName,
 			},
-		},
-		Resources: pt.Spec.Resources,
+			VolumeMounts: []core.VolumeMount{
+				{
+					Name:      configDirectoryName,
+					MountPath: configDirectoryPath,
+				},
+			},
+			Resources: pt.Spec.Resources,
+		}
+	} else {
+		installContainer = core.Container{
+			Name:            InitInstallContainerName,
+			Image:           mongodbVersion.Spec.InitContainer.Image,
+			ImagePullPolicy: core.PullIfNotPresent,
+			Command:         []string{"sh"},
+			Args: []string{
+				"-c",
+				`set -xe
+				if [ -f "/configdb-readonly/mongod.conf" ]; then
+					cp /configdb-readonly/mongod.conf /data/configdb/mongod.conf
+				else
+					touch /data/configdb/mongod.conf
+				fi
+
+				if [ -f "/keydir-readonly/key.txt" ]; then
+					cp /keydir-readonly/key.txt /data/configdb/key.txt
+					chmod 600 /data/configdb/key.txt
+				fi
+
+				if [ -f "/keydir-readonly/ca.cert" ]; then
+					cp /keydir-readonly/ca.cert /data/configdb/ca.cert
+					chmod 600 /data/configdb/ca.cert
+				fi
+
+				if [ -f "/keydir-readonly/ca.key" ]; then
+					cp /keydir-readonly/ca.key /data/configdb/ca.key
+					chmod 600 /data/configdb/ca.key
+				fi
+
+				if [ -f "/keydir-readonly/mongo.pem" ]; then
+					cp /keydir-readonly/mongo.pem /data/configdb/mongo.pem
+					chmod 600 /data/configdb/mongo.pem
+				fi
+
+				if [ -f "/keydir-readonly/client.pem" ]; then
+					cp /keydir-readonly/client.pem /data/configdb/client.pem
+					chmod 600 /data/configdb/client.pem
+				fi`,
+			},
+			VolumeMounts: []core.VolumeMount{
+				{
+					Name:      configDirectoryName,
+					MountPath: configDirectoryPath,
+				},
+			},
+			Resources: pt.Spec.Resources,
+		}
 	}
 
 	initVolumes := []core.Volume{{
@@ -661,6 +896,57 @@ func installInitContainer(
 			},
 		})
 	}
+
+	return installContainer, initVolumes
+}
+
+// Init container for disabling THP
+func installInitContainerTHP(
+	mongodb *api.MongoDB,
+	mongodbVersion *v1alpha1.MongoDBVersion,
+	podTemplate *ofst.PodTemplateSpec,
+) (core.Container, []core.Volume) {
+	// Take value of podTemplate
+	var pt ofst.PodTemplateSpec
+	if podTemplate != nil {
+		pt = *podTemplate
+	}
+
+	installContainer := core.Container{
+		Name:            InitDisableTHPContainerName,
+		Image:           mongodbVersion.Spec.InitContainer.Image,
+		ImagePullPolicy: core.PullIfNotPresent,
+		Command:         []string{"/bin/sh"},
+		Args: []string{
+			"-c",
+			fmt.Sprintf("%v %v", DisableTHPScriptName, "/host-sys/kernel/mm/transparent_hugepage"),
+		},
+		VolumeMounts: []core.VolumeMount{
+			{
+				Name:      "host-sys",
+				MountPath: "/host-sys",
+			},
+			{
+				Name:      configDirectoryName,
+				MountPath: configDirectoryPath,
+			},
+		},
+		Resources: pt.Spec.Resources,
+		SecurityContext: &core.SecurityContext{
+			RunAsNonRoot: &[]bool{false}[0],
+			RunAsUser:    types.Int64P(0),
+			Privileged:   &[]bool{true}[0],
+		},
+	}
+
+	initVolumes := []core.Volume{{
+		Name: "host-sys",
+		VolumeSource: core.VolumeSource{
+			HostPath: &core.HostPathVolumeSource{
+				Path: "/sys",
+			},
+		},
+	}}
 
 	return installContainer, initVolumes
 }
