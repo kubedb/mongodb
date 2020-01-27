@@ -1381,9 +1381,6 @@ var _ = Describe("MongoDB", func() {
 					By("Wait for Running mongodb")
 					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
 
-					mongodb, err = f.GetMongoDB(mongodb.ObjectMeta)
-					Expect(err).NotTo(HaveOccurred())
-
 					By("Ping mongodb database")
 					f.EventuallyPingMongo(mongodb.ObjectMeta)
 
@@ -1410,7 +1407,6 @@ var _ = Describe("MongoDB", func() {
 
 					By("Checking Inserted Document")
 					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
-
 				}
 
 				It("should create dormantdatabase successfully", shouldRunWithTerminationHalt)
