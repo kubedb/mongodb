@@ -372,15 +372,15 @@ func (m *MongoDB) SetDefaults(mgVersion *v1alpha1.MongoDBVersion, topology *core
 		// set default affinity (PodAntiAffinity)
 		shardLabels := m.OffshootSelectors()
 		shardLabels[MongoDBShardLabelKey] = m.ShardNodeTemplate()
-		m.setDefaultAffinity(&m.Spec.ShardTopology.Shard.PodTemplate, shardLabels, topology, int(m.Spec.ShardTopology.Shard.Replicas)*int(m.Spec.ShardTopology.Shard.Shards))
+		m.setDefaultAffinity(&m.Spec.ShardTopology.Shard.PodTemplate, shardLabels, topology)
 
 		configServerLabels := m.OffshootSelectors()
 		configServerLabels[MongoDBConfigLabelKey] = m.ConfigSvrNodeName()
-		m.setDefaultAffinity(&m.Spec.ShardTopology.ConfigServer.PodTemplate, configServerLabels, topology, int(m.Spec.ShardTopology.ConfigServer.Replicas))
+		m.setDefaultAffinity(&m.Spec.ShardTopology.ConfigServer.PodTemplate, configServerLabels, topology)
 
 		mongosLabels := m.OffshootSelectors()
 		mongosLabels[MongoDBMongosLabelKey] = m.MongosNodeName()
-		m.setDefaultAffinity(&m.Spec.ShardTopology.Mongos.PodTemplate, mongosLabels, topology, int(m.Spec.ShardTopology.Mongos.Replicas))
+		m.setDefaultAffinity(&m.Spec.ShardTopology.Mongos.PodTemplate, mongosLabels, topology)
 	} else {
 		if m.Spec.Replicas == nil {
 			m.Spec.Replicas = types.Int32P(1)
@@ -396,7 +396,7 @@ func (m *MongoDB) SetDefaults(mgVersion *v1alpha1.MongoDBVersion, topology *core
 		// set default probes
 		m.setDefaultProbes(m.Spec.PodTemplate, mgVersion)
 		// set default affinity (PodAntiAffinity)
-		m.setDefaultAffinity(m.Spec.PodTemplate, m.OffshootSelectors(), topology, int(*m.Spec.Replicas))
+		m.setDefaultAffinity(m.Spec.PodTemplate, m.OffshootSelectors(), topology)
 	}
 }
 
@@ -470,8 +470,10 @@ func (m *MongoDB) setDefaultProbes(podTemplate *ofst.PodTemplateSpec, mgVersion 
 }
 
 // setDefaultAffinity
-func (m *MongoDB) setDefaultAffinity(podTemplate *ofst.PodTemplateSpec, labels map[string]string, topology *core_util.Topology, totalPods int) {
-	if podTemplate == nil || podTemplate.Spec.Affinity != nil {
+func (m *MongoDB) setDefaultAffinity(podTemplate *ofst.PodTemplateSpec, labels map[string]string, topology *core_util.Topology) {
+	if podTemplate == nil {
+		return
+	} else if podTemplate.Spec.Affinity != nil {
 		// Update topologyKey fields according to Kubernetes version
 		topology.ConvertAffinity(podTemplate.Spec.Affinity)
 		return
@@ -479,10 +481,21 @@ func (m *MongoDB) setDefaultAffinity(podTemplate *ofst.PodTemplateSpec, labels m
 
 	podTemplate.Spec.Affinity = &core.Affinity{
 		PodAntiAffinity: &core.PodAntiAffinity{
-			// Prefer to not schedule multiple pods on the node with same zone
 			PreferredDuringSchedulingIgnoredDuringExecution: []core.WeightedPodAffinityTerm{
+				// Prefer to not schedule multiple pods on the same node
 				{
 					Weight: 100,
+					PodAffinityTerm: core.PodAffinityTerm{
+						Namespaces: []string{m.Namespace},
+						LabelSelector: &metav1.LabelSelector{
+							MatchLabels: labels,
+						},
+						TopologyKey: core.LabelHostname,
+					},
+				},
+				// Prefer to not schedule multiple pods on the node with same zone
+				{
+					Weight: 50,
 					PodAffinityTerm: core.PodAffinityTerm{
 						Namespaces: []string{m.Namespace},
 						LabelSelector: &metav1.LabelSelector{
@@ -493,19 +506,6 @@ func (m *MongoDB) setDefaultAffinity(podTemplate *ofst.PodTemplateSpec, labels m
 				},
 			},
 		},
-	}
-
-	// If there are more nodes than pods, don't schedule multiple pods on the same node
-	if topology.TotalNodes > totalPods {
-		podTemplate.Spec.Affinity.PodAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution = []core.PodAffinityTerm{
-			{
-				Namespaces: []string{m.Namespace},
-				LabelSelector: &metav1.LabelSelector{
-					MatchLabels: labels,
-				},
-				TopologyKey: core.LabelHostname,
-			},
-		}
 	}
 }
 
