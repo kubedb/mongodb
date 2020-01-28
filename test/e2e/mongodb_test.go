@@ -29,9 +29,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
-	rbac "k8s.io/api/rbac/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	meta_util "kmodules.xyz/client-go/meta"
 	store "kmodules.xyz/objectstore-api/api/v1"
@@ -52,28 +50,24 @@ const (
 
 var _ = Describe("MongoDB", func() {
 	var (
-		err                      error
-		f                        *framework.Invocation
-		mongodb                  *api.MongoDB
-		garbageMongoDB           *api.MongoDBList
-		snapshot                 *api.Snapshot
-		snapshotPVC              *core.PersistentVolumeClaim
-		secret                   *core.Secret
-		skipMessage              string
-		skipSnapshotDataChecking bool
-		verifySharding           bool
-		enableSharding           bool
-		dbName                   string
+		err            error
+		f              *framework.Invocation
+		mongodb        *api.MongoDB
+		garbageMongoDB *api.MongoDBList
+		snapshotPVC    *core.PersistentVolumeClaim
+		secret         *core.Secret
+		skipMessage    string
+		verifySharding bool
+		enableSharding bool
+		dbName         string
 	)
 
 	BeforeEach(func() {
 		f = root.Invoke()
 		mongodb = f.MongoDBStandalone()
 		garbageMongoDB = new(api.MongoDBList)
-		snapshot = f.Snapshot()
 		secret = nil
 		skipMessage = ""
-		skipSnapshotDataChecking = true
 		verifySharding = false
 		enableSharding = false
 		dbName = "kubedb"
@@ -84,10 +78,6 @@ var _ = Describe("MongoDB", func() {
 		By("Cleanup Left Overs")
 		By("Delete left over MongoDB objects")
 		root.CleanMongoDB()
-		By("Delete left over Dormant Database objects")
-		root.CleanDormantDatabase()
-		By("Delete left over Snapshot objects")
-		root.CleanSnapshot()
 		By("Delete left over workloads if exists any")
 		root.CleanWorkloadLeftOvers()
 
@@ -131,43 +121,29 @@ var _ = Describe("MongoDB", func() {
 
 		By("Check if mongodb " + mongodb.Name + " exists.")
 		mg, err := f.GetMongoDB(mongodb.ObjectMeta)
-		if err != nil {
-			if kerr.IsNotFound(err) {
-				// MongoDB was not created. Hence, rest of cleanup is not necessary.
-				return
-			}
-			Expect(err).NotTo(HaveOccurred())
+		if err != nil && kerr.IsNotFound(err) {
+			// MongoDB was not created. Hence, rest of cleanup is not necessary.
+			return
 		}
+		Expect(err).NotTo(HaveOccurred())
+
+		By("Update mongodb to set spec.terminationPolicy = WipeOut")
+		_, err = f.PatchMongoDB(mg.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
+			in.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
+			return in
+		})
+		Expect(err).NotTo(HaveOccurred())
 
 		By("Delete mongodb")
 		err = f.DeleteMongoDB(mongodb.ObjectMeta)
-		if err != nil {
-			if kerr.IsNotFound(err) {
-				// MongoDB was not created. Hence, rest of cleanup is not necessary.
-				return
-			}
-			Expect(err).NotTo(HaveOccurred())
+		if err != nil && kerr.IsNotFound(err) {
+			// MongoDB was not created. Hence, rest of cleanup is not necessary.
+			return
 		}
+		Expect(err).NotTo(HaveOccurred())
 
-		if mg.Spec.TerminationPolicy == api.TerminationPolicyPause {
-
-			By("Wait for mongodb to be paused")
-			f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
-
-			By("Set DormantDatabase Spec.WipeOut to true")
-			_, err = f.PatchDormantDatabase(mongodb.ObjectMeta, func(in *api.DormantDatabase) *api.DormantDatabase {
-				in.Spec.WipeOut = true
-				return in
-			})
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Delete Dormant Database")
-			err = f.DeleteDormantDatabase(mongodb.ObjectMeta)
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Eventually dormant database is deleted")
-			f.EventuallyDormantDatabase(mongodb.ObjectMeta).Should(BeFalse())
-		}
+		By("Wait for mongodb to be deleted")
+		f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeFalse())
 
 		By("Wait for mongodb resources to be wipedOut")
 		f.EventuallyWipedOut(mongodb.ObjectMeta).Should(Succeed())
@@ -191,11 +167,6 @@ var _ = Describe("MongoDB", func() {
 				deleteTestResource()
 			}
 
-			if !skipSnapshotDataChecking {
-				By("Check for snapshot data")
-				f.EventuallySnapshotDataFound(snapshot).Should(BeFalse())
-			}
-
 			if secret != nil {
 				err := f.DeleteSecret(secret.ObjectMeta)
 				if !kerr.IsNotFound(err) {
@@ -206,7 +177,7 @@ var _ = Describe("MongoDB", func() {
 
 		Context("General", func() {
 
-			Context("With PVC", func() {
+			Context("With PVC - Halt", func() {
 
 				var shouldRunWithPVC = func() {
 					if skipMessage != "" {
@@ -230,20 +201,22 @@ var _ = Describe("MongoDB", func() {
 					By("Checking Inserted Document")
 					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 3).Should(BeTrue())
 
-					By("Delete mongodb")
-					err = f.DeleteMongoDB(mongodb.ObjectMeta)
+					By("Halt MongoDB: Update mongodb to set spec.halted = true")
+					_, err := f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
+						in.Spec.Halted = true
+						return in
+					})
 					Expect(err).NotTo(HaveOccurred())
 
-					By("Wait for mongodb to be paused")
-					f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
+					By("Wait for halted/paused mongodb")
+					f.EventuallyMongoDBPhase(mongodb.ObjectMeta).Should(Equal(api.DatabasePhaseHalted))
 
-					// Create MongoDB object again to resume it
-					By("Create MongoDB: " + mongodb.Name)
-					err = f.CreateMongoDB(mongodb)
+					By("Resume MongoDB: Update mongodb to set spec.halted = false")
+					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
+						in.Spec.Halted = false
+						return in
+					})
 					Expect(err).NotTo(HaveOccurred())
-
-					By("Wait for DormantDatabase to be deleted")
-					f.EventuallyDormantDatabase(mongodb.ObjectMeta).Should(BeFalse())
 
 					By("Wait for Running mongodb")
 					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
@@ -307,7 +280,7 @@ var _ = Describe("MongoDB", func() {
 
 				It("should run evictions on Sharded MongoDB successfully", func() {
 					mongodb = f.MongoDBShard()
-					//mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+					mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 					mongodb.Spec.ShardTopology.Shard.Shards = int32(1)
 					mongodb.Spec.ShardTopology.ConfigServer.Replicas = int32(3)
 					mongodb.Spec.ShardTopology.Mongos.Replicas = int32(3)
@@ -330,7 +303,7 @@ var _ = Describe("MongoDB", func() {
 						SecretName: customSecret.Name,
 					}
 					err = f.CreateSecret(customSecret)
-					mongodb.Spec.TerminationPolicy = api.TerminationPolicyPause
+					mongodb.Spec.TerminationPolicy = api.TerminationPolicyHalt
 				})
 
 				It("should start and resume without shard successfully", func() {
@@ -367,8 +340,8 @@ var _ = Describe("MongoDB", func() {
 						Expect(err).NotTo(HaveOccurred())
 					}
 
-					By("Wait for mongoDB to be paused")
-					f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
+					By("Wait for mongodb to be deleted")
+					f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeFalse())
 
 					By("Resume DB")
 					createAndWaitForRunning()
@@ -424,789 +397,11 @@ var _ = Describe("MongoDB", func() {
 						Expect(err).NotTo(HaveOccurred())
 					}
 
-					By("Wait for mongoDB to be paused")
-					f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
+					By("Wait for mongodb to be deleted")
+					f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeFalse())
 
 					By("Resume DB")
 					createAndWaitForRunning()
-				})
-			})
-		})
-
-		Context("Snapshot", func() {
-			BeforeEach(func() {
-				skipSnapshotDataChecking = false
-				snapshot.Spec.DatabaseName = mongodb.Name
-			})
-
-			var shouldTakeSnapshot = func() {
-				// Create and wait for running MongoDB
-				createAndWaitForRunning()
-				By("Insert Document Inside DB")
-				f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName, 50).Should(BeTrue())
-
-				By("Checking Inserted Document")
-				f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 50).Should(BeTrue())
-
-				By("Create Secret")
-				err := f.CreateSecret(secret)
-				Expect(err).NotTo(HaveOccurred())
-
-				By("Create Snapshot")
-				err = f.CreateSnapshot(snapshot)
-				Expect(err).NotTo(HaveOccurred())
-
-				By("Check for Succeeded snapshot")
-				f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
-
-				if !skipSnapshotDataChecking {
-					By("Check for snapshot data")
-					f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-				}
-			}
-
-			Context("For Custom Resources", func() {
-				BeforeEach(func() {
-					skipSnapshotDataChecking = false
-					secret = f.SecretForGCSBackend()
-					snapshot.Spec.StorageSecretName = secret.Name
-					snapshot.Spec.GCS = &store.GCSSpec{
-						Bucket: os.Getenv(GCS_BUCKET_NAME),
-					}
-				})
-
-				Context("with custom Service Account", func() {
-					var customSAForDB *core.ServiceAccount
-					var customRoleForDB *rbac.Role
-					var customRoleBindingForDB *rbac.RoleBinding
-					var customSAForSnapshot *core.ServiceAccount
-					var customRoleForSnapshot *rbac.Role
-					var customRoleBindingForSnapshot *rbac.RoleBinding
-					var anotherMongoDB *api.MongoDB
-
-					BeforeEach(func() {
-						anotherMongoDB = f.MongoDBStandalone()
-						anotherMongoDB.Spec.Init = &api.InitSpec{
-							SnapshotSource: &api.SnapshotSourceSpec{
-								Namespace: snapshot.Namespace,
-								Name:      snapshot.Name,
-							},
-						}
-						mongodb.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
-						By("Setting up Database SA")
-						customSAForDB = f.ServiceAccount()
-						mongodb.Spec.PodTemplate = &ofst.PodTemplateSpec{
-							Spec: ofst.PodSpec{
-								ServiceAccountName: customSAForDB.Name,
-							},
-						}
-						customRoleForDB = f.RoleForMongoDB(mongodb.ObjectMeta)
-						customRoleBindingForDB = f.RoleBinding(customSAForDB.Name, customRoleForDB.Name)
-
-						By("Setting up Snapshot SA")
-						customSAForSnapshot = f.ServiceAccount()
-						mongodb.Spec.PodTemplate = &ofst.PodTemplateSpec{
-							Spec: ofst.PodSpec{
-								ServiceAccountName: customSAForSnapshot.Name,
-							},
-						}
-						customRoleForSnapshot = f.RoleForSnapshot(mongodb.ObjectMeta)
-						customRoleBindingForSnapshot = f.RoleBinding(customSAForSnapshot.Name, customRoleForSnapshot.Name)
-
-						By("Creating Snapshot SA")
-						By("Create Database SA")
-						err = f.CreateServiceAccount(customSAForDB)
-						Expect(err).NotTo(HaveOccurred())
-						By("Create Database Role")
-						err = f.CreateRole(customRoleForDB)
-						Expect(err).NotTo(HaveOccurred())
-						By("Create Database RoleBinding")
-						err = f.CreateRoleBinding(customRoleBindingForDB)
-						Expect(err).NotTo(HaveOccurred())
-
-						By("Create Snapshot SA")
-						err = f.CreateServiceAccount(customSAForSnapshot)
-						Expect(err).NotTo(HaveOccurred())
-						By("Create Snapshot Role")
-						err = f.CreateRole(customRoleForSnapshot)
-						Expect(err).NotTo(HaveOccurred())
-						By("Create Snapshot RoleBinding")
-						err = f.CreateRoleBinding(customRoleBindingForSnapshot)
-						Expect(err).NotTo(HaveOccurred())
-
-					})
-					It("should take snapshot successfully", func() {
-						shouldTakeSnapshot()
-					})
-
-					It("should initialize from snapshot successfully", func() {
-						By("Start initializing From Snapshot")
-						// Create and wait for running MongoDB
-						createAndWaitForRunning()
-
-						By("Insert Document Inside DB")
-						f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName, 50).Should(BeTrue())
-
-						By("Checking Inserted Document")
-						f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 50).Should(BeTrue())
-
-						By("Create Secret")
-						err := f.CreateSecret(secret)
-						Expect(err).NotTo(HaveOccurred())
-
-						By("Create Snapshot")
-						err = f.CreateSnapshot(snapshot)
-						Expect(err).NotTo(HaveOccurred())
-
-						By("Check for Succeeded snapshot")
-						f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
-
-						if !skipSnapshotDataChecking {
-							By("Check for snapshot data")
-							f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-						}
-
-						oldMongoDB, err := f.GetMongoDB(mongodb.ObjectMeta)
-						Expect(err).NotTo(HaveOccurred())
-
-						garbageMongoDB.Items = append(garbageMongoDB.Items, *oldMongoDB)
-
-						By("Create mongodb from snapshot")
-						mongodb = anotherMongoDB
-						mongodb.Spec.DatabaseSecret = oldMongoDB.Spec.DatabaseSecret
-
-						//Setup MongoDB Role and binf with SA
-						By("Get new Role and RB")
-						customRoleForReplayDB := f.RoleForMongoDB(mongodb.ObjectMeta)
-						customRoleBindingForReplayDB := f.RoleBinding(customSAForDB.Name, customRoleForReplayDB.Name)
-
-						By("Create Database Role")
-						err = f.CreateRole(customRoleForReplayDB)
-						Expect(err).NotTo(HaveOccurred())
-						By("Create Database RoleBinding")
-						err = f.CreateRoleBinding(customRoleBindingForReplayDB)
-						Expect(err).NotTo(HaveOccurred())
-
-						By("Setting SA name in ES")
-						mongodb.Spec.PodTemplate = &ofst.PodTemplateSpec{
-							Spec: ofst.PodSpec{
-								ServiceAccountName: customSAForDB.Name,
-							},
-						}
-
-						// Create and wait for running MongoDB
-						By("Create init-MongoDB now")
-						createAndWaitForRunning()
-						By("Checking previously Inserted Document")
-						f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 50).Should(BeTrue())
-					})
-				})
-
-				Context("with custom Secret", func() {
-					var customSecret *core.Secret
-					BeforeEach(func() {
-						customSecret = f.SecretForDatabaseAuthentication(mongodb.ObjectMeta, false)
-						mongodb.Spec.DatabaseSecret = &core.SecretVolumeSource{
-							SecretName: customSecret.Name,
-						}
-
-					})
-					It("should delete secret successfully", func() {
-						By("Create Database Secret")
-						err := f.CreateSecret(customSecret)
-						Expect(err).NotTo(HaveOccurred())
-
-						By("Take Snapshot")
-						shouldTakeSnapshot()
-						By("Delete test resources")
-						deleteTestResource()
-						By("Confirm Database Secret exists")
-						err = f.CheckSecret(customSecret)
-						Expect(err).NotTo(HaveOccurred())
-					})
-					It("should keep custom secret successfully", func() {
-						kubedbSecret := f.SecretForDatabaseAuthentication(mongodb.ObjectMeta, true)
-						mongodb.Spec.DatabaseSecret = &core.SecretVolumeSource{
-							SecretName: kubedbSecret.Name,
-						}
-						By("Create Database Secret")
-						err = f.CreateSecret(kubedbSecret)
-						Expect(err).NotTo(HaveOccurred())
-
-						By("Take Snapshot")
-						shouldTakeSnapshot()
-						By("Delete test resources")
-						deleteTestResource()
-						By("Confirm Database Secret doesnt exist")
-						err = f.CheckSecret(kubedbSecret)
-						Expect(err).To(HaveOccurred())
-					})
-				})
-			})
-
-			Context("In Local", func() {
-				BeforeEach(func() {
-					skipSnapshotDataChecking = true
-					secret = f.SecretForLocalBackend()
-					snapshot.Spec.StorageSecretName = secret.Name
-				})
-
-				Context("With EmptyDir as Snapshot's backend", func() {
-					BeforeEach(func() {
-						snapshot.Spec.Local = &store.LocalSpec{
-							MountPath: "/repo",
-							VolumeSource: core.VolumeSource{
-								EmptyDir: &core.EmptyDirVolumeSource{},
-							},
-						}
-					})
-
-					It("should take Snapshot successfully", shouldTakeSnapshot)
-				})
-
-				Context("With PVC as Snapshot's backend", func() {
-
-					BeforeEach(func() {
-						snapshotPVC = f.GetPersistentVolumeClaim()
-						By("Creating PVC for local backend snapshot")
-						err := f.CreatePersistentVolumeClaim(snapshotPVC)
-						Expect(err).NotTo(HaveOccurred())
-
-						snapshot.Spec.Local = &store.LocalSpec{
-							MountPath: "/repo",
-							VolumeSource: core.VolumeSource{
-								PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-									ClaimName: snapshotPVC.Name,
-								},
-							},
-						}
-					})
-
-					It("should delete Snapshot successfully", func() {
-						shouldTakeSnapshot()
-
-						By("Deleting Snapshot")
-						err := f.DeleteSnapshot(snapshot.ObjectMeta)
-						Expect(err).NotTo(HaveOccurred())
-
-						By("Waiting Snapshot to be deleted")
-						f.EventuallySnapshot(snapshot.ObjectMeta).Should(BeFalse())
-					})
-				})
-
-				Context("With Replica Set", func() {
-					BeforeEach(func() {
-						mongodb = f.MongoDBRS()
-						snapshot.Spec.DatabaseName = mongodb.Name
-						snapshot.Spec.Local = &store.LocalSpec{
-							MountPath: "/repo",
-							VolumeSource: core.VolumeSource{
-								EmptyDir: &core.EmptyDirVolumeSource{},
-							},
-						}
-					})
-					It("should take Snapshot successfully", shouldTakeSnapshot)
-				})
-
-				Context("With Sharding", func() {
-					BeforeEach(func() {
-						mongodb = f.MongoDBShard()
-						//mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
-						snapshot.Spec.DatabaseName = mongodb.Name
-						snapshot.Spec.Local = &store.LocalSpec{
-							MountPath: "/repo",
-							VolumeSource: core.VolumeSource{
-								EmptyDir: &core.EmptyDirVolumeSource{},
-							},
-						}
-					})
-					It("should take Snapshot successfully", shouldTakeSnapshot)
-				})
-			})
-
-			Context("In S3", func() {
-				BeforeEach(func() {
-					secret = f.SecretForS3Backend()
-					snapshot.Spec.StorageSecretName = secret.Name
-					snapshot.Spec.S3 = &store.S3Spec{
-						Bucket: os.Getenv(S3_BUCKET_NAME),
-					}
-				})
-
-				It("should take Snapshot successfully", shouldTakeSnapshot)
-
-				Context("Faulty Snapshot", func() {
-					BeforeEach(func() {
-						skipSnapshotDataChecking = true
-						snapshot.Spec.S3 = &store.S3Spec{
-							Bucket: "nonexisting",
-						}
-					})
-					It("snapshot should fail", func() {
-						// Create and wait for running MongoDB
-						createAndWaitForRunning()
-
-						By("Create Secret")
-						err := f.CreateSecret(secret)
-						Expect(err).NotTo(HaveOccurred())
-
-						By("Create Snapshot")
-						err = f.CreateSnapshot(snapshot)
-						Expect(err).NotTo(HaveOccurred())
-
-						By("Check for Failed snapshot")
-						f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseFailed))
-					})
-				})
-
-				Context("Delete One Snapshot keeping others", func() {
-					var configMap *core.ConfigMap
-
-					BeforeEach(func() {
-						configMap = f.ConfigMapForInitialization()
-						err := f.CreateConfigMap(configMap)
-						Expect(err).NotTo(HaveOccurred())
-
-						mongodb.Spec.Init = &api.InitSpec{
-							ScriptSource: &api.ScriptSourceSpec{
-								VolumeSource: core.VolumeSource{
-									ConfigMap: &core.ConfigMapVolumeSource{
-										LocalObjectReference: core.LocalObjectReference{
-											Name: configMap.Name,
-										},
-									},
-								},
-							},
-						}
-					})
-
-					AfterEach(func() {
-						err := f.DeleteConfigMap(configMap.ObjectMeta)
-						Expect(err).NotTo(HaveOccurred())
-					})
-
-					It("Delete One Snapshot keeping others", func() {
-						// Create and wait for running MongoDB
-						shouldTakeSnapshot()
-
-						oldSnapshot := snapshot.DeepCopy()
-
-						// New snapshot that has old snapshot's name in prefix
-						snapshot.Name += "-2"
-
-						By(fmt.Sprintf("Create Snapshot %v", snapshot.Name))
-						err = f.CreateSnapshot(snapshot)
-						Expect(err).NotTo(HaveOccurred())
-
-						By("Check for Succeeded snapshot")
-						f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
-
-						if !skipSnapshotDataChecking {
-							By("Check for snapshot data")
-							f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-						}
-
-						// delete old snapshot
-						By(fmt.Sprintf("Delete old Snapshot %v", oldSnapshot.Name))
-						err = f.DeleteSnapshot(oldSnapshot.ObjectMeta)
-						Expect(err).NotTo(HaveOccurred())
-
-						By("Waiting for old Snapshot to be deleted")
-						f.EventuallySnapshot(oldSnapshot.ObjectMeta).Should(BeFalse())
-						if !skipSnapshotDataChecking {
-							By(fmt.Sprintf("Check data for old snapshot %v", oldSnapshot.Name))
-							f.EventuallySnapshotDataFound(oldSnapshot).Should(BeFalse())
-						}
-
-						// check remaining snapshot
-						By(fmt.Sprintf("Checking another Snapshot %v still exists", snapshot.Name))
-						_, err = f.GetSnapshot(snapshot.ObjectMeta)
-						Expect(err).NotTo(HaveOccurred())
-
-						if !skipSnapshotDataChecking {
-							By(fmt.Sprintf("Check data for remaining snapshot %v", snapshot.Name))
-							f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-						}
-					})
-				})
-			})
-
-			Context("In GCS", func() {
-				BeforeEach(func() {
-					secret = f.SecretForGCSBackend()
-					snapshot.Spec.StorageSecretName = secret.Name
-					snapshot.Spec.GCS = &store.GCSSpec{
-						Bucket: os.Getenv(GCS_BUCKET_NAME),
-					}
-				})
-
-				It("should take Snapshot successfully", shouldTakeSnapshot)
-
-				Context("With Replica Set", func() {
-					BeforeEach(func() {
-						mongodb = f.MongoDBRS()
-						mongodb.Spec.Replicas = types.Int32P(3)
-						snapshot.Spec.DatabaseName = mongodb.Name
-					})
-					It("should take Snapshot successfully", shouldTakeSnapshot)
-				})
-
-				Context("With Sharding", func() {
-					BeforeEach(func() {
-						mongodb = f.MongoDBShard()
-						//mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
-						snapshot.Spec.DatabaseName = mongodb.Name
-					})
-					It("should take Snapshot successfully", shouldTakeSnapshot)
-				})
-
-				Context("Delete One Snapshot keeping others", func() {
-					var configMap *core.ConfigMap
-
-					BeforeEach(func() {
-						configMap = f.ConfigMapForInitialization()
-						err := f.CreateConfigMap(configMap)
-						Expect(err).NotTo(HaveOccurred())
-
-						mongodb.Spec.Init = &api.InitSpec{
-							ScriptSource: &api.ScriptSourceSpec{
-								VolumeSource: core.VolumeSource{
-									ConfigMap: &core.ConfigMapVolumeSource{
-										LocalObjectReference: core.LocalObjectReference{
-											Name: configMap.Name,
-										},
-									},
-								},
-							},
-						}
-					})
-
-					AfterEach(func() {
-						err := f.DeleteConfigMap(configMap.ObjectMeta)
-						Expect(err).NotTo(HaveOccurred())
-					})
-
-					It("Delete One Snapshot keeping others", func() {
-						// Create and wait for running MongoDB
-						shouldTakeSnapshot()
-
-						oldSnapshot := snapshot.DeepCopy()
-
-						// New snapshot that has old snapshot's name in prefix
-						snapshot.Name += "-2"
-
-						By(fmt.Sprintf("Create Snapshot %v", snapshot.Name))
-						err = f.CreateSnapshot(snapshot)
-						Expect(err).NotTo(HaveOccurred())
-
-						By("Check for Succeeded snapshot")
-						f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
-
-						if !skipSnapshotDataChecking {
-							By("Check for snapshot data")
-							f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-						}
-
-						// delete old snapshot
-						By(fmt.Sprintf("Delete old Snapshot %v", oldSnapshot.Name))
-						err = f.DeleteSnapshot(oldSnapshot.ObjectMeta)
-						Expect(err).NotTo(HaveOccurred())
-
-						By("Waiting for old Snapshot to be deleted")
-						f.EventuallySnapshot(oldSnapshot.ObjectMeta).Should(BeFalse())
-						if !skipSnapshotDataChecking {
-							By(fmt.Sprintf("Check data for old snapshot %v", oldSnapshot.Name))
-							f.EventuallySnapshotDataFound(oldSnapshot).Should(BeFalse())
-						}
-
-						// check remaining snapshot
-						By(fmt.Sprintf("Checking another Snapshot %v still exists", snapshot.Name))
-						_, err = f.GetSnapshot(snapshot.ObjectMeta)
-						Expect(err).NotTo(HaveOccurred())
-
-						if !skipSnapshotDataChecking {
-							By(fmt.Sprintf("Check data for remaining snapshot %v", snapshot.Name))
-							f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-						}
-					})
-				})
-			})
-
-			Context("In Azure", func() {
-				BeforeEach(func() {
-					secret = f.SecretForAzureBackend()
-					snapshot.Spec.StorageSecretName = secret.Name
-					snapshot.Spec.Azure = &store.AzureSpec{
-						Container: os.Getenv(AZURE_CONTAINER_NAME),
-					}
-				})
-
-				It("should take Snapshot successfully", shouldTakeSnapshot)
-
-				Context("Delete One Snapshot keeping others", func() {
-					var configMap *core.ConfigMap
-
-					BeforeEach(func() {
-						configMap = f.ConfigMapForInitialization()
-						err := f.CreateConfigMap(configMap)
-						Expect(err).NotTo(HaveOccurred())
-						mongodb.Spec.Init = &api.InitSpec{
-							ScriptSource: &api.ScriptSourceSpec{
-								VolumeSource: core.VolumeSource{
-									ConfigMap: &core.ConfigMapVolumeSource{
-										LocalObjectReference: core.LocalObjectReference{
-											Name: configMap.Name,
-										},
-									},
-								},
-							},
-						}
-					})
-
-					AfterEach(func() {
-						err := f.DeleteConfigMap(configMap.ObjectMeta)
-						Expect(err).NotTo(HaveOccurred())
-					})
-
-					It("Delete One Snapshot keeping others", func() {
-						// Create and wait for running MongoDB
-						shouldTakeSnapshot()
-
-						oldSnapshot := snapshot.DeepCopy()
-
-						// New snapshot that has old snapshot's name in prefix
-						snapshot.Name += "-2"
-
-						By(fmt.Sprintf("Create Snapshot %v", snapshot.Name))
-						err = f.CreateSnapshot(snapshot)
-						Expect(err).NotTo(HaveOccurred())
-
-						By("Check for Succeeded snapshot")
-						f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
-
-						if !skipSnapshotDataChecking {
-							By("Check for snapshot data")
-							f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-						}
-
-						// delete old snapshot
-						By(fmt.Sprintf("Delete old Snapshot %v", oldSnapshot.Name))
-						err = f.DeleteSnapshot(oldSnapshot.ObjectMeta)
-						Expect(err).NotTo(HaveOccurred())
-
-						By("Waiting for old Snapshot to be deleted")
-						f.EventuallySnapshot(oldSnapshot.ObjectMeta).Should(BeFalse())
-						if !skipSnapshotDataChecking {
-							By(fmt.Sprintf("Check data for old snapshot %v", oldSnapshot.Name))
-							f.EventuallySnapshotDataFound(oldSnapshot).Should(BeFalse())
-						}
-
-						// check remaining snapshot
-						By(fmt.Sprintf("Checking another Snapshot %v still exists", snapshot.Name))
-						_, err = f.GetSnapshot(snapshot.ObjectMeta)
-						Expect(err).NotTo(HaveOccurred())
-
-						if !skipSnapshotDataChecking {
-							By(fmt.Sprintf("Check data for remaining snapshot %v", snapshot.Name))
-							f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-						}
-					})
-				})
-			})
-
-			Context("In Swift", func() {
-				BeforeEach(func() {
-					secret = f.SecretForSwiftBackend()
-					snapshot.Spec.StorageSecretName = secret.Name
-					snapshot.Spec.Swift = &store.SwiftSpec{
-						Container: os.Getenv(SWIFT_CONTAINER_NAME),
-					}
-				})
-
-				It("should take Snapshot successfully", shouldTakeSnapshot)
-			})
-
-			Context("Snapshot PodVolume Template - In S3", func() {
-
-				BeforeEach(func() {
-					secret = f.SecretForS3Backend()
-					snapshot.Spec.StorageSecretName = secret.Name
-					snapshot.Spec.S3 = &store.S3Spec{
-						Bucket: os.Getenv(S3_BUCKET_NAME),
-					}
-				})
-
-				var shouldHandleJobVolumeSuccessfully = func() {
-					// Create and wait for running MongoDB
-					createAndWaitForRunning()
-
-					By("Get MongoDB")
-					es, err := f.GetMongoDB(mongodb.ObjectMeta)
-					Expect(err).NotTo(HaveOccurred())
-					mongodb.Spec = es.Spec
-
-					By("Create Secret")
-					err = f.CreateSecret(secret)
-					Expect(err).NotTo(HaveOccurred())
-
-					// determine pvcSpec and storageType for job
-					// start
-					pvcSpec := snapshot.Spec.PodVolumeClaimSpec
-					if pvcSpec == nil {
-						pvcSpec = mongodb.Spec.Storage
-					}
-					st := snapshot.Spec.StorageType
-					if st == nil {
-						st = &mongodb.Spec.StorageType
-					}
-					Expect(st).NotTo(BeNil())
-					// end
-
-					By("Create Snapshot")
-					err = f.CreateSnapshot(snapshot)
-					if *st == api.StorageTypeDurable && pvcSpec == nil {
-						By("Create Snapshot should have failed")
-						Expect(err).Should(HaveOccurred())
-						return
-					} else {
-						Expect(err).NotTo(HaveOccurred())
-					}
-
-					By("Get Snapshot")
-					snap, err := f.GetSnapshot(snapshot.ObjectMeta)
-					Expect(err).NotTo(HaveOccurred())
-					snapshot.Spec = snap.Spec
-
-					if *st == api.StorageTypeEphemeral {
-						storageSize := "0"
-						if pvcSpec != nil {
-							if sz, found := pvcSpec.Resources.Requests[core.ResourceStorage]; found {
-								storageSize = sz.String()
-							}
-						}
-						By(fmt.Sprintf("Check for Job Empty volume size: %v", storageSize))
-						f.EventuallyJobVolumeEmptyDirSize(snapshot.ObjectMeta).Should(Equal(storageSize))
-					} else if *st == api.StorageTypeDurable {
-						sz, found := pvcSpec.Resources.Requests[core.ResourceStorage]
-						Expect(found).NotTo(BeFalse())
-
-						By("Check for Job PVC Volume size from snapshot")
-						f.EventuallyJobPVCSize(snapshot.ObjectMeta).Should(Equal(sz.String()))
-					}
-
-					By("Check for succeeded snapshot")
-					f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
-
-					if !skipSnapshotDataChecking {
-						By("Check for snapshot data")
-						f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-					}
-				}
-
-				// db StorageType Scenarios
-				// ==============> Start
-				var dbStorageTypeScenarios = func() {
-					Context("DBStorageType - Durable", func() {
-						BeforeEach(func() {
-							mongodb.Spec.StorageType = api.StorageTypeDurable
-							mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
-								Resources: core.ResourceRequirements{
-									Requests: core.ResourceList{
-										core.ResourceStorage: resource.MustParse(framework.DBPvcStorageSize),
-									},
-								},
-								StorageClassName: types.StringP(root.StorageClass),
-							}
-
-						})
-
-						It("should Handle Job Volume Successfully", shouldHandleJobVolumeSuccessfully)
-					})
-
-					Context("DBStorageType - Ephemeral", func() {
-						BeforeEach(func() {
-							mongodb.Spec.StorageType = api.StorageTypeEphemeral
-							mongodb.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
-						})
-
-						Context("DBPvcSpec is nil", func() {
-							BeforeEach(func() {
-								mongodb.Spec.Storage = nil
-							})
-
-							It("should Handle Job Volume Successfully", shouldHandleJobVolumeSuccessfully)
-						})
-
-						Context("DBPvcSpec is given [not nil]", func() {
-							BeforeEach(func() {
-								mongodb.Spec.Storage = &core.PersistentVolumeClaimSpec{
-									Resources: core.ResourceRequirements{
-										Requests: core.ResourceList{
-											core.ResourceStorage: resource.MustParse(framework.DBPvcStorageSize),
-										},
-									},
-									StorageClassName: types.StringP(root.StorageClass),
-								}
-							})
-
-							It("should Handle Job Volume Successfully", shouldHandleJobVolumeSuccessfully)
-						})
-					})
-				}
-				// End <==============
-
-				// Snapshot PVC Scenarios
-				// ==============> Start
-				var snapshotPvcScenarios = func() {
-					Context("Snapshot PVC is given [not nil]", func() {
-						BeforeEach(func() {
-							snapshot.Spec.PodVolumeClaimSpec = &core.PersistentVolumeClaimSpec{
-								Resources: core.ResourceRequirements{
-									Requests: core.ResourceList{
-										core.ResourceStorage: resource.MustParse(framework.JobPvcStorageSize),
-									},
-								},
-								StorageClassName: types.StringP(root.StorageClass),
-							}
-						})
-
-						dbStorageTypeScenarios()
-					})
-
-					Context("Snapshot PVC is nil", func() {
-						BeforeEach(func() {
-							snapshot.Spec.PodVolumeClaimSpec = nil
-						})
-
-						dbStorageTypeScenarios()
-					})
-				}
-				// End <==============
-
-				Context("Snapshot StorageType is nil", func() {
-					BeforeEach(func() {
-						snapshot.Spec.StorageType = nil
-					})
-
-					snapshotPvcScenarios()
-				})
-
-				Context("Snapshot StorageType is Ephemeral", func() {
-					BeforeEach(func() {
-						ephemeral := api.StorageTypeEphemeral
-						snapshot.Spec.StorageType = &ephemeral
-					})
-
-					snapshotPvcScenarios()
-				})
-
-				Context("Snapshot StorageType is Durable", func() {
-					BeforeEach(func() {
-						durable := api.StorageTypeDurable
-						snapshot.Spec.StorageType = &durable
-					})
-
-					snapshotPvcScenarios()
 				})
 			})
 		})
@@ -1298,212 +493,6 @@ var _ = Describe("MongoDB", func() {
 
 			})
 
-			Context("With Snapshot", func() {
-
-				var anotherMongoDB *api.MongoDB
-				var skipConfig bool
-
-				BeforeEach(func() {
-					skipConfig = true
-					anotherMongoDB = f.MongoDBStandalone()
-					anotherMongoDB.Spec.Init = &api.InitSpec{
-						SnapshotSource: &api.SnapshotSourceSpec{
-							Namespace: snapshot.Namespace,
-							Name:      snapshot.Name,
-						},
-					}
-					skipSnapshotDataChecking = false
-					secret = f.SecretForGCSBackend()
-					snapshot.Spec.StorageSecretName = secret.Name
-					snapshot.Spec.GCS = &store.GCSSpec{
-						Bucket: os.Getenv(GCS_BUCKET_NAME),
-					}
-					snapshot.Spec.DatabaseName = mongodb.Name
-				})
-
-				var shouldInitializeSnapshot = func() {
-					// Create and wait for running MongoDB
-					createAndWaitForRunning()
-
-					if enableSharding {
-						By("Enable sharding for db:" + dbName)
-						f.EventuallyEnableSharding(mongodb.ObjectMeta, dbName).Should(BeTrue())
-					}
-					if verifySharding {
-						By("Check if db " + dbName + " is set to partitioned")
-						f.EventuallyCollectionPartitioned(mongodb.ObjectMeta, dbName).Should(Equal(enableSharding))
-					}
-
-					By("Insert Document Inside DB")
-					f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName, 50).Should(BeTrue())
-
-					By("Checking Inserted Document")
-					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 50).Should(BeTrue())
-
-					By("Create Secret")
-					err := f.CreateSecret(secret)
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Create Snapshot")
-					err = f.CreateSnapshot(snapshot)
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Check for Succeeded snapshot")
-					f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
-
-					if !skipSnapshotDataChecking {
-						By("Check for snapshot data")
-						f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-					}
-
-					oldMongoDB, err := f.GetMongoDB(mongodb.ObjectMeta)
-					Expect(err).NotTo(HaveOccurred())
-
-					garbageMongoDB.Items = append(garbageMongoDB.Items, *oldMongoDB)
-
-					By("Create mongodb from snapshot")
-					mongodb = anotherMongoDB
-					mongodb.Spec.DatabaseSecret = oldMongoDB.Spec.DatabaseSecret
-
-					// Create and wait for running MongoDB
-					createAndWaitForRunning()
-
-					if verifySharding {
-						By("Check if db " + dbName + " is set to partitioned")
-						f.EventuallyCollectionPartitioned(mongodb.ObjectMeta, dbName).Should(Equal(!skipConfig))
-					}
-
-					By("Checking previously Inserted Document")
-					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 50).Should(BeTrue())
-				}
-
-				It("should run successfully", shouldInitializeSnapshot)
-
-				Context("with local volume", func() {
-
-					BeforeEach(func() {
-						snapshotPVC = f.GetPersistentVolumeClaim()
-						By("Creating PVC for local backend snapshot")
-						err := f.CreatePersistentVolumeClaim(snapshotPVC)
-						Expect(err).NotTo(HaveOccurred())
-
-						skipSnapshotDataChecking = true
-						secret = f.SecretForLocalBackend()
-						snapshot.Spec.StorageSecretName = secret.Name
-						snapshot.Spec.Backend = store.Backend{
-							Local: &store.LocalSpec{
-								MountPath: "/repo",
-								VolumeSource: core.VolumeSource{
-									PersistentVolumeClaim: &core.PersistentVolumeClaimVolumeSource{
-										ClaimName: snapshotPVC.Name,
-									},
-								},
-							},
-						}
-					})
-
-					It("should initialize database successfully", shouldInitializeSnapshot)
-
-				})
-
-				Context("With Replica Set", func() {
-					BeforeEach(func() {
-						mongodb = f.MongoDBRS()
-						snapshot.Spec.DatabaseName = mongodb.Name
-						anotherMongoDB = f.MongoDBRS()
-						anotherMongoDB.Spec.Init = &api.InitSpec{
-							SnapshotSource: &api.SnapshotSourceSpec{
-								Namespace: snapshot.Namespace,
-								Name:      snapshot.Name,
-							},
-						}
-					})
-					It("should initialize database successfully", shouldInitializeSnapshot)
-				})
-
-				Context("With Sharding", func() {
-					BeforeEach(func() {
-						verifySharding = true
-						mongodb = f.MongoDBShard()
-						snapshot.Spec.DatabaseName = mongodb.Name
-						anotherMongoDB = f.MongoDBShard()
-						anotherMongoDB.Spec.Init = &api.InitSpec{
-							SnapshotSource: &api.SnapshotSourceSpec{
-								Namespace: snapshot.Namespace,
-								Name:      snapshot.Name,
-							},
-						}
-					})
-					Context("-", func() {
-						BeforeEach(func() {
-							enableSharding = false
-							skipConfig = true
-							anotherMongoDB.Spec.Init = &api.InitSpec{
-								SnapshotSource: &api.SnapshotSourceSpec{
-									Namespace: snapshot.Namespace,
-									Name:      snapshot.Name,
-									Args:      []string{fmt.Sprintf("--skip-config=%v", skipConfig)},
-								},
-							}
-							mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
-							anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
-						})
-						It("should initialize database successfully", shouldInitializeSnapshot)
-					})
-
-					Context("With Sharding Enabled database", func() {
-						BeforeEach(func() {
-							enableSharding = true
-							skipConfig = true
-							anotherMongoDB.Spec.Init = &api.InitSpec{
-								SnapshotSource: &api.SnapshotSourceSpec{
-									Namespace: snapshot.Namespace,
-									Name:      snapshot.Name,
-									Args:      []string{fmt.Sprintf("--skip-config=%v", skipConfig)},
-								},
-							}
-							mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
-							anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
-						})
-						It("should initialize database successfully", shouldInitializeSnapshot)
-					})
-
-					Context("With ShardingEnabled database - skipConfig is set false", func() {
-						BeforeEach(func() {
-							enableSharding = true
-							skipConfig = false
-							anotherMongoDB.Spec.Init = &api.InitSpec{
-								SnapshotSource: &api.SnapshotSourceSpec{
-									Namespace: snapshot.Namespace,
-									Name:      snapshot.Name,
-									Args:      []string{fmt.Sprintf("--skip-config=%v", skipConfig)},
-								},
-							}
-						})
-						It("should initialize database successfully", shouldInitializeSnapshot)
-					})
-
-				})
-
-				Context("From Sharding to standalone", func() {
-					BeforeEach(func() {
-						mongodb = f.MongoDBShard()
-						snapshot.Spec.DatabaseName = mongodb.Name
-						anotherMongoDB = f.MongoDBStandalone()
-						anotherMongoDB.Spec.Init = &api.InitSpec{
-							SnapshotSource: &api.SnapshotSourceSpec{
-								Namespace: snapshot.Namespace,
-								Name:      snapshot.Name,
-								Args:      []string{"--skip-config=true"},
-							},
-						}
-						mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
-						anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
-					})
-					It("should take Snapshot successfully", shouldInitializeSnapshot)
-				})
-			})
-
 			// To run this test,
 			// 1st: Deploy stash latest operator
 			// 2nd: create mongodb related tasks and functions from
@@ -1520,14 +509,7 @@ var _ = Describe("MongoDB", func() {
 					if !f.FoundStashCRDs() {
 						Skip("Skipping tests for stash integration. reason: stash operator is not running.")
 					}
-					skipSnapshotDataChecking = true
 					anotherMongoDB = f.MongoDBStandalone()
-					anotherMongoDB.Spec.Init = &api.InitSpec{
-						SnapshotSource: &api.SnapshotSourceSpec{
-							Namespace: snapshot.Namespace,
-							Name:      snapshot.Name,
-						},
-					}
 				})
 
 				AfterEach(func() {
@@ -1980,10 +962,8 @@ var _ = Describe("MongoDB", func() {
 
 		Context("Resume", func() {
 			var usedInitScript bool
-			var usedInitSnapshot bool
 			BeforeEach(func() {
 				usedInitScript = false
-				usedInitSnapshot = false
 			})
 
 			Context("Super Fast User - Create-Delete-Create-Delete-Create ", func() {
@@ -2001,8 +981,8 @@ var _ = Describe("MongoDB", func() {
 					err = f.DeleteMongoDB(mongodb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("Wait for mongodb to be paused")
-					f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
+					By("Wait for mongodb to be deleted")
+					f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeFalse())
 
 					// Create MongoDB object again to resume it
 					By("Create MongoDB: " + mongodb.Name)
@@ -2021,9 +1001,6 @@ var _ = Describe("MongoDB", func() {
 					By("Create MongoDB: " + mongodb.Name)
 					err = f.CreateMongoDB(mongodb)
 					Expect(err).NotTo(HaveOccurred())
-
-					By("Wait for DormantDatabase to be deleted")
-					f.EventuallyDormantDatabase(mongodb.ObjectMeta).Should(BeFalse())
 
 					By("Wait for Running mongodb")
 					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
@@ -2056,15 +1033,12 @@ var _ = Describe("MongoDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for mongodb to be paused")
-					f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
+					f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeFalse())
 
 					// Create MongoDB object again to resume it
 					By("Create MongoDB: " + mongodb.Name)
 					err = f.CreateMongoDB(mongodb)
 					Expect(err).NotTo(HaveOccurred())
-
-					By("Wait for DormantDatabase to be deleted")
-					f.EventuallyDormantDatabase(mongodb.ObjectMeta).Should(BeFalse())
 
 					By("Wait for Running mongodb")
 					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
@@ -2137,15 +1111,12 @@ var _ = Describe("MongoDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for mongodb to be paused")
-					f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
+					f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeFalse())
 
 					// Create MongoDB object again to resume it
 					By("Create MongoDB: " + mongodb.Name)
 					err = f.CreateMongoDB(mongodb)
 					Expect(err).NotTo(HaveOccurred())
-
-					By("Wait for DormantDatabase to be deleted")
-					f.EventuallyDormantDatabase(mongodb.ObjectMeta).Should(BeFalse())
 
 					By("Wait for Running mongodb")
 					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
@@ -2207,122 +1178,6 @@ var _ = Describe("MongoDB", func() {
 				})
 			})
 
-			Context("With Snapshot Init", func() {
-
-				var anotherMongoDB *api.MongoDB
-
-				BeforeEach(func() {
-					anotherMongoDB = f.MongoDBStandalone()
-					usedInitSnapshot = true
-					secret = f.SecretForGCSBackend()
-					snapshot.Spec.StorageSecretName = secret.Name
-					snapshot.Spec.GCS = &store.GCSSpec{
-						Bucket: os.Getenv(GCS_BUCKET_NAME),
-					}
-					snapshot.Spec.DatabaseName = mongodb.Name
-				})
-				var shouldResumeWithSnapshot = func() {
-					// Create and wait for running MongoDB
-					createAndWaitForRunning()
-
-					By("Insert Document Inside DB")
-					f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
-
-					By("Checking Inserted Document")
-					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
-
-					By("Create Secret")
-					err := f.CreateSecret(secret)
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Create Snapshot")
-					err = f.CreateSnapshot(snapshot)
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Check for Succeeded snapshot")
-					f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
-
-					By("Check for snapshot data")
-					f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-
-					oldMongoDB, err := f.GetMongoDB(mongodb.ObjectMeta)
-					Expect(err).NotTo(HaveOccurred())
-
-					garbageMongoDB.Items = append(garbageMongoDB.Items, *oldMongoDB)
-
-					By("Create mongodb from snapshot")
-					mongodb = anotherMongoDB
-					mongodb.Spec.Init = &api.InitSpec{
-						SnapshotSource: &api.SnapshotSourceSpec{
-							Namespace: snapshot.Namespace,
-							Name:      snapshot.Name,
-						},
-					}
-
-					// Create and wait for running MongoDB
-					createAndWaitForRunning()
-
-					By("Checking Inserted Document")
-					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
-
-					By("Delete mongodb")
-					err = f.DeleteMongoDB(mongodb.ObjectMeta)
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Wait for mongodb to be paused")
-					f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
-
-					// Create MongoDB object again to resume it
-					By("Create MongoDB: " + mongodb.Name)
-					err = f.CreateMongoDB(mongodb)
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Wait for DormantDatabase to be deleted")
-					f.EventuallyDormantDatabase(mongodb.ObjectMeta).Should(BeFalse())
-
-					By("Wait for Running mongodb")
-					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
-
-					mongodb, err = f.GetMongoDB(mongodb.ObjectMeta)
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Ping mongodb database")
-					f.EventuallyPingMongo(mongodb.ObjectMeta)
-
-					By("Checking Inserted Document")
-					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
-
-					if usedInitSnapshot {
-						_, err = meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized)
-						Expect(err).NotTo(HaveOccurred())
-					}
-				}
-
-				It("should resume successfully", shouldResumeWithSnapshot)
-
-				Context("With Replica Set", func() {
-					BeforeEach(func() {
-						mongodb = f.MongoDBRS()
-						snapshot.Spec.DatabaseName = mongodb.Name
-						anotherMongoDB = f.MongoDBRS()
-					})
-					It("should take Snapshot successfully", shouldResumeWithSnapshot)
-				})
-
-				Context("With Sharding", func() {
-					BeforeEach(func() {
-						mongodb = f.MongoDBShard()
-						snapshot.Spec.DatabaseName = mongodb.Name
-						anotherMongoDB = f.MongoDBShard()
-
-						mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
-						anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
-					})
-
-					It("should take Snapshot successfully", shouldResumeWithSnapshot)
-				})
-			})
-
 			Context("Multiple times with init script", func() {
 				var configMap *core.ConfigMap
 
@@ -2365,15 +1220,12 @@ var _ = Describe("MongoDB", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						By("Wait for mongodb to be paused")
-						f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
+						f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeFalse())
 
 						// Create MongoDB object again to resume it
 						By("Create MongoDB: " + mongodb.Name)
 						err = f.CreateMongoDB(mongodb)
 						Expect(err).NotTo(HaveOccurred())
-
-						By("Wait for DormantDatabase to be deleted")
-						f.EventuallyDormantDatabase(mongodb.ObjectMeta).Should(BeFalse())
 
 						By("Wait for Running mongodb")
 						f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
@@ -2437,292 +1289,9 @@ var _ = Describe("MongoDB", func() {
 
 		})
 
-		Context("SnapshotScheduler", func() {
-
-			Context("With Startup", func() {
-
-				var shouldStartupSchedular = func() {
-					By("Create Secret")
-					err := f.CreateSecret(secret)
-					Expect(err).NotTo(HaveOccurred())
-
-					// Create and wait for running MongoDB
-					createAndWaitForRunning()
-
-					By("Count multiple Snapshot Object")
-					f.EventuallySnapshotCount(mongodb.ObjectMeta).Should(matcher.MoreThan(3))
-
-					By("Remove Backup Scheduler from MongoDB")
-					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
-						in.Spec.BackupSchedule = nil
-						return in
-					})
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Verify multiple Succeeded Snapshot")
-					f.EventuallyMultipleSnapshotFinishedProcessing(mongodb.ObjectMeta).Should(Succeed())
-				}
-
-				Context("with local", func() {
-					BeforeEach(func() {
-						secret = f.SecretForLocalBackend()
-						mongodb.Spec.BackupSchedule = &api.BackupScheduleSpec{
-							CronExpression: "@every 20s",
-							Backend: store.Backend{
-								StorageSecretName: secret.Name,
-								Local: &store.LocalSpec{
-									MountPath: "/repo",
-									VolumeSource: core.VolumeSource{
-										EmptyDir: &core.EmptyDirVolumeSource{},
-									},
-								},
-							},
-						}
-					})
-
-					It("should run schedular successfully", shouldStartupSchedular)
-				})
-
-				Context("with GCS", func() {
-					BeforeEach(func() {
-						secret = f.SecretForGCSBackend()
-						mongodb.Spec.BackupSchedule = &api.BackupScheduleSpec{
-							CronExpression: "@every 20s",
-							Backend: store.Backend{
-								StorageSecretName: secret.Name,
-								GCS: &store.GCSSpec{
-									Bucket: os.Getenv(GCS_BUCKET_NAME),
-								},
-							},
-						}
-					})
-
-					It("should run schedular successfully", shouldStartupSchedular)
-
-					Context("With Replica Set", func() {
-						BeforeEach(func() {
-							mongodb = f.MongoDBRS()
-							mongodb.Spec.BackupSchedule = &api.BackupScheduleSpec{
-								CronExpression: "@every 20s",
-								Backend: store.Backend{
-									StorageSecretName: secret.Name,
-									GCS: &store.GCSSpec{
-										Bucket: os.Getenv(GCS_BUCKET_NAME),
-									},
-								},
-							}
-						})
-						It("should take Snapshot successfully", shouldStartupSchedular)
-					})
-
-					Context("With Sharding", func() {
-						BeforeEach(func() {
-							mongodb = f.MongoDBShard()
-							mongodb.Spec.BackupSchedule = &api.BackupScheduleSpec{
-								CronExpression: "@every 20s",
-								Backend: store.Backend{
-									StorageSecretName: secret.Name,
-									GCS: &store.GCSSpec{
-										Bucket: os.Getenv(GCS_BUCKET_NAME),
-									},
-								},
-							}
-							mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
-						})
-						It("should take Snapshot successfully", shouldStartupSchedular)
-					})
-
-				})
-			})
-
-			Context("With Update - with Local", func() {
-				BeforeEach(func() {
-					secret = f.SecretForLocalBackend()
-				})
-
-				var shouldScheduleWithUpdate = func() {
-					// Create and wait for running MongoDB
-					createAndWaitForRunning()
-
-					By("Create Secret")
-					err := f.CreateSecret(secret)
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Update mongodb")
-					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
-						in.Spec.BackupSchedule = &api.BackupScheduleSpec{
-							CronExpression: "@every 20s",
-							Backend: store.Backend{
-								StorageSecretName: secret.Name,
-								Local: &store.LocalSpec{
-									MountPath: "/repo",
-									VolumeSource: core.VolumeSource{
-										EmptyDir: &core.EmptyDirVolumeSource{},
-									},
-								},
-							},
-						}
-
-						return in
-					})
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Count multiple Snapshot Object")
-					f.EventuallySnapshotCount(mongodb.ObjectMeta).Should(matcher.MoreThan(3))
-
-					By("Remove Backup Scheduler from MongoDB")
-					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
-						in.Spec.BackupSchedule = nil
-						return in
-					})
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Verify multiple Succeeded Snapshot")
-					f.EventuallyMultipleSnapshotFinishedProcessing(mongodb.ObjectMeta).Should(Succeed())
-
-					deleteTestResource()
-				}
-
-				It("should run schedular successfully", shouldScheduleWithUpdate)
-
-				Context("With Replica Set", func() {
-					BeforeEach(func() {
-						mongodb = f.MongoDBRS()
-					})
-					It("should take Snapshot successfully", shouldScheduleWithUpdate)
-				})
-
-				Context("With Sharding", func() {
-					BeforeEach(func() {
-						mongodb = f.MongoDBShard()
-						mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
-					})
-					It("should take Snapshot successfully", shouldScheduleWithUpdate)
-				})
-			})
-
-			Context("Re-Use DormantDatabase's scheduler", func() {
-				BeforeEach(func() {
-					secret = f.SecretForLocalBackend()
-				})
-
-				var shouldeReUseDormantDBcheduler = func() {
-					// Create and wait for running MongoDB
-					createAndWaitForRunning()
-
-					By("Create Secret")
-					err := f.CreateSecret(secret)
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Update mongodb")
-					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
-						in.Spec.BackupSchedule = &api.BackupScheduleSpec{
-							CronExpression: "@every 20s",
-							Backend: store.Backend{
-								StorageSecretName: secret.Name,
-								Local: &store.LocalSpec{
-									MountPath: "/repo",
-									VolumeSource: core.VolumeSource{
-										EmptyDir: &core.EmptyDirVolumeSource{},
-									},
-								},
-							},
-						}
-						return in
-					})
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Insert Document Inside DB")
-					f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
-
-					By("Checking Inserted Document")
-					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
-
-					By("Count multiple Snapshot Object")
-					f.EventuallySnapshotCount(mongodb.ObjectMeta).Should(matcher.MoreThan(3))
-
-					By("Verify multiple Succeeded Snapshot")
-					f.EventuallyMultipleSnapshotFinishedProcessing(mongodb.ObjectMeta).Should(Succeed())
-
-					By("Delete mongodb")
-					err = f.DeleteMongoDB(mongodb.ObjectMeta)
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Wait for mongodb to be paused")
-					f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
-
-					// Create MongoDB object again to resume it
-					By("Create MongoDB: " + mongodb.Name)
-					err = f.CreateMongoDB(mongodb)
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Wait for DormantDatabase to be deleted")
-					f.EventuallyDormantDatabase(mongodb.ObjectMeta).Should(BeFalse())
-
-					By("Wait for Running mongodb")
-					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
-
-					By("Ping mongodb database")
-					f.EventuallyPingMongo(mongodb.ObjectMeta)
-
-					By("Checking Inserted Document")
-					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
-
-					By("Count multiple Snapshot Object")
-					f.EventuallySnapshotCount(mongodb.ObjectMeta).Should(matcher.MoreThan(5))
-
-					By("Remove Backup Scheduler from MongoDB")
-					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
-						in.Spec.BackupSchedule = nil
-						return in
-					})
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Verify multiple Succeeded Snapshot")
-					f.EventuallyMultipleSnapshotFinishedProcessing(mongodb.ObjectMeta).Should(Succeed())
-				}
-
-				It("should re-use scheduler successfully", shouldeReUseDormantDBcheduler)
-
-				Context("With Replica Set", func() {
-					BeforeEach(func() {
-						mongodb = f.MongoDBRS()
-					})
-					It("should take Snapshot successfully", shouldeReUseDormantDBcheduler)
-				})
-
-				Context("With Sharding", func() {
-					BeforeEach(func() {
-						mongodb = f.MongoDBRS()
-					})
-					It("should take Snapshot successfully", shouldeReUseDormantDBcheduler)
-				})
-			})
-		})
-
 		Context("Termination Policy", func() {
 			BeforeEach(func() {
-				skipSnapshotDataChecking = false
 				secret = f.SecretForS3Backend()
-				snapshot.Spec.StorageSecretName = secret.Name
-				snapshot.Spec.S3 = &store.S3Spec{
-					Bucket: os.Getenv(S3_BUCKET_NAME),
-				}
-				snapshot.Spec.DatabaseName = mongodb.Name
-			})
-
-			AfterEach(func() {
-				if snapshot != nil {
-					By("Delete Existing snapshot")
-					err := f.DeleteSnapshot(snapshot.ObjectMeta)
-					if err != nil {
-						if kerr.IsNotFound(err) {
-							// MongoDB was not created. Hence, rest of cleanup is not necessary.
-							return
-						}
-						Expect(err).NotTo(HaveOccurred())
-					}
-				}
 			})
 
 			var shouldRunWithSnapshot = func() {
@@ -2738,23 +1307,10 @@ var _ = Describe("MongoDB", func() {
 				By("Create Secret")
 				err := f.CreateSecret(secret)
 				Expect(err).NotTo(HaveOccurred())
-
-				By("Create Snapshot")
-				err = f.CreateSnapshot(snapshot)
-				Expect(err).NotTo(HaveOccurred())
-
-				By("Check for succeeded snapshot")
-				f.EventuallySnapshotPhase(snapshot.ObjectMeta).Should(Equal(api.SnapshotPhaseSucceeded))
-
-				if !skipSnapshotDataChecking {
-					By("Check for snapshot data")
-					f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-				}
 			}
 
 			Context("with TerminationDoNotTerminate", func() {
 				BeforeEach(func() {
-					skipSnapshotDataChecking = true
 					mongodb.Spec.TerminationPolicy = api.TerminationPolicyDoNotTerminate
 				})
 
@@ -2774,7 +1330,7 @@ var _ = Describe("MongoDB", func() {
 
 					By("Update mongodb to set spec.terminationPolicy = Pause")
 					_, err := f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
-						in.Spec.TerminationPolicy = api.TerminationPolicyPause
+						in.Spec.TerminationPolicy = api.TerminationPolicyHalt
 						return in
 					})
 					Expect(err).NotTo(HaveOccurred())
@@ -2801,40 +1357,29 @@ var _ = Describe("MongoDB", func() {
 
 			})
 
-			Context("with TerminationPolicyPause (default)", func() {
-				var shouldRunWithTerminationPause = func() {
+			Context("with TerminationPolicyHalt", func() {
+				var shouldRunWithTerminationHalt = func() {
 					shouldRunWithSnapshot()
 
-					By("Delete mongodb")
-					err = f.DeleteMongoDB(mongodb.ObjectMeta)
+					By("Halt MongoDB: Update mongodb to set spec.halted = true")
+					_, err := f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
+						in.Spec.Halted = true
+						return in
+					})
 					Expect(err).NotTo(HaveOccurred())
 
-					// DormantDatabase.Status= paused, means mongodb object is deleted
-					By("Wait for mongodb to be paused")
-					f.EventuallyDormantDatabaseStatus(mongodb.ObjectMeta).Should(matcher.HavePaused())
+					By("Wait for halted/paused mongodb")
+					f.EventuallyMongoDBPhase(mongodb.ObjectMeta).Should(Equal(api.DatabasePhaseHalted))
 
-					By("Check for intact snapshot")
-					_, err := f.GetSnapshot(snapshot.ObjectMeta)
+					By("Resume MongoDB: Update mongodb to set spec.halted = false")
+					_, err = f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
+						in.Spec.Halted = false
+						return in
+					})
 					Expect(err).NotTo(HaveOccurred())
-
-					if !skipSnapshotDataChecking {
-						By("Check for snapshot data")
-						f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-					}
-
-					// Create MongoDB object again to resume it
-					By("Create (pause) MongoDB: " + mongodb.Name)
-					err = f.CreateMongoDB(mongodb)
-					Expect(err).NotTo(HaveOccurred())
-
-					By("Wait for DormantDatabase to be deleted")
-					f.EventuallyDormantDatabase(mongodb.ObjectMeta).Should(BeFalse())
 
 					By("Wait for Running mongodb")
 					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
-
-					mongodb, err = f.GetMongoDB(mongodb.ObjectMeta)
-					Expect(err).NotTo(HaveOccurred())
 
 					By("Ping mongodb database")
 					f.EventuallyPingMongo(mongodb.ObjectMeta)
@@ -2842,27 +1387,45 @@ var _ = Describe("MongoDB", func() {
 					By("Checking Inserted Document")
 					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
 
+					By("Delete mongodb")
+					err = f.DeleteMongoDB(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("wait until mongodb is deleted")
+					f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeFalse())
+
+					// create mongodb object again to resume it
+					By("Create (pause) MongoDB: " + mongodb.Name)
+					err = f.CreateMongoDB(mongodb)
+					Expect(err).NotTo(HaveOccurred())
+
+					By("Wait for Running mongodb")
+					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+
+					By("Ping mongodb database")
+					f.EventuallyPingMongo(mongodb.ObjectMeta)
+
+					By("Checking Inserted Document")
+					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
 				}
 
-				It("should create dormantdatabase successfully", shouldRunWithTerminationPause)
+				It("should create dormantdatabase successfully", shouldRunWithTerminationHalt)
 
 				Context("with Replica Set", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
-						snapshot.Spec.DatabaseName = mongodb.Name
 					})
 
-					It("should create dormantdatabase successfully", shouldRunWithTerminationPause)
+					It("should create dormantdatabase successfully", shouldRunWithTerminationHalt)
 				})
 
 				Context("with Sharding", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBShard()
-						snapshot.Spec.DatabaseName = mongodb.Name
 						//mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 					})
 
-					It("should create dormantdatabase successfully", shouldRunWithTerminationPause)
+					It("should create dormantdatabase successfully", shouldRunWithTerminationHalt)
 				})
 			})
 
@@ -2881,32 +1444,11 @@ var _ = Describe("MongoDB", func() {
 					By("wait until mongodb is deleted")
 					f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeFalse())
 
-					By("Checking DormantDatabase is not created")
-					f.EventuallyDormantDatabase(mongodb.ObjectMeta).Should(BeFalse())
-
 					By("Check for deleted PVCs")
 					f.EventuallyPVCCount(mongodb.ObjectMeta).Should(Equal(0))
 
 					By("Check for intact Secrets")
 					f.EventuallyDBSecretCount(mongodb.ObjectMeta).ShouldNot(Equal(0))
-
-					By("Check for intact snapshot")
-					_, err := f.GetSnapshot(snapshot.ObjectMeta)
-					Expect(err).NotTo(HaveOccurred())
-
-					if !skipSnapshotDataChecking {
-						By("Check for intact snapshot data")
-						f.EventuallySnapshotDataFound(snapshot).Should(BeTrue())
-					}
-
-					By("Delete snapshot")
-					err = f.DeleteSnapshot(snapshot.ObjectMeta)
-					Expect(err).NotTo(HaveOccurred())
-
-					if !skipSnapshotDataChecking {
-						By("Check for deleted snapshot data")
-						f.EventuallySnapshotDataFound(snapshot).Should(BeFalse())
-					}
 				}
 
 				It("should run with TerminationPolicyDelete", shouldRunWithTerminationDelete)
@@ -2915,7 +1457,6 @@ var _ = Describe("MongoDB", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
 						mongodb.Spec.TerminationPolicy = api.TerminationPolicyDelete
-						snapshot.Spec.DatabaseName = mongodb.Name
 					})
 					It("should initialize database successfully", shouldRunWithTerminationDelete)
 				})
@@ -2924,7 +1465,6 @@ var _ = Describe("MongoDB", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
 						mongodb.Spec.TerminationPolicy = api.TerminationPolicyDelete
-						snapshot.Spec.DatabaseName = mongodb.Name
 					})
 					It("should initialize database successfully", shouldRunWithTerminationDelete)
 				})
@@ -2945,22 +1485,11 @@ var _ = Describe("MongoDB", func() {
 					By("wait until mongodb is deleted")
 					f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeFalse())
 
-					By("Checking DormantDatabase is not created")
-					f.EventuallyDormantDatabase(mongodb.ObjectMeta).Should(BeFalse())
-
 					By("Check for deleted PVCs")
 					f.EventuallyPVCCount(mongodb.ObjectMeta).Should(Equal(0))
 
 					By("Check for deleted Secrets")
 					f.EventuallyDBSecretCount(mongodb.ObjectMeta).Should(Equal(0))
-
-					By("Check for deleted Snapshots")
-					f.EventuallySnapshotCount(snapshot.ObjectMeta).Should(Equal(0))
-
-					if !skipSnapshotDataChecking {
-						By("Check for deleted snapshot data")
-						f.EventuallySnapshotDataFound(snapshot).Should(BeFalse())
-					}
 				}
 
 				It("should run with TerminationPolicyWipeOut", shouldRunWithTerminationWipeOut)
@@ -2968,7 +1497,6 @@ var _ = Describe("MongoDB", func() {
 				Context("with Replica Set", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
-						snapshot.Spec.DatabaseName = mongodb.Name
 						mongodb.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
 					})
 					It("should initialize database successfully", shouldRunWithTerminationWipeOut)
@@ -2977,7 +1505,6 @@ var _ = Describe("MongoDB", func() {
 				Context("with Sharding", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBShard()
-						snapshot.Spec.DatabaseName = mongodb.Name
 						mongodb.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
 
 						//mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
@@ -3428,12 +1955,12 @@ var _ = Describe("MongoDB", func() {
 					It("should run successfully", shouldRunSuccessfully)
 				})
 
-				Context("With TerminationPolicyPause", func() {
+				Context("With TerminationPolicyHalt", func() {
 
 					BeforeEach(func() {
 						mongodb.Spec.StorageType = api.StorageTypeEphemeral
 						mongodb.Spec.Storage = nil
-						mongodb.Spec.TerminationPolicy = api.TerminationPolicyPause
+						mongodb.Spec.TerminationPolicy = api.TerminationPolicyHalt
 					})
 
 					It("should reject to create MongoDB object", func() {

@@ -71,10 +71,18 @@ func (c *Controller) runMongoDB(key string) error {
 				return nil
 			}
 
-			if err := c.create(mongodb); err != nil {
-				log.Errorln(err)
-				c.pushFailureEvent(mongodb, err.Error())
-				return err
+			if mongodb.Spec.Halted {
+				if err := c.halt(mongodb); err != nil {
+					log.Errorln(err)
+					c.pushFailureEvent(mongodb, err.Error())
+					return err
+				}
+			} else {
+				if err := c.create(mongodb); err != nil {
+					log.Errorln(err)
+					c.pushFailureEvent(mongodb, err.Error())
+					return err
+				}
 			}
 		}
 	}

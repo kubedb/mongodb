@@ -152,7 +152,7 @@ func (c *Controller) ensureStatsService(mongodb *api.MongoDB) (kutil.VerbType, e
 			{
 				Name:       api.PrometheusExporterPortName,
 				Protocol:   core.ProtocolTCP,
-				Port:       mongodb.Spec.Monitor.Prometheus.Port,
+				Port:       mongodb.Spec.Monitor.Prometheus.Exporter.Port,
 				TargetPort: intstr.FromString(api.PrometheusExporterPortName),
 			},
 		})

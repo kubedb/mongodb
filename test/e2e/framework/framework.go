@@ -24,6 +24,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	ka "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset"
+	core_util "kmodules.xyz/client-go/core/v1"
 	appcat_cs "kmodules.xyz/custom-resources/client/clientset/versioned/typed/appcatalog/v1alpha1"
 	scs "stash.appscode.dev/stash/client/clientset/versioned"
 )
@@ -41,6 +42,7 @@ type Framework struct {
 	kaClient         ka.Interface
 	appCatalogClient appcat_cs.AppcatalogV1alpha1Interface
 	stashClient      scs.Interface
+	topology         *core_util.Topology
 	namespace        string
 	name             string
 	StorageClass     string
@@ -55,7 +57,12 @@ func New(
 	appCatalogClient appcat_cs.AppcatalogV1alpha1Interface,
 	stashClient scs.Interface,
 	storageClass string,
-) *Framework {
+) (*Framework, error) {
+	topology, err := core_util.DetectTopology(kubeClient)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Framework{
 		restConfig:       restConfig,
 		kubeClient:       kubeClient,
@@ -67,7 +74,8 @@ func New(
 		name:             "mongodb-operator",
 		namespace:        rand.WithUniqSuffix(api.ResourceSingularMongoDB),
 		StorageClass:     storageClass,
-	}
+		topology:         topology,
+	}, nil
 }
 
 func (f *Framework) Invoke() *Invocation {

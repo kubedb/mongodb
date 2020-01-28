@@ -104,7 +104,8 @@ var _ = BeforeSuite(func() {
 	stashClient := scs.NewForConfigOrDie(config)
 
 	// Framework
-	root = framework.New(config, kubeClient, aPIExtKubeClient, dbClient, kaClient, appCatalogClient, stashClient, storageClass)
+	root, err = framework.New(config, kubeClient, aPIExtKubeClient, dbClient, kaClient, appCatalogClient, stashClient, storageClass)
+	Expect(err).NotTo(HaveOccurred())
 
 	// Create namespace
 	By("Using namespace " + root.Namespace())
@@ -118,10 +119,6 @@ var _ = AfterSuite(func() {
 	By("Cleanup Left Overs")
 	By("Delete left over MongoDB objects")
 	root.CleanMongoDB()
-	By("Delete left over Dormant Database objects")
-	root.CleanDormantDatabase()
-	By("Delete left over Snapshot objects")
-	root.CleanSnapshot()
 	By("Delete left over workloads if exists any")
 	root.CleanWorkloadLeftOvers()
 	By("Delete Namespace")

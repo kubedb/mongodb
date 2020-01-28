@@ -16,6 +16,7 @@ limitations under the License.
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -27,6 +28,8 @@ import (
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
 	"github.com/fatih/structs"
+	"github.com/pkg/errors"
+	"gomodules.xyz/envsubst"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
@@ -57,6 +60,8 @@ const (
 
 	InitInstallContainerName   = "copy-config"
 	InitBootstrapContainerName = "bootstrap"
+
+	ShardAffinityTemplateVar = "SHARD_INDEX"
 )
 
 type workloadOptions struct {
@@ -197,6 +202,12 @@ func (c *Controller) ensureShardNode(mongodb *api.MongoDB) ([]*apps.StatefulSet,
 		initContainers = append(initContainers, bootstrpContnr)
 		volumes = core_util.UpsertVolume(volumes, bootstrpVol...)
 
+		podTemplate := mongodb.Spec.ShardTopology.Shard.PodTemplate.DeepCopy()
+		podTemplate, err = parseAffinityTemplate(podTemplate, nodeNum)
+		if err != nil {
+			return nil, kutil.VerbUnchanged, errors.Wrap(err, "error while templating affinity for shard nodes")
+		}
+
 		opts := workloadOptions{
 			stsName:        mongodb.ShardNodeName(nodeNum),
 			labels:         mongodb.ShardLabels(nodeNum),
@@ -206,7 +217,7 @@ func (c *Controller) ensureShardNode(mongodb *api.MongoDB) ([]*apps.StatefulSet,
 			envList:        nil,
 			initContainers: initContainers,
 			gvrSvcName:     mongodb.GvrSvcName(mongodb.ShardNodeName(nodeNum)),
-			podTemplate:    &mongodb.Spec.ShardTopology.Shard.PodTemplate,
+			podTemplate:    podTemplate,
 			configSource:   mongodb.Spec.ShardTopology.Shard.ConfigSource,
 			pvcSpec:        mongodb.Spec.ShardTopology.Shard.Storage,
 			replicas:       &mongodb.Spec.ShardTopology.Shard.Replicas,
@@ -777,12 +788,13 @@ func upsertEnv(template core.PodTemplateSpec, mongodb *api.MongoDB) core.PodTemp
 	return template
 }
 
-func (c *Controller) checkStatefulSetPodStatus(statefulSet *apps.StatefulSet) error {
+func (c *Controller) checkStatefulSetPodStatus(sts *apps.StatefulSet) error {
+	log.Infof("Waiting for running phase for statefulset %v/%v.", sts.Namespace, sts.Name)
 	err := core_util.WaitUntilPodRunningBySelector(
 		c.Client,
-		statefulSet.Namespace,
-		statefulSet.Spec.Selector,
-		int(types.Int32(statefulSet.Spec.Replicas)),
+		sts.Namespace,
+		sts.Spec.Selector,
+		int(types.Int32(sts.Spec.Replicas)),
 	)
 	if err != nil {
 		return err
@@ -801,19 +813,42 @@ func getExporterContainer(mongodb *api.MongoDB, mongodbVersion *v1alpha1.MongoDB
 		Name: "exporter",
 		Args: append([]string{
 			"--mongodb.uri=mongodb://$(MONGO_INITDB_ROOT_USERNAME):$(MONGO_INITDB_ROOT_PASSWORD)@localhost:27017/admin",
-			fmt.Sprintf("--web.listen-address=:%d", mongodb.Spec.Monitor.Prometheus.Port),
+			fmt.Sprintf("--web.listen-address=:%d", mongodb.Spec.Monitor.Prometheus.Exporter.Port),
 			metricsPath,
-		}, mongodb.Spec.Monitor.Args...),
+		}, mongodb.Spec.Monitor.Prometheus.Exporter.Args...),
 		Image: mongodbVersion.Spec.Exporter.Image,
 		Ports: []core.ContainerPort{
 			{
 				Name:          api.PrometheusExporterPortName,
 				Protocol:      core.ProtocolTCP,
-				ContainerPort: mongodb.Spec.Monitor.Prometheus.Port,
+				ContainerPort: mongodb.Spec.Monitor.Prometheus.Exporter.Port,
 			},
 		},
-		Env:             mongodb.Spec.Monitor.Env,
-		Resources:       mongodb.Spec.Monitor.Resources,
-		SecurityContext: mongodb.Spec.Monitor.SecurityContext,
+		Env:             mongodb.Spec.Monitor.Prometheus.Exporter.Env,
+		Resources:       mongodb.Spec.Monitor.Prometheus.Exporter.Resources,
+		SecurityContext: mongodb.Spec.Monitor.Prometheus.Exporter.SecurityContext,
 	}
+}
+
+func parseAffinityTemplate(podTemplate *ofst.PodTemplateSpec, nodeNum int32) (*ofst.PodTemplateSpec, error) {
+	if podTemplate == nil || podTemplate.Spec.Affinity == nil {
+		return podTemplate, nil
+	}
+
+	templateMap := map[string]string{
+		ShardAffinityTemplateVar: fmt.Sprint(nodeNum),
+	}
+
+	jsonObj, err := json.Marshal(podTemplate)
+	if err != nil {
+		return podTemplate, err
+	}
+
+	resolved, err := envsubst.EvalMap(string(jsonObj), templateMap)
+	if err != nil {
+		return podTemplate, err
+	}
+
+	err = json.Unmarshal([]byte(resolved), podTemplate)
+	return podTemplate, err
 }
