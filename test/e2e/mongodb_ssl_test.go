@@ -420,7 +420,6 @@ var _ = Describe("MongoDB SSL", func() {
 						})
 
 						BeforeEach(func() {
-							secret = f.SecretForGCSBackend()
 							mongodb.Spec.Init = &api.InitSpec{
 								ScriptSource: &api.ScriptSourceSpec{
 									VolumeSource: core.VolumeSource{
@@ -469,7 +468,6 @@ var _ = Describe("MongoDB SSL", func() {
 							})
 
 							BeforeEach(func() {
-								secret = f.SecretForGCSBackend()
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -515,7 +513,6 @@ var _ = Describe("MongoDB SSL", func() {
 
 								verifySharding = true
 								enableSharding = true
-								secret = f.SecretForGCSBackend()
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -580,7 +577,6 @@ var _ = Describe("MongoDB SSL", func() {
 
 								verifySharding = true
 								enableSharding = true
-								secret = f.SecretForGCSBackend()
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -632,7 +628,6 @@ var _ = Describe("MongoDB SSL", func() {
 							})
 
 							BeforeEach(func() {
-								secret = f.SecretForGCSBackend()
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -678,7 +673,6 @@ var _ = Describe("MongoDB SSL", func() {
 
 								verifySharding = true
 								enableSharding = true
-								secret = f.SecretForGCSBackend()
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -730,7 +724,6 @@ var _ = Describe("MongoDB SSL", func() {
 							})
 
 							BeforeEach(func() {
-								secret = f.SecretForGCSBackend()
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -776,7 +769,6 @@ var _ = Describe("MongoDB SSL", func() {
 
 								verifySharding = true
 								enableSharding = true
-								secret = f.SecretForGCSBackend()
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -827,7 +819,6 @@ var _ = Describe("MongoDB SSL", func() {
 							Expect(err).NotTo(HaveOccurred())
 						})
 						BeforeEach(func() {
-							secret = f.SecretForGCSBackend()
 							mongodb.Spec.Init = &api.InitSpec{
 								ScriptSource: &api.ScriptSourceSpec{
 									VolumeSource: core.VolumeSource{
@@ -876,7 +867,6 @@ var _ = Describe("MongoDB SSL", func() {
 							})
 
 							BeforeEach(func() {
-								secret = f.SecretForGCSBackend()
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -922,7 +912,6 @@ var _ = Describe("MongoDB SSL", func() {
 
 								verifySharding = true
 								enableSharding = true
-								secret = f.SecretForGCSBackend()
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -1006,7 +995,6 @@ var _ = Describe("MongoDB SSL", func() {
 							})
 
 							BeforeEach(func() {
-								secret = f.SecretForGCSBackend()
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -1052,7 +1040,6 @@ var _ = Describe("MongoDB SSL", func() {
 
 								verifySharding = true
 								enableSharding = true
-								secret = f.SecretForGCSBackend()
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -1134,7 +1121,6 @@ var _ = Describe("MongoDB SSL", func() {
 							err := f.CreateConfigMap(configMap)
 							Expect(err).NotTo(HaveOccurred())
 
-							secret = f.SecretForGCSBackend()
 							mongodb.Spec.Init = &api.InitSpec{
 								ScriptSource: &api.ScriptSourceSpec{
 									VolumeSource: core.VolumeSource{
@@ -1183,7 +1169,6 @@ var _ = Describe("MongoDB SSL", func() {
 								err := f.CreateConfigMap(configMap)
 								Expect(err).NotTo(HaveOccurred())
 
-								secret = f.SecretForGCSBackend()
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
@@ -1231,7 +1216,6 @@ var _ = Describe("MongoDB SSL", func() {
 
 								verifySharding = true
 								enableSharding = true
-								secret = f.SecretForGCSBackend()
 								mongodb.Spec.Init = &api.InitSpec{
 									ScriptSource: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{

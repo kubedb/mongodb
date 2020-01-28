@@ -16,6 +16,8 @@ limitations under the License.
 package framework
 
 import (
+	"fmt"
+	"os"
 	"time"
 
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
@@ -25,6 +27,7 @@ import (
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1alpha13 "kmodules.xyz/custom-resources/apis/appcatalog/v1alpha1"
+	store "kmodules.xyz/objectstore-api/api/v1"
 	"stash.appscode.dev/stash/apis/stash/v1alpha1"
 	stashV1alpha1 "stash.appscode.dev/stash/apis/stash/v1alpha1"
 	"stash.appscode.dev/stash/apis/stash/v1beta1"
@@ -46,6 +49,7 @@ func (i *Invocation) BackupConfiguration(dbMeta metav1.ObjectMeta, repo *stashV1
 				Name: repo.Name,
 			},
 			RetentionPolicy: v1alpha1.RetentionPolicy{
+				Name:     "keep-last-5",
 				KeepLast: 5,
 				Prune:    true,
 			},
@@ -83,15 +87,80 @@ func (f *Framework) PauseBackupConfiguration(meta metav1.ObjectMeta) error {
 	return err
 }
 
-func (f *Framework) Repository(dbMeta metav1.ObjectMeta) *stashV1alpha1.Repository {
+func (i *Invocation) Repository(dbMeta metav1.ObjectMeta, secretName string) *stashV1alpha1.Repository {
 	return &stashV1alpha1.Repository{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      dbMeta.Name + "-stash",
-			Namespace: f.namespace,
+			Namespace: i.namespace,
 		},
 		Spec: stashV1alpha1.RepositorySpec{
+			Backend: i.backendSpec(dbMeta, secretName),
 			WipeOut: true,
 		},
+	}
+}
+
+func (i *Invocation) backendSpec(dbMeta metav1.ObjectMeta, secretName string) store.Backend {
+	switch StorageProvider {
+	case StorageProviderGCS:
+		return i.gcsBackend(dbMeta, secretName)
+	case StorageProviderS3:
+		return i.s3Backend(dbMeta, secretName)
+	case StorageProviderMinio:
+		return i.minioBackend(dbMeta, secretName)
+	case StorageProviderAzure:
+		return i.azureBackend(dbMeta, secretName)
+	case StorageProviderSwift:
+		return i.swiftBackend(dbMeta, secretName)
+	}
+	return store.Backend{}
+}
+
+func (i *Invocation) gcsBackend(dbMeta metav1.ObjectMeta, secretName string) store.Backend {
+	return store.Backend{
+		GCS: &store.GCSSpec{
+			Bucket: os.Getenv("GCS_BUCKET_NAME"),
+			Prefix: fmt.Sprintf("stash/%v/%v", dbMeta.Namespace, dbMeta.Name),
+		},
+		StorageSecretName: secretName,
+	}
+}
+
+func (i *Invocation) s3Backend(dbMeta metav1.ObjectMeta, secretName string) store.Backend {
+	return store.Backend{
+		S3: &store.S3Spec{
+			Bucket: os.Getenv("S3_BUCKET_NAME"),
+			Prefix: fmt.Sprintf("stash/%v/%v", dbMeta.Namespace, dbMeta.Name),
+		},
+		StorageSecretName: secretName,
+	}
+}
+func (i *Invocation) minioBackend(dbMeta metav1.ObjectMeta, secretName string) store.Backend {
+	return store.Backend{
+		S3: &store.S3Spec{
+			Endpoint: i.MinioServiceAddres(),
+			Bucket:   i.app,
+			Prefix:   fmt.Sprintf("stash/%v/%v", dbMeta.Namespace, dbMeta.Name),
+		},
+		StorageSecretName: secretName,
+	}
+}
+func (i *Invocation) azureBackend(dbMeta metav1.ObjectMeta, secretName string) store.Backend {
+	return store.Backend{
+		Azure: &store.AzureSpec{
+			Container: os.Getenv("AZURE_CONTAINER_NAME"),
+			Prefix:    fmt.Sprintf("stash/%v/%v", dbMeta.Namespace, dbMeta.Name),
+		},
+		StorageSecretName: secretName,
+	}
+}
+func (i *Invocation) swiftBackend(dbMeta metav1.ObjectMeta, secretName string) store.Backend {
+	return store.Backend{
+		Swift: &store.SwiftSpec{
+			Container: os.Getenv("SWIFT_CONTAINER_NAME"),
+			Prefix:    fmt.Sprintf("stash/%v/%v", dbMeta.Namespace, dbMeta.Name),
+		},
+		StorageSecretName: secretName,
 	}
 }
 

@@ -39,91 +39,97 @@ import (
 	"stash.appscode.dev/stash/pkg/restic"
 )
 
-func (i *Invocation) SecretForLocalBackend() *core.Secret {
-	return &core.Secret{
+const (
+	StorageProviderGCS   = "gcs"
+	StorageProviderAzure = "azure"
+	StorageProviderS3    = "s3"
+	StorageProviderMinio = "minio"
+	StorageProviderSwift = "swift"
+)
+
+func (i *Invocation) SecretForBackend() *core.Secret {
+	secret := &core.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      rand.WithUniqSuffix(i.app + "-local"),
+			Name:      rand.WithUniqSuffix(i.app + "-" + StorageProvider),
 			Namespace: i.namespace,
 		},
-		Data: map[string][]byte{},
 	}
+
+	switch StorageProvider {
+	case StorageProviderGCS:
+		secret.Data = i.gcsCredentials()
+	case StorageProviderS3:
+		secret.Data = i.s3Credentials()
+	case StorageProviderMinio:
+		secret.Data = i.minioCredentials()
+	case StorageProviderAzure:
+		secret.Data = i.azureCredentials()
+	case StorageProviderSwift:
+		secret.Data = i.swiftCredentials()
+	}
+
+	return secret
 }
 
-func (i *Invocation) SecretForS3Backend() *core.Secret {
+func (i *Invocation) s3Credentials() map[string][]byte {
 	if os.Getenv(aws.AWS_ACCESS_KEY_ID) == "" ||
 		os.Getenv(aws.AWS_SECRET_ACCESS_KEY) == "" {
-		return &core.Secret{}
+		return nil
 	}
 
-	return &core.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      rand.WithUniqSuffix(i.app + "-s3"),
-			Namespace: i.namespace,
-		},
-		Data: map[string][]byte{
-			aws.AWS_ACCESS_KEY_ID:     []byte(os.Getenv(aws.AWS_ACCESS_KEY_ID)),
-			aws.AWS_SECRET_ACCESS_KEY: []byte(os.Getenv(aws.AWS_SECRET_ACCESS_KEY)),
-		},
+	return map[string][]byte{
+		aws.AWS_ACCESS_KEY_ID:     []byte(os.Getenv(aws.AWS_ACCESS_KEY_ID)),
+		aws.AWS_SECRET_ACCESS_KEY: []byte(os.Getenv(aws.AWS_SECRET_ACCESS_KEY)),
 	}
 }
 
-func (i *Invocation) SecretForGCSBackend() *core.Secret {
+func (i *Invocation) minioCredentials() map[string][]byte {
+	return map[string][]byte{
+		aws.AWS_ACCESS_KEY_ID:     []byte(MINIO_ACCESS_KEY_ID),
+		aws.AWS_SECRET_ACCESS_KEY: []byte(MINIO_SECRET_ACCESS_KEY),
+		aws.CA_CERT_DATA:          i.CertStore.CACertBytes(),
+	}
+}
+
+func (i *Invocation) gcsCredentials() map[string][]byte {
 	jsonKey := google.ServiceAccountFromEnv()
 	if jsonKey == "" || os.Getenv(google.GOOGLE_PROJECT_ID) == "" {
-		return &core.Secret{}
+		return nil
 	}
 
-	return &core.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      rand.WithUniqSuffix(i.app + "-gcs"),
-			Namespace: i.namespace,
-		},
-		Data: map[string][]byte{
-			google.GOOGLE_PROJECT_ID:               []byte(os.Getenv(google.GOOGLE_PROJECT_ID)),
-			google.GOOGLE_SERVICE_ACCOUNT_JSON_KEY: []byte(jsonKey),
-		},
+	return map[string][]byte{
+		google.GOOGLE_PROJECT_ID:               []byte(os.Getenv(google.GOOGLE_PROJECT_ID)),
+		google.GOOGLE_SERVICE_ACCOUNT_JSON_KEY: []byte(jsonKey),
 	}
 }
 
-func (i *Invocation) SecretForAzureBackend() *core.Secret {
+func (i *Invocation) azureCredentials() map[string][]byte {
 	if os.Getenv(azure.AZURE_ACCOUNT_NAME) == "" ||
 		os.Getenv(azure.AZURE_ACCOUNT_KEY) == "" {
-		return &core.Secret{}
+		return nil
 	}
 
-	return &core.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      rand.WithUniqSuffix(i.app + "-azure"),
-			Namespace: i.namespace,
-		},
-		Data: map[string][]byte{
-			azure.AZURE_ACCOUNT_NAME: []byte(os.Getenv(azure.AZURE_ACCOUNT_NAME)),
-			azure.AZURE_ACCOUNT_KEY:  []byte(os.Getenv(azure.AZURE_ACCOUNT_KEY)),
-		},
+	return map[string][]byte{
+		azure.AZURE_ACCOUNT_NAME: []byte(os.Getenv(azure.AZURE_ACCOUNT_NAME)),
+		azure.AZURE_ACCOUNT_KEY:  []byte(os.Getenv(azure.AZURE_ACCOUNT_KEY)),
 	}
 }
 
-func (i *Invocation) SecretForSwiftBackend() *core.Secret {
+func (i *Invocation) swiftCredentials() map[string][]byte {
 	if os.Getenv(openstack.OS_AUTH_URL) == "" ||
 		(os.Getenv(openstack.OS_TENANT_ID) == "" && os.Getenv(openstack.OS_TENANT_NAME) == "") ||
 		os.Getenv(openstack.OS_USERNAME) == "" ||
 		os.Getenv(openstack.OS_PASSWORD) == "" {
-		return &core.Secret{}
+		return nil
 	}
 
-	return &core.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      rand.WithUniqSuffix(i.app + "-swift"),
-			Namespace: i.namespace,
-		},
-		Data: map[string][]byte{
-			openstack.OS_AUTH_URL:    []byte(os.Getenv(openstack.OS_AUTH_URL)),
-			openstack.OS_TENANT_ID:   []byte(os.Getenv(openstack.OS_TENANT_ID)),
-			openstack.OS_TENANT_NAME: []byte(os.Getenv(openstack.OS_TENANT_NAME)),
-			openstack.OS_USERNAME:    []byte(os.Getenv(openstack.OS_USERNAME)),
-			openstack.OS_PASSWORD:    []byte(os.Getenv(openstack.OS_PASSWORD)),
-			openstack.OS_REGION_NAME: []byte(os.Getenv(openstack.OS_REGION_NAME)),
-		},
+	return map[string][]byte{
+		openstack.OS_AUTH_URL:    []byte(os.Getenv(openstack.OS_AUTH_URL)),
+		openstack.OS_TENANT_ID:   []byte(os.Getenv(openstack.OS_TENANT_ID)),
+		openstack.OS_TENANT_NAME: []byte(os.Getenv(openstack.OS_TENANT_NAME)),
+		openstack.OS_USERNAME:    []byte(os.Getenv(openstack.OS_USERNAME)),
+		openstack.OS_PASSWORD:    []byte(os.Getenv(openstack.OS_PASSWORD)),
+		openstack.OS_REGION_NAME: []byte(os.Getenv(openstack.OS_REGION_NAME)),
 	}
 }
 

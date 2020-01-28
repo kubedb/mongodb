@@ -309,6 +309,9 @@ github.com/russross/blackfriday
 github.com/satori/go.uuid
 # github.com/sergi/go-diff v1.0.0
 github.com/sergi/go-diff/diffmatchpatch
+# github.com/spf13/afero v1.2.2
+github.com/spf13/afero
+github.com/spf13/afero/mem
 # github.com/spf13/cobra v0.0.5
 github.com/spf13/cobra
 github.com/spf13/cobra/doc
@@ -443,6 +446,7 @@ golang.org/x/text/width
 golang.org/x/time/rate
 # gomodules.xyz/cert v1.0.2
 gomodules.xyz/cert
+gomodules.xyz/cert/certstore
 # gomodules.xyz/envsubst v0.1.0
 gomodules.xyz/envsubst
 gomodules.xyz/envsubst/parse
