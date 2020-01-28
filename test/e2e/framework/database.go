@@ -70,7 +70,7 @@ func (f *Framework) GetMongoDBClient(meta metav1.ObjectMeta, tunnel *portforward
 		if err := f.GetSSLCertificate(meta); err != nil {
 			return nil, err
 		}
-		clientOpts = options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%s@localhost:%v/?ssl=true&sslclientcertificatekeyfile=/tmp/mongodb/%v&&sslcertificateauthorityfile=/tmp/mongodb/%v", user, pass, tunnel.Local, v1alpha1.MongoClientPemFileName, v1alpha1.MongoTLSCertFileName))
+		clientOpts = options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%s@localhost:%v/?ssl=true&sslclientcertificatekeyfile=/tmp/mongodb/%v&&sslcertificateauthorityfile=/tmp/mongodb/%v", user, pass, tunnel.Local, v1alpha1.MongoPemFileName, v1alpha1.TLSCACertFileName))
 	}
 
 	if (len(isReplSet) > 0 && isReplSet[0]) || IsRepSet(mongodb) {
@@ -559,6 +559,7 @@ func (f *Framework) EventuallyUserSSLSettings(meta metav1.ObjectMeta, clusterAut
 			if sm != "" {
 				val, err := f.getSSLModeFromDB(meta)
 				if err != nil {
+					//log.Infoln(err) //TODO: Fixed some cert-manager problems here. Delete later
 					return false, err
 				}
 				if val != string(sm) {
@@ -567,7 +568,7 @@ func (f *Framework) EventuallyUserSSLSettings(meta metav1.ObjectMeta, clusterAut
 			}
 			return true, nil
 		},
-		time.Minute*10,
-		time.Second*5,
+		time.Minute*1,
+		time.Second*1,
 	)
 }

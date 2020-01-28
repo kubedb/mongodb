@@ -27,6 +27,7 @@ import (
 	"kubedb.dev/apimachinery/client/clientset/versioned/scheme"
 	"kubedb.dev/mongodb/test/e2e/framework"
 
+	cm "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
@@ -104,9 +105,10 @@ var _ = BeforeSuite(func() {
 	appCatalogClient := appcat_cs.NewForConfigOrDie(config)
 	aPIExtKubeClient := kext_cs.NewForConfigOrDie(config)
 	stashClient := scs.NewForConfigOrDie(config)
+	cerManagerClient := cm.NewForConfigOrDie(config)
 
 	// Framework
-	root, err = framework.New(config, kubeClient, aPIExtKubeClient, dbClient, kaClient, appCatalogClient, stashClient, storageClass)
+	root, err = framework.New(config, kubeClient, aPIExtKubeClient, dbClient, kaClient, appCatalogClient, stashClient, storageClass, cerManagerClient)
 	Expect(err).NotTo(HaveOccurred())
 
 	// Create namespace

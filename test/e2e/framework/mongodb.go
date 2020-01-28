@@ -64,6 +64,8 @@ func (i *Invocation) MongoDBStandalone() *api.MongoDB {
 				},
 				StorageClassName: types.StringP(i.StorageClass),
 			},
+			SSLMode: api.SSLModeDisabled,
+
 			TerminationPolicy: api.TerminationPolicyHalt,
 		},
 	}

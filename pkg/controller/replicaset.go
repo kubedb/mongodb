@@ -27,7 +27,7 @@ import (
 	ofst "kmodules.xyz/offshoot-api/api/v1"
 )
 
-func topologyInitContainer(
+func (c *Controller) topologyInitContainer(
 	mongodb *api.MongoDB,
 	mongodbVersion *catalog.MongoDBVersion,
 	podTemplate *ofst.PodTemplateSpec,
@@ -123,6 +123,10 @@ func topologyInitContainer(
 				MountPath: configDirectoryPath,
 			},
 			{
+				Name:      certDirectoryName,
+				MountPath: api.MongoCertDirectory,
+			},
+			{
 				Name:      dataDirectoryName,
 				MountPath: dataDirectoryPath,
 			},
@@ -134,21 +138,23 @@ func topologyInitContainer(
 		Resources: pt.Spec.Resources,
 	}
 
-	rsVolume := []core.Volume{
-		{
-			Name: initialKeyDirectoryName,
+	var rsVolumes []core.Volume
+
+	if mongodb.Spec.KeyFile != nil {
+		rsVolumes = append(rsVolumes, core.Volume{
+			Name: initialKeyDirectoryName, // FIXIT: mounted where?
 			VolumeSource: core.VolumeSource{
 				Secret: &core.SecretVolumeSource{
-					DefaultMode: types.Int32P(256),
-					SecretName:  mongodb.Spec.CertificateSecret.SecretName,
+					DefaultMode: types.Int32P(0400),
+					SecretName:  mongodb.Spec.KeyFile.SecretName,
 				},
 			},
-		},
+		})
 	}
 
 	//only on mongos in case of sharding (which is handled on 'ensureMongosNode'.
 	if mongodb.Spec.ShardTopology == nil && mongodb.Spec.Init != nil && mongodb.Spec.Init.ScriptSource != nil {
-		rsVolume = append(rsVolume, core.Volume{
+		rsVolumes = append(rsVolumes, core.Volume{
 			Name:         "initial-script",
 			VolumeSource: mongodb.Spec.Init.ScriptSource.VolumeSource,
 		})
@@ -162,5 +168,5 @@ func topologyInitContainer(
 		)
 	}
 
-	return bootstrapContainer, rsVolume
+	return bootstrapContainer, rsVolumes
 }

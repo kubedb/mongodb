@@ -235,10 +235,19 @@ func (c *Controller) ensureMongoGvrSvc(mongodb *api.MongoDB) error {
 			}
 		}
 		// create configsvr governing service
-		return svcFunc(mongodb.GvrSvcName(
+		if err := svcFunc(mongodb.GvrSvcName(
 			mongodb.ConfigSvrNodeName()),
 			mongodb.ConfigSvrLabels(),
 			mongodb.ConfigSvrSelectors(),
+		); err != nil {
+			return err
+		}
+
+		// create mongos governing service
+		return svcFunc(mongodb.GvrSvcName(
+			mongodb.MongosNodeName()),
+			mongodb.MongosLabels(),
+			mongodb.MongosSelectors(),
 		)
 	}
 	// create mongodb governing service

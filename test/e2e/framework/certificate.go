@@ -18,11 +18,11 @@ package framework
 import (
 	"path/filepath"
 
-	"kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 
 	"github.com/appscode/go/ioutil"
 	"github.com/pkg/errors"
-	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -30,25 +30,25 @@ const (
 )
 
 // GetSSLCertificate gets ssl certificate of mongodb and creates a client certificate in certPath
-func (f *Framework) GetSSLCertificate(meta v12.ObjectMeta) error {
+func (f *Framework) GetSSLCertificate(meta metav1.ObjectMeta) error {
 	mg, err := f.GetMongoDB(meta)
 	if err != nil {
 		return err
 	}
 
-	certSecret, err := f.kubeClient.CoreV1().Secrets(mg.Namespace).Get(mg.Spec.CertificateSecret.SecretName, v12.GetOptions{})
+	certSecret, err := f.kubeClient.CoreV1().Secrets(mg.Namespace).Get(mg.Name+api.MongoDBExternalClientSecretSuffix, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
-	caCertBytes := certSecret.Data[string(v1alpha1.MongoTLSCertFileName)]
-	certBytes := certSecret.Data[string(v1alpha1.MongoClientPemFileName)]
+	caCertBytes := certSecret.Data[string(api.TLSCACertFileName)]
+	certBytes := append(certSecret.Data[string(tlsCertFileKey)], certSecret.Data[string(tlsKeyFileKey)]...)
 
-	if !ioutil.WriteString(filepath.Join(certPath, string(v1alpha1.MongoTLSCertFileName)), string(caCertBytes)) {
+	if !ioutil.WriteString(filepath.Join(certPath, string(api.TLSCACertFileName)), string(caCertBytes)) {
 		return errors.New("failed to write client certificate")
 	}
 
-	if !ioutil.WriteString(filepath.Join(certPath, string(v1alpha1.MongoClientPemFileName)), string(certBytes)) {
+	if !ioutil.WriteString(filepath.Join(certPath, string(api.MongoPemFileName)), string(certBytes)) {
 		return errors.New("failed to write client certificate")
 	}
 
