@@ -272,6 +272,10 @@ unit-tests: $(BUILD_DIRS)
 GINKGO_ARGS ?=
 TEST_ARGS   ?=
 
+# By default the tests will use Minio as backend storage.
+# In order to use specific backend, use 'TEST_ARGS="--storage-provider=<provider name>'
+# Just use `export TEST_ARGS="--storage-provider=<provider name>` in the shell before running test
+# Currently, supported providers are "gcs, s3, minio, azure, swift"
 .PHONY: e2e-tests
 e2e-tests: $(BUILD_DIRS)
 	@docker run                                                 \

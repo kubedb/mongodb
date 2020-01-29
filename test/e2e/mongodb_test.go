@@ -17,7 +17,6 @@ package e2e_test
 
 import (
 	"fmt"
-	"os"
 
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
@@ -32,7 +31,6 @@ import (
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	meta_util "kmodules.xyz/client-go/meta"
-	store "kmodules.xyz/objectstore-api/api/v1"
 	ofst "kmodules.xyz/offshoot-api/api/v1"
 	stashV1alpha1 "stash.appscode.dev/stash/apis/stash/v1alpha1"
 	stashV1beta1 "stash.appscode.dev/stash/apis/stash/v1beta1"
@@ -112,6 +110,21 @@ var _ = Describe("MongoDB", func() {
 
 		By("Ping mongodb database")
 		f.EventuallyPingMongo(mongodb.ObjectMeta)
+	}
+
+	var createAndInsertData = func() {
+
+		if skipMessage != "" {
+			Skip(skipMessage)
+		}
+		// Create MongoDB
+		createAndWaitForRunning()
+
+		By("Insert Document Inside DB")
+		f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
+
+		By("Checking Inserted Document")
+		f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
 	}
 
 	var deleteTestResource = func() {
@@ -617,21 +630,13 @@ var _ = Describe("MongoDB", func() {
 					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 25).Should(BeTrue())
 				}
 
-				Context("From GCS backend", func() {
+				Context("From "+framework.StorageProvider+" backend", func() {
 
 					BeforeEach(func() {
-						secret = f.SecretForGCSBackend()
+						secret = f.SecretForBackend()
 						secret = f.PatchSecretForRestic(secret)
-						repo = f.Repository(mongodb.ObjectMeta)
+						repo = f.Repository(mongodb.ObjectMeta, secret.Name)
 						bc = f.BackupConfiguration(mongodb.ObjectMeta, repo)
-
-						repo.Spec.Backend = store.Backend{
-							GCS: &store.GCSSpec{
-								Bucket: os.Getenv("GCS_BUCKET_NAME"),
-								Prefix: fmt.Sprintf("stash/%v/%v", mongodb.Namespace, mongodb.Name),
-							},
-							StorageSecretName: secret.Name,
-						}
 					})
 
 					Context("-", func() {
@@ -685,18 +690,10 @@ var _ = Describe("MongoDB", func() {
 						BeforeEach(func() {
 							mongodb = f.MongoDBRS()
 							anotherMongoDB = f.MongoDBRS()
-							secret = f.SecretForGCSBackend()
+							secret = f.SecretForBackend()
 							secret = f.PatchSecretForRestic(secret)
-							repo = f.Repository(mongodb.ObjectMeta)
+							repo = f.Repository(mongodb.ObjectMeta, secret.Name)
 							bc = f.BackupConfiguration(mongodb.ObjectMeta, repo)
-
-							repo.Spec.Backend = store.Backend{
-								GCS: &store.GCSSpec{
-									Bucket: os.Getenv("GCS_BUCKET_NAME"),
-									Prefix: fmt.Sprintf("stash/%v/%v", mongodb.Namespace, mongodb.Name),
-								},
-								StorageSecretName: secret.Name,
-							}
 						})
 
 						Context("-", func() {
@@ -761,18 +758,10 @@ var _ = Describe("MongoDB", func() {
 							verifySharding = true
 							anotherMongoDB = f.MongoDBShard()
 							mongodb = f.MongoDBShard()
-							secret = f.SecretForGCSBackend()
+							secret = f.SecretForBackend()
 							secret = f.PatchSecretForRestic(secret)
-							repo = f.Repository(mongodb.ObjectMeta)
+							repo = f.Repository(mongodb.ObjectMeta, secret.Name)
 							bc = f.BackupConfiguration(mongodb.ObjectMeta, repo)
-
-							repo.Spec.Backend = store.Backend{
-								GCS: &store.GCSSpec{
-									Bucket: os.Getenv("GCS_BUCKET_NAME"),
-									Prefix: fmt.Sprintf("stash/%v/%v", mongodb.Namespace, mongodb.Name),
-								},
-								StorageSecretName: secret.Name,
-							}
 						})
 
 						Context("With Sharding disabled database", func() {
@@ -854,16 +843,8 @@ var _ = Describe("MongoDB", func() {
 							mongodb = f.MongoDBShard()
 							anotherMongoDB = f.MongoDBStandalone()
 							customAppBindingName = mongodb.Name + "custom"
-							repo = f.Repository(mongodb.ObjectMeta)
+							repo = f.Repository(mongodb.ObjectMeta, secret.Name)
 							bc = f.BackupConfiguration(mongodb.ObjectMeta, repo)
-
-							repo.Spec.Backend = store.Backend{
-								GCS: &store.GCSSpec{
-									Bucket: os.Getenv("GCS_BUCKET_NAME"),
-									Prefix: fmt.Sprintf("stash/%v/%v", mongodb.Namespace, mongodb.Name),
-								},
-								StorageSecretName: secret.Name,
-							}
 
 							mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 							anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
@@ -1290,24 +1271,6 @@ var _ = Describe("MongoDB", func() {
 		})
 
 		Context("Termination Policy", func() {
-			BeforeEach(func() {
-				secret = f.SecretForS3Backend()
-			})
-
-			var shouldRunWithSnapshot = func() {
-				// Create and wait for running MongoDB
-				createAndWaitForRunning()
-
-				By("Insert Document Inside DB")
-				f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
-
-				By("Checking Inserted Document")
-				f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
-
-				By("Create Secret")
-				err := f.CreateSecret(secret)
-				Expect(err).NotTo(HaveOccurred())
-			}
 
 			Context("with TerminationDoNotTerminate", func() {
 				BeforeEach(func() {
@@ -1359,7 +1322,7 @@ var _ = Describe("MongoDB", func() {
 
 			Context("with TerminationPolicyHalt", func() {
 				var shouldRunWithTerminationHalt = func() {
-					shouldRunWithSnapshot()
+					createAndInsertData()
 
 					By("Halt MongoDB: Update mongodb to set spec.halted = true")
 					_, err := f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
@@ -1435,7 +1398,7 @@ var _ = Describe("MongoDB", func() {
 				})
 
 				var shouldRunWithTerminationDelete = func() {
-					shouldRunWithSnapshot()
+					createAndInsertData()
 
 					By("Delete mongodb")
 					err = f.DeleteMongoDB(mongodb.ObjectMeta)
@@ -1476,7 +1439,7 @@ var _ = Describe("MongoDB", func() {
 				})
 
 				var shouldRunWithTerminationWipeOut = func() {
-					shouldRunWithSnapshot()
+					createAndInsertData()
 
 					By("Delete mongodb")
 					err = f.DeleteMongoDB(mongodb.ObjectMeta)
@@ -1901,21 +1864,6 @@ var _ = Describe("MongoDB", func() {
 
 		Context("StorageType ", func() {
 
-			var shouldRunSuccessfully = func() {
-
-				if skipMessage != "" {
-					Skip(skipMessage)
-				}
-				// Create MongoDB
-				createAndWaitForRunning()
-
-				By("Insert Document Inside DB")
-				f.EventuallyInsertDocument(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
-
-				By("Checking Inserted Document")
-				f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
-			}
-
 			Context("Ephemeral", func() {
 
 				Context("Standalone MongoDB", func() {
@@ -1926,7 +1874,7 @@ var _ = Describe("MongoDB", func() {
 						mongodb.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
 					})
 
-					It("should run successfully", shouldRunSuccessfully)
+					It("should run successfully", createAndInsertData)
 				})
 
 				Context("With Replica Set", func() {
@@ -1939,7 +1887,7 @@ var _ = Describe("MongoDB", func() {
 						mongodb.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
 					})
 
-					It("should run successfully", shouldRunSuccessfully)
+					It("should run successfully", createAndInsertData)
 				})
 
 				Context("With Sharding", func() {
@@ -1952,7 +1900,7 @@ var _ = Describe("MongoDB", func() {
 						//mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 					})
 
-					It("should run successfully", shouldRunSuccessfully)
+					It("should run successfully", createAndInsertData)
 				})
 
 				Context("With TerminationPolicyHalt", func() {

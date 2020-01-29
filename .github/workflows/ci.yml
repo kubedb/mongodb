@@ -80,6 +80,12 @@ jobs:
         kubectl wait --for=condition=Ready nodes --all --timeout=5m
         kubectl get nodes
         echo
+        echo "installing local-path provisioner ..."
+        kubectl delete storageclass --all
+        kubectl apply -f https://github.com/rancher/local-path-provisioner/raw/v0.0.12/deploy/local-path-storage.yaml
+        kubectl wait --for=condition=Ready pods -n local-path-storage --all --timeout=5m
+        kubectl apply -f hack/kubernetes/storageclass/standard.yaml
+        echo
         echo "install helm 3"
         curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
         echo
@@ -111,4 +117,4 @@ jobs:
         echo "GOOGLE_SERVICE_ACCOUNT_JSON_KEY=$(echo $GOOGLE_SERVICE_ACCOUNT_JSON_KEY)" >> hack/config/.env
         make install
         echo
-        make e2e-parallel TEST_ARGS="--db-catalog=${{ matrix.db }}" || (kubectl describe deployment -n kube-system kubedb-mg-operator; kubectl logs -n kube-system deployment/kubedb-mg-operator; kubectl describe deployment -n kube-system stash-operator; kubectl logs -n kube-system deployment/stash-operator operator; exit 1;)
+        make e2e-tests GINKGO_ARGS="--flakeAttempts=2" TEST_ARGS="--db-catalog=${{ matrix.db }}" || (kubectl describe deployment -n kube-system kubedb-mg-operator; kubectl logs -n kube-system deployment/kubedb-mg-operator; kubectl describe deployment -n kube-system stash-operator; kubectl logs -n kube-system deployment/stash-operator operator; exit 1;)

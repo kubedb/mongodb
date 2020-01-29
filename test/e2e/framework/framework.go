@@ -16,10 +16,14 @@ limitations under the License.
 package framework
 
 import (
+	"path/filepath"
+
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	cs "kubedb.dev/apimachinery/client/clientset/versioned"
 
 	"github.com/appscode/go/crypto/rand"
+	"github.com/spf13/afero"
+	"gomodules.xyz/cert/certstore"
 	crd_cs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -30,8 +34,9 @@ import (
 )
 
 var (
-	DockerRegistry = "kubedbci"
-	DBCatalogName  = "3.6-v4"
+	DockerRegistry  = "kubedbci"
+	DBCatalogName   = "3.6-v4"
+	StorageProvider string
 )
 
 type Framework struct {
@@ -46,6 +51,7 @@ type Framework struct {
 	namespace        string
 	name             string
 	StorageClass     string
+	CertStore        *certstore.CertStore
 }
 
 func New(
@@ -63,6 +69,16 @@ func New(
 		return nil, err
 	}
 
+	store, err := certstore.NewCertStore(afero.NewMemMapFs(), filepath.Join("", "pki"))
+	if err != nil {
+		return nil, err
+	}
+
+	err = store.InitCA()
+	if err != nil {
+		return nil, err
+	}
+
 	return &Framework{
 		restConfig:       restConfig,
 		kubeClient:       kubeClient,
@@ -75,6 +91,7 @@ func New(
 		namespace:        rand.WithUniqSuffix(api.ResourceSingularMongoDB),
 		StorageClass:     storageClass,
 		topology:         topology,
+		CertStore:        store,
 	}, nil
 }
 

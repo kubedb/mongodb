@@ -17,6 +17,7 @@ package e2e_test
 
 import (
 	"flag"
+	"net"
 	"os"
 	"path/filepath"
 	"testing"
@@ -67,6 +68,7 @@ func init() {
 	flag.StringVar(&storageClass, "storageclass", storageClass, "Kubernetes StorageClass name")
 	flag.StringVar(&framework.DockerRegistry, "docker-registry", framework.DockerRegistry, "User provided docker repository")
 	flag.StringVar(&framework.DBCatalogName, "db-catalog", framework.DBCatalogName, "MongoDB version")
+	flag.StringVar(&framework.StorageProvider, "storage-provider", framework.StorageProviderMinio, "Backend Storage Provider")
 }
 
 const (
@@ -113,6 +115,12 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	root.EventuallyCRD().Should(Succeed())
+
+	if framework.StorageProvider == framework.StorageProviderMinio {
+		By("Deploy TLS secured Minio Server")
+		_, err = root.CreateMinioServer(true, []net.IP{net.ParseIP(framework.LocalHostIP)})
+		Expect(err).NotTo(HaveOccurred())
+	}
 })
 
 var _ = AfterSuite(func() {
@@ -121,6 +129,13 @@ var _ = AfterSuite(func() {
 	root.CleanMongoDB()
 	By("Delete left over workloads if exists any")
 	root.CleanWorkloadLeftOvers()
+
+	if framework.StorageProvider == framework.StorageProviderMinio {
+		By("Deleting Minio server")
+		err := root.DeleteMinioServer()
+		Expect(err).NotTo(HaveOccurred())
+	}
+
 	By("Delete Namespace")
 	err := root.DeleteNamespace()
 	Expect(err).NotTo(HaveOccurred())
