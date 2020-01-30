@@ -610,7 +610,7 @@ func installInitContainer(
 			DEST_DIR="${DEST_DIR:-/init-scripts}"
 
 			if [[ -d ${INIT_DIR} ]] && [[ -d ${DEST_DIR} ]]; then
-    			cp -a ${INIT_DIR}/* ${DEST_DIR}
+				cp -a ${INIT_DIR}/* ${DEST_DIR}
 			fi
 
 			if [ -f "/configdb-readonly/mongod.conf" ]; then
