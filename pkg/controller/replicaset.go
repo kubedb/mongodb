@@ -59,9 +59,9 @@ func topologyInitContainer(
 		Name:            InitBootstrapContainerName,
 		Image:           mongodbVersion.Spec.DB.Image,
 		ImagePullPolicy: core.PullIfNotPresent,
-		Command:         []string{"peer-finder"},
+		Command:         []string{fmt.Sprintf("%v/peer-finder", InitScriptDirectoryPath)},
 		Args: []string{
-			fmt.Sprintf("-on-start=/usr/local/bin/%v", scriptName),
+			fmt.Sprintf("-on-start=%v/%v", InitScriptDirectoryPath, scriptName),
 			"-service=" + gvrSvc,
 		},
 		Env: core_util.UpsertEnvVars([]core.EnvVar{
@@ -125,6 +125,10 @@ func topologyInitContainer(
 			{
 				Name:      dataDirectoryName,
 				MountPath: dataDirectoryPath,
+			},
+			{
+				Name:      InitScriptDirectoryName,
+				MountPath: InitScriptDirectoryPath,
 			},
 		},
 		Resources: pt.Spec.Resources,

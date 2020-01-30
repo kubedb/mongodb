@@ -358,7 +358,7 @@ func mongosInitContainer(
 		Command:         []string{"/bin/sh"},
 		Args: []string{
 			"-c",
-			fmt.Sprintf("/usr/local/bin/%v", scriptName),
+			fmt.Sprintf("%v/%v", InitScriptDirectoryPath, scriptName),
 		},
 		Env: core_util.UpsertEnvVars([]core.EnvVar{
 			{
@@ -404,6 +404,10 @@ func mongosInitContainer(
 			{
 				Name:      configDirectoryName,
 				MountPath: configDirectoryPath,
+			},
+			{
+				Name:      InitScriptDirectoryName,
+				MountPath: InitScriptDirectoryPath,
 			},
 		},
 	}

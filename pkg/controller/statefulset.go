@@ -52,6 +52,10 @@ const (
 	configDirectoryName = "config"
 	configDirectoryPath = "/data/configdb"
 
+	InitScriptDirectoryName = "init-scripts"
+	InitScriptDirectoryPath = "/init-scripts"
+	TempScriptDirectoryPath = "/scripts"
+
 	initialConfigDirectoryName = "configdir"
 	initialConfigDirectoryPath = "/configdb-readonly"
 
@@ -601,6 +605,14 @@ func installInitContainer(
 		Args: []string{
 			"-c",
 			`set -xe
+			
+			INIT_DIR="${INIT_DIR:-/scripts}"
+			DEST_DIR="${DEST_DIR:-/init-scripts}"
+
+			if [[ -d ${INIT_DIR} ]] && [[ -d ${DEST_DIR} ]]; then
+    			cp -a ${INIT_DIR}/* ${DEST_DIR}
+			fi
+
 			if [ -f "/configdb-readonly/mongod.conf" ]; then
   				cp /configdb-readonly/mongod.conf /data/configdb/mongod.conf
 			else
@@ -637,16 +649,28 @@ func installInitContainer(
 				Name:      configDirectoryName,
 				MountPath: configDirectoryPath,
 			},
+			{
+				Name:      InitScriptDirectoryName,
+				MountPath: InitScriptDirectoryPath,
+			},
 		},
 		Resources: pt.Spec.Resources,
 	}
 
-	initVolumes := []core.Volume{{
-		Name: workDirectoryName,
-		VolumeSource: core.VolumeSource{
-			EmptyDir: &core.EmptyDirVolumeSource{},
+	initVolumes := []core.Volume{
+		{
+			Name: workDirectoryName,
+			VolumeSource: core.VolumeSource{
+				EmptyDir: &core.EmptyDirVolumeSource{},
+			},
 		},
-	}}
+		{
+			Name: InitScriptDirectoryName,
+			VolumeSource: core.VolumeSource{
+				EmptyDir: &core.EmptyDirVolumeSource{},
+			},
+		},
+	}
 
 	// mongodb.Spec.SSLMode can be empty if upgraded operator from previous version.
 	// But, eventually it will be defaulted. TODO: delete `mongodb.Spec.SSLMode != ""` in future.
