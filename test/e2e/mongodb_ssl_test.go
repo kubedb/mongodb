@@ -19,6 +19,8 @@ import (
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/mongodb/test/e2e/framework"
 
+	"github.com/appscode/go/types"
+	cm_api "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
@@ -28,18 +30,19 @@ import (
 var _ = Describe("MongoDB SSL", func() {
 
 	var (
-		err             error
-		f               *framework.Invocation
-		mongodb         *api.MongoDB
-		garbageMongoDB  *api.MongoDBList
-		snapshotPVC     *core.PersistentVolumeClaim
-		secret          *core.Secret
-		skipMessage     string
-		verifySharding  bool
-		enableSharding  bool
-		dbName          string
-		clusterAuthMode *api.ClusterAuthMode
-		sslMode         *api.SSLMode
+		err              error
+		f                *framework.Invocation
+		mongodb          *api.MongoDB
+		garbageMongoDB   *api.MongoDBList
+		snapshotPVC      *core.PersistentVolumeClaim
+		secret           *core.Secret
+		skipMessage      string
+		verifySharding   bool
+		enableSharding   bool
+		dbName           string
+		clusterAuthMode  *api.ClusterAuthMode
+		sslMode          *api.SSLMode
+		garbageCASecrets []*core.Secret
 	)
 
 	BeforeEach(func() {
@@ -53,6 +56,7 @@ var _ = Describe("MongoDB SSL", func() {
 		dbName = "kubedb"
 		clusterAuthMode = nil
 		sslMode = nil
+		garbageCASecrets = []*core.Secret{}
 	})
 
 	AfterEach(func() {
@@ -77,7 +81,31 @@ var _ = Describe("MongoDB SSL", func() {
 		}
 	})
 
+	var addIssuerRef = func() {
+		//create cert-manager ca secret
+
+		clientCASecret := f.SelfSignedCASecret(mongodb.ObjectMeta)
+		err := f.CreateSecret(clientCASecret)
+		Expect(err).NotTo(HaveOccurred())
+		garbageCASecrets = append(garbageCASecrets, clientCASecret)
+		//create issuer
+		issuer := f.IssuerForMongoDB(mongodb.ObjectMeta, clientCASecret.ObjectMeta)
+		err = f.CreateIssuer(issuer)
+		Expect(err).NotTo(HaveOccurred())
+		mongodb.Spec.TLS = &api.TLSConfig{
+			IssuerRef: &core.TypedLocalObjectReference{
+				Name:     issuer.Name,
+				Kind:     issuer.Kind,
+				APIGroup: types.StringP(cm_api.SchemeGroupVersion.Group), //cert-manger.io
+			},
+		}
+	}
+
 	var createAndWaitForRunning = func() {
+		if mongodb.Spec.SSLMode != api.SSLModeDisabled {
+			// all the mongoDB here has TLS, hence needs IssuerRef
+			addIssuerRef()
+		}
 		By("Create MongoDB: " + mongodb.Name)
 		err = f.CreateMongoDB(mongodb)
 		Expect(err).NotTo(HaveOccurred())
@@ -123,6 +151,8 @@ var _ = Describe("MongoDB SSL", func() {
 			return
 		}
 		Expect(err).NotTo(HaveOccurred())
+		By("Delete CA secret")
+		f.DeleteGarbageCASecrets(garbageCASecrets)
 
 		By("Wait for mongodb to be deleted")
 		f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeFalse())
@@ -239,6 +269,157 @@ var _ = Describe("MongoDB SSL", func() {
 					Expect(err).NotTo(HaveOccurred())
 				}
 			}
+		})
+
+		Context("Exporter", func() {
+			var verifyExporter = func() {
+				mongodb.Spec.SSLMode = *sslMode
+				By("Add monitoring configurations to mongodb")
+				f.AddMonitor(mongodb)
+				// Create MongoDB
+				createAndWaitForRunning()
+				By("Verify exporter")
+				err = f.VerifyExporter(mongodb.ObjectMeta)
+				Expect(err).NotTo(HaveOccurred())
+				By("Done")
+			}
+
+			var verifyShardedExporter = func() {
+				mongodb.Spec.SSLMode = *sslMode
+				By("Add monitoring configurations to mongodb")
+				f.AddMonitor(mongodb)
+				// Create MongoDB
+				createAndWaitForRunning()
+				By("Verify exporter")
+				err = f.VerifyShardExporters(mongodb.ObjectMeta)
+				Expect(err).NotTo(HaveOccurred())
+				By("Done")
+			}
+
+			Context("Standalone", func() {
+				BeforeEach(func() {
+					mongodb = f.MongoDBStandalone()
+				})
+
+				Context("With sslMode requireSSL", func() {
+					BeforeEach(func() {
+						sslMode = framework.SSLModeP(api.SSLModeRequireSSL)
+					})
+					It("Should verify Exporter", func() {
+						verifyExporter()
+					})
+				})
+
+				Context("With sslMode preferSSL", func() {
+					BeforeEach(func() {
+						sslMode = framework.SSLModeP(api.SSLModePreferSSL)
+					})
+					It("Should verify Exporter", func() {
+						verifyExporter()
+					})
+				})
+
+				Context("With sslMode allowSSL", func() {
+					BeforeEach(func() {
+						sslMode = framework.SSLModeP(api.SSLModeAllowSSL)
+					})
+					It("Should verify Exporter", func() {
+						verifyExporter()
+					})
+				})
+
+				Context("With sslMode disableSSL", func() {
+					BeforeEach(func() {
+						sslMode = framework.SSLModeP(api.SSLModeDisabled)
+					})
+					It("Should verify Exporter", func() {
+						verifyExporter()
+					})
+				})
+			})
+
+			Context("Replicas", func() {
+				BeforeEach(func() {
+					mongodb = f.MongoDBRS()
+				})
+
+				Context("With sslMode requireSSL", func() {
+					BeforeEach(func() {
+						sslMode = framework.SSLModeP(api.SSLModeRequireSSL)
+					})
+					It("Should verify Exporter", func() {
+						verifyExporter()
+					})
+				})
+
+				Context("With sslMode preferSSL", func() {
+					BeforeEach(func() {
+						sslMode = framework.SSLModeP(api.SSLModePreferSSL)
+					})
+					It("Should verify Exporter", func() {
+						verifyExporter()
+					})
+				})
+
+				Context("With sslMode allowSSL", func() {
+					BeforeEach(func() {
+						sslMode = framework.SSLModeP(api.SSLModeAllowSSL)
+					})
+					It("Should verify Exporter", func() {
+						verifyExporter()
+					})
+				})
+
+				Context("With sslMode disableSSL", func() {
+					BeforeEach(func() {
+						sslMode = framework.SSLModeP(api.SSLModeDisabled)
+					})
+					It("Should verify Exporter", func() {
+						verifyExporter()
+					})
+				})
+			})
+
+			Context("Shards", func() {
+				BeforeEach(func() {
+					mongodb = f.MongoDBShard()
+				})
+				Context("With sslMode requireSSL", func() {
+					BeforeEach(func() {
+						sslMode = framework.SSLModeP(api.SSLModeRequireSSL)
+					})
+					It("Should verify Exporter", func() {
+						verifyShardedExporter()
+					})
+				})
+
+				Context("With sslMode preferSSL", func() {
+					BeforeEach(func() {
+						sslMode = framework.SSLModeP(api.SSLModePreferSSL)
+					})
+					It("Should verify Exporter", func() {
+						verifyShardedExporter()
+					})
+				})
+
+				Context("With sslMode allowSSL", func() {
+					BeforeEach(func() {
+						sslMode = framework.SSLModeP(api.SSLModeAllowSSL)
+					})
+					It("Should verify Exporter", func() {
+						verifyShardedExporter()
+					})
+				})
+
+				Context("With sslMode disableSSL", func() {
+					BeforeEach(func() {
+						sslMode = framework.SSLModeP(api.SSLModeDisabled)
+					})
+					It("Should verify Exporter", func() {
+						verifyShardedExporter()
+					})
+				})
+			})
 		})
 
 		Context("General SSL", func() {
@@ -790,7 +971,7 @@ var _ = Describe("MongoDB SSL", func() {
 				})
 			})
 
-			Context("With sslMode allowssl", func() {
+			Context("With sslMode allowSSL", func() {
 
 				BeforeEach(func() {
 					sslMode = framework.SSLModeP(api.SSLModeAllowSSL)

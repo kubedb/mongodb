@@ -70,6 +70,14 @@ func (c *Controller) ensureRole(db *api.MongoDB, name string, pspName string) er
 				}
 				in.Rules = append(in.Rules, pspRule)
 			}
+			// keep this rule even if the psp needs to be removed.
+			// rbac for secret is used by init-containers to read cert-secret
+			secretRule := rbac.PolicyRule{
+				APIGroups: []string{""},
+				Resources: []string{"secrets"},
+				Verbs:     []string{"get"},
+			}
+			in.Rules = append(in.Rules, secretRule)
 			return in
 		},
 	)

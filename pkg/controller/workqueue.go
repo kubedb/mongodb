@@ -20,6 +20,8 @@ import (
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 
 	"github.com/appscode/go/log"
+	core "k8s.io/api/core/v1"
+	"k8s.io/client-go/tools/cache"
 	core_util "kmodules.xyz/client-go/core/v1"
 	"kmodules.xyz/client-go/tools/queue"
 )
@@ -87,4 +89,33 @@ func (c *Controller) runMongoDB(key string) error {
 		}
 	}
 	return nil
+}
+
+func (c *Controller) initSecretWatcher() {
+	c.SecretInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			if secret, ok := obj.(*core.Secret); ok {
+				db, err := c.MongoDBForSecret(secret)
+				if err == nil && db != nil {
+					queue.Enqueue(c.mgQueue.GetQueue(), db)
+				}
+			}
+		},
+		UpdateFunc: func(oldObj interface{}, newObj interface{}) {
+			if secret, ok := newObj.(*core.Secret); ok {
+				db, err := c.MongoDBForSecret(secret)
+				if err == nil && db != nil {
+					queue.Enqueue(c.mgQueue.GetQueue(), db)
+				}
+			}
+		},
+		DeleteFunc: func(obj interface{}) {
+			if secret, ok := obj.(*core.Secret); ok {
+				db, err := c.MongoDBForSecret(secret)
+				if err == nil && db != nil {
+					queue.Enqueue(c.mgQueue.GetQueue(), db)
+				}
+			}
+		},
+	})
 }

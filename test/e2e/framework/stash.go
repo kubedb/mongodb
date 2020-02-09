@@ -23,6 +23,7 @@ import (
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/pkg/controller"
 
+	"github.com/appscode/go/log"
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -180,7 +181,7 @@ func (f *Framework) EventuallySnapshotInRepository(meta metav1.ObjectMeta) Gomeg
 		func() int64 {
 			repository, err := f.stashClient.StashV1alpha1().Repositories(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
-
+			log.Infoln(fmt.Sprintf("Found %v snapshot(s)", repository.Status.SnapshotCount))
 			return repository.Status.SnapshotCount
 		},
 		time.Minute*13,
@@ -250,11 +251,11 @@ func (f *Framework) getStashMGBackupTaskName() string {
 }
 
 func (f *Framework) getStashMGRestoreTaskName() string {
-	esVersion, err := f.dbClient.CatalogV1alpha1().MongoDBVersions().Get(DBCatalogName, metav1.GetOptions{})
+	mongoVersion, err := f.dbClient.CatalogV1alpha1().MongoDBVersions().Get(DBCatalogName, metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
-	if esVersion.Spec.Version == "4.0.3" {
-		// ongorestore may not work for Replicaset and Sharding for 4.0.3. Use `4.0.11` image for restore purpose. issue link: http://mongodb.2344371.n4.nabble.com/mongorestore-oplogReplay-looping-forever-td25243.html
-		esVersion.Spec.Version = "4.0.11"
+	if mongoVersion.Spec.Version == "4.0.3" {
+		// mongorestore may not work for Replicaset and Sharding for 4.0.3. Use `4.0.11` image for restore purpose. issue link: http://mongodb.2344371.n4.nabble.com/mongorestore-oplogReplay-looping-forever-td25243.html
+		mongoVersion.Spec.Version = "4.0.11"
 	}
-	return "mongodb-restore-" + esVersion.Spec.Version
+	return "mongodb-restore-" + mongoVersion.Spec.Version
 }

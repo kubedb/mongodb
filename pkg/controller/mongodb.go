@@ -26,6 +26,7 @@ import (
 	"github.com/appscode/go/log"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
+	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kutil "kmodules.xyz/client-go"
@@ -80,9 +81,19 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 	sslMode := mongodb.Spec.SSLMode
 	if (sslMode != api.SSLModeDisabled && sslMode != "") ||
 		mongodb.Spec.ReplicaSet != nil || mongodb.Spec.ShardTopology != nil {
-		if err := c.ensureCertSecret(mongodb); err != nil {
+		if err := c.ensureKeyFileSecret(mongodb); err != nil {
 			return err
 		}
+	}
+
+	// create or patch Certificates
+	if err := c.checkTLS(mongodb); err != nil {
+		if kerr.IsNotFound(err) {
+			return nil
+		}
+
+		log.Infoln(err)
+		return err
 	}
 
 	// ensure database StatefulSet

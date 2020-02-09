@@ -25,6 +25,7 @@ import (
 
 	"github.com/appscode/go/log"
 	"github.com/appscode/go/types"
+	cm_api "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1alpha2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	core "k8s.io/api/core/v1"
@@ -48,16 +49,18 @@ const (
 
 var _ = Describe("MongoDB", func() {
 	var (
-		err            error
-		f              *framework.Invocation
-		mongodb        *api.MongoDB
-		garbageMongoDB *api.MongoDBList
-		snapshotPVC    *core.PersistentVolumeClaim
-		secret         *core.Secret
-		skipMessage    string
-		verifySharding bool
-		enableSharding bool
-		dbName         string
+		err              error
+		f                *framework.Invocation
+		mongodb          *api.MongoDB
+		anotherMongoDB   *api.MongoDB
+		garbageMongoDB   *api.MongoDBList
+		snapshotPVC      *core.PersistentVolumeClaim
+		secret           *core.Secret
+		skipMessage      string
+		verifySharding   bool
+		enableSharding   bool
+		dbName           string
+		garbageCASecrets []*core.Secret
 	)
 
 	BeforeEach(func() {
@@ -69,6 +72,7 @@ var _ = Describe("MongoDB", func() {
 		verifySharding = false
 		enableSharding = false
 		dbName = "kubedb"
+		garbageCASecrets = []*core.Secret{}
 	})
 
 	AfterEach(func() {
@@ -158,8 +162,34 @@ var _ = Describe("MongoDB", func() {
 		By("Wait for mongodb to be deleted")
 		f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeFalse())
 
+		By("Delete CA secret")
+		f.DeleteGarbageCASecrets(garbageCASecrets)
+
 		By("Wait for mongodb resources to be wipedOut")
 		f.EventuallyWipedOut(mongodb.ObjectMeta).Should(Succeed())
+	}
+
+	var setupIssuerRefConfig = func(db *api.MongoDB) *api.MongoDB { //func(db *api.MongoDB)
+		//create cert-manager ca secret
+		clientCASecret := f.SelfSignedCASecret(db.ObjectMeta)
+		err := f.CheckSecret(clientCASecret)
+		if kerr.IsNotFound(err) {
+			err = f.CreateSecret(clientCASecret)
+			Expect(err).NotTo(HaveOccurred())
+			garbageCASecrets = append(garbageCASecrets, clientCASecret)
+		}
+		//create issuer
+		issuer := f.IssuerForMongoDB(db.ObjectMeta, clientCASecret.ObjectMeta)
+		err = f.CreateIssuer(issuer)
+		Expect(err).NotTo(HaveOccurred())
+		db.Spec.TLS = &api.TLSConfig{
+			IssuerRef: &core.TypedLocalObjectReference{
+				Name:     issuer.Name,
+				Kind:     issuer.Kind,
+				APIGroup: types.StringP(cm_api.SchemeGroupVersion.Group), //cert-manger.io
+			},
+		}
+		return db
 	}
 
 	Describe("Test", func() {
@@ -300,15 +330,13 @@ var _ = Describe("MongoDB", func() {
 					mongodb.Spec.ShardTopology.Shard.Replicas = int32(3)
 					// Create MongoDB
 					createAndWaitForRunning()
-					//Evict a MongoDB pod from each sts and deploy
+					//Evict a MongoDB pod from each sts
 					By("Try to evict pods from each statefulset")
 					err := f.EvictPodsFromStatefulSet(mongodb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
-					By("Try to evict pods from deployment")
-					err = f.EvictPodsFromDeployment(mongodb.ObjectMeta)
-					Expect(err).NotTo(HaveOccurred())
 				})
 			})
+
 			Context("with custom SA Name", func() {
 				BeforeEach(func() {
 					customSecret := f.SecretForDatabaseAuthentication(mongodb.ObjectMeta, false)
@@ -516,8 +544,6 @@ var _ = Describe("MongoDB", func() {
 				var rs *stashV1beta1.RestoreSession
 				var repo *stashV1alpha1.Repository
 
-				var anotherMongoDB *api.MongoDB
-
 				BeforeEach(func() {
 					if !f.FoundStashCRDs() {
 						Skip("Skipping tests for stash integration. reason: stash operator is not running.")
@@ -556,6 +582,11 @@ var _ = Describe("MongoDB", func() {
 
 				var shouldInitializeFromStash = func() {
 					// Create and wait for running MongoDB
+					if mongodb.Spec.SSLMode != api.SSLModeDisabled && anotherMongoDB.Spec.SSLMode != api.SSLModeDisabled {
+						setupIssuerRefConfig(mongodb)
+						setupIssuerRefConfig(anotherMongoDB)
+					}
+
 					createAndWaitForRunning()
 
 					if enableSharding {
@@ -606,7 +637,6 @@ var _ = Describe("MongoDB", func() {
 							Name: rs.Name,
 						},
 					}
-
 					// Create and wait for running MongoDB
 					createAndWaitForInitializing()
 
@@ -652,9 +682,9 @@ var _ = Describe("MongoDB", func() {
 						Context("with requireSSL sslMode", func() {
 							BeforeEach(func() {
 								mongodb.Spec.SSLMode = api.SSLModeRequireSSL
-								anotherMongoDB.Spec.SSLMode = api.SSLModeRequireSSL
-
 								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+
+								anotherMongoDB.Spec.SSLMode = api.SSLModeRequireSSL
 								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 							})
 
@@ -664,9 +694,9 @@ var _ = Describe("MongoDB", func() {
 						Context("with allowSSL sslMode", func() {
 							BeforeEach(func() {
 								mongodb.Spec.SSLMode = api.SSLModeAllowSSL
-								anotherMongoDB.Spec.SSLMode = api.SSLModeAllowSSL
-
 								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+
+								anotherMongoDB.Spec.SSLMode = api.SSLModeAllowSSL
 								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 							})
 
@@ -676,9 +706,9 @@ var _ = Describe("MongoDB", func() {
 						Context("with preferSSL sslMode", func() {
 							BeforeEach(func() {
 								mongodb.Spec.SSLMode = api.SSLModePreferSSL
-								anotherMongoDB.Spec.SSLMode = api.SSLModePreferSSL
-
 								mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
+
+								anotherMongoDB.Spec.SSLMode = api.SSLModePreferSSL
 								anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 							})
 
@@ -710,11 +740,10 @@ var _ = Describe("MongoDB", func() {
 								BeforeEach(func() {
 									mongodb.Spec.ClusterAuthMode = api.ClusterAuthModeX509
 									mongodb.Spec.SSLMode = api.SSLModeRequireSSL
+									mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 
 									anotherMongoDB.Spec.ClusterAuthMode = api.ClusterAuthModeX509
 									anotherMongoDB.Spec.SSLMode = api.SSLModeRequireSSL
-
-									mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 									anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 								})
 
@@ -725,11 +754,10 @@ var _ = Describe("MongoDB", func() {
 								BeforeEach(func() {
 									mongodb.Spec.ClusterAuthMode = api.ClusterAuthModeKeyFile
 									mongodb.Spec.SSLMode = api.SSLModeAllowSSL
+									mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 
 									anotherMongoDB.Spec.ClusterAuthMode = api.ClusterAuthModeKeyFile
 									anotherMongoDB.Spec.SSLMode = api.SSLModeAllowSSL
-
-									mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 									anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 								})
 
@@ -740,11 +768,10 @@ var _ = Describe("MongoDB", func() {
 								BeforeEach(func() {
 									mongodb.Spec.ClusterAuthMode = api.ClusterAuthModeX509
 									mongodb.Spec.SSLMode = api.SSLModePreferSSL
+									mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 
 									anotherMongoDB.Spec.ClusterAuthMode = api.ClusterAuthModeX509
 									anotherMongoDB.Spec.SSLMode = api.SSLModePreferSSL
-
-									mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 									anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 								})
 
@@ -793,11 +820,10 @@ var _ = Describe("MongoDB", func() {
 								BeforeEach(func() {
 									mongodb.Spec.ClusterAuthMode = api.ClusterAuthModeX509
 									mongodb.Spec.SSLMode = api.SSLModeRequireSSL
+									mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 
 									anotherMongoDB.Spec.ClusterAuthMode = api.ClusterAuthModeX509
 									anotherMongoDB.Spec.SSLMode = api.SSLModeRequireSSL
-
-									mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 									anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 								})
 
@@ -808,11 +834,10 @@ var _ = Describe("MongoDB", func() {
 								BeforeEach(func() {
 									mongodb.Spec.ClusterAuthMode = api.ClusterAuthModeKeyFile
 									mongodb.Spec.SSLMode = api.SSLModeAllowSSL
+									mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 
 									anotherMongoDB.Spec.ClusterAuthMode = api.ClusterAuthModeKeyFile
 									anotherMongoDB.Spec.SSLMode = api.SSLModeAllowSSL
-
-									mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 									anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 								})
 
@@ -823,11 +848,10 @@ var _ = Describe("MongoDB", func() {
 								BeforeEach(func() {
 									mongodb.Spec.ClusterAuthMode = api.ClusterAuthModeX509
 									mongodb.Spec.SSLMode = api.SSLModePreferSSL
+									mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 
 									anotherMongoDB.Spec.ClusterAuthMode = api.ClusterAuthModeX509
 									anotherMongoDB.Spec.SSLMode = api.SSLModePreferSSL
-
-									mongodb = f.MongoDBWithFlexibleProbeTimeout(mongodb)
 									anotherMongoDB = f.MongoDBWithFlexibleProbeTimeout(anotherMongoDB)
 								})
 
@@ -1917,6 +1941,56 @@ var _ = Describe("MongoDB", func() {
 						err := f.CreateMongoDB(mongodb)
 						Expect(err).To(HaveOccurred())
 					})
+				})
+			})
+		})
+
+		Context("Exporter", func() {
+			Context("Standalone", func() {
+				BeforeEach(func() {
+					mongodb = f.MongoDBStandalone()
+				})
+				It("should export selected metrics", func() {
+					By("Add monitoring configurations to mongodb")
+					f.AddMonitor(mongodb)
+					// Create MongoDB
+					createAndWaitForRunning()
+					By("Verify exporter")
+					err = f.VerifyExporter(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+					By("Done")
+				})
+			})
+
+			Context("Replicas", func() {
+				BeforeEach(func() {
+					mongodb = f.MongoDBRS()
+				})
+				It("should export selected metrics", func() {
+					By("Add monitoring configurations to mongodb")
+					f.AddMonitor(mongodb)
+					// Create MongoDB
+					createAndWaitForRunning()
+					By("Verify exporter")
+					err = f.VerifyExporter(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+					By("Done")
+				})
+			})
+
+			Context("Shards", func() {
+				BeforeEach(func() {
+					mongodb = f.MongoDBShard()
+				})
+				It("should export selected metrics", func() {
+					By("Add monitoring configurations to mongodb")
+					f.AddMonitor(mongodb)
+					// Create MongoDB
+					createAndWaitForRunning()
+					By("Verify exporter")
+					err = f.VerifyShardExporters(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+					By("Done")
 				})
 			})
 		})

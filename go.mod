@@ -5,13 +5,18 @@ go 1.12
 require (
 	github.com/DataDog/zstd v1.4.4 // indirect
 	github.com/appscode/go v0.0.0-20191119085241-0887d8ec2ecc
+	github.com/aws/aws-sdk-go v1.24.1
 	github.com/codeskyblue/go-sh v0.0.0-20190412065543-76bd3d59ff27
 	github.com/coreos/prometheus-operator v0.34.0
 	github.com/fatih/structs v1.1.0
 	github.com/golang/snappy v0.0.1 // indirect
+	github.com/jetstack/cert-manager v0.12.0
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/pkg/errors v0.8.1
+	github.com/prometheus/client_model v0.1.0
+	github.com/prometheus/prom2json v1.3.0
+	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
 	github.com/tidwall/pretty v1.0.0 // indirect
@@ -20,20 +25,22 @@ require (
 	go.mongodb.org/mongo-driver v1.2.0
 	gomodules.xyz/cert v1.0.2
 	gomodules.xyz/envsubst v0.1.0
+	gomodules.xyz/version v0.1.0
+	google.golang.org/appengine v1.6.0 // indirect
 	k8s.io/api v0.0.0-20191122220107-b5267f2975e0
 	k8s.io/apiextensions-apiserver v0.0.0-20191114105449-027877536833
 	k8s.io/apimachinery v0.16.5-beta.1
 	k8s.io/apiserver v0.0.0-20191114103151-9ca1dc586682
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-aggregator v0.0.0-20191114103820-f023614fb9ea
-	kmodules.xyz/client-go v0.0.0-20200127013029-a6db892785ee
+	kmodules.xyz/client-go v0.0.0-20200201171629-70cdbdd3321b
 	kmodules.xyz/constants v0.0.0-20191024095500-cd4313df4aa6
 	kmodules.xyz/custom-resources v0.0.0-20191130062942-f41b54f62419
 	kmodules.xyz/monitoring-agent-api v0.0.0-20200125202117-d3b3e33ce41f
 	kmodules.xyz/objectstore-api v0.0.0-20191127144749-5881939b57f0
 	kmodules.xyz/offshoot-api v0.0.0-20200103145223-2c4f520520d2
 	kmodules.xyz/webhook-runtime v0.0.0-20191127075323-d4bfdee6974d
-	kubedb.dev/apimachinery v0.13.0-rc.3.0.20200127043645-b88239d7ee69
+	kubedb.dev/apimachinery v0.13.0-rc.3.0.20200208191103-5b2fb5e2abf2
 	stash.appscode.dev/stash v0.9.0-rc.4
 )
 

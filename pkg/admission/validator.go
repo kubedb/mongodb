@@ -131,11 +131,6 @@ func (a *MongoDBValidator) Admit(req *admission.AdmissionRequest) *admission.Adm
 				oldMongoDB.Spec.DatabaseSecret = mongodb.Spec.DatabaseSecret
 			}
 
-			// Allow changing Database ReplicaSet Keyfile only if there was no secret have set up yet.
-			if oldMongoDB.Spec.CertificateSecret == nil {
-				oldMongoDB.Spec.CertificateSecret = mongodb.Spec.CertificateSecret
-			}
-
 			if err := validateUpdate(mongodb, oldMongoDB); err != nil {
 				return hookapi.StatusBadRequest(fmt.Errorf("%v", err))
 			}
@@ -251,16 +246,14 @@ func ValidateMongoDB(client kubernetes.Interface, extClient cs.Interface, mongod
 	}
 
 	if strictValidation {
-		databaseSecret := mongodb.Spec.DatabaseSecret
-		if databaseSecret != nil {
-			if _, err := client.CoreV1().Secrets(mongodb.Namespace).Get(databaseSecret.SecretName, metav1.GetOptions{}); err != nil {
+		if mongodb.Spec.DatabaseSecret != nil {
+			if _, err := client.CoreV1().Secrets(mongodb.Namespace).Get(mongodb.Spec.DatabaseSecret.SecretName, metav1.GetOptions{}); err != nil {
 				return err
 			}
 		}
 
-		certSecret := mongodb.Spec.CertificateSecret
-		if certSecret != nil {
-			if _, err := client.CoreV1().Secrets(mongodb.Namespace).Get(certSecret.SecretName, metav1.GetOptions{}); err != nil {
+		if mongodb.Spec.KeyFile != nil {
+			if _, err := client.CoreV1().Secrets(mongodb.Namespace).Get(mongodb.Spec.KeyFile.SecretName, metav1.GetOptions{}); err != nil {
 				return err
 			}
 		}

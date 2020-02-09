@@ -62,8 +62,8 @@ func (f *Framework) CheckAppBindingSpec(meta metav1.ObjectMeta) error {
 	}
 	if appBinding.Spec.Secret == nil ||
 		(appBinding.Spec.ClientConfig.CABundle == nil && appBinding.Spec.Secret.Name != mongodb.Spec.DatabaseSecret.SecretName) ||
-		(appBinding.Spec.ClientConfig.CABundle != nil && appBinding.Spec.Secret.Name != mongodb.Spec.CertificateSecret.SecretName) {
-		return fmt.Errorf("appbinding %v/%v contains invalid data", appBinding.Namespace, appBinding.Name)
+		(appBinding.Spec.ClientConfig.CABundle != nil && appBinding.Spec.Secret.Name != mongodb.Name+api.MongoDBExternalClientSecretSuffix+api.MongoDBPEMSecretSuffix) {
+		return fmt.Errorf("appbinding %v/%v contains invalid secret", appBinding.Namespace, appBinding.Name)
 	}
 	return nil
 }

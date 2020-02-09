@@ -22,6 +22,7 @@ import (
 	cs "kubedb.dev/apimachinery/client/clientset/versioned"
 
 	"github.com/appscode/go/crypto/rand"
+	cm "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	"github.com/spf13/afero"
 	"gomodules.xyz/cert/certstore"
 	crd_cs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
@@ -35,23 +36,24 @@ import (
 
 var (
 	DockerRegistry  = "kubedbci"
-	DBCatalogName   = "3.6-v4"
+	DBCatalogName   = "4.1.13-v1"
 	StorageProvider string
 )
 
 type Framework struct {
-	restConfig       *rest.Config
-	kubeClient       kubernetes.Interface
-	apiExtKubeClient crd_cs.ApiextensionsV1beta1Interface
-	dbClient         cs.Interface
-	kaClient         ka.Interface
-	appCatalogClient appcat_cs.AppcatalogV1alpha1Interface
-	stashClient      scs.Interface
-	topology         *core_util.Topology
-	namespace        string
-	name             string
-	StorageClass     string
-	CertStore        *certstore.CertStore
+	restConfig        *rest.Config
+	kubeClient        kubernetes.Interface
+	apiExtKubeClient  crd_cs.ApiextensionsV1beta1Interface
+	dbClient          cs.Interface
+	kaClient          ka.Interface
+	appCatalogClient  appcat_cs.AppcatalogV1alpha1Interface
+	stashClient       scs.Interface
+	topology          *core_util.Topology
+	namespace         string
+	name              string
+	StorageClass      string
+	CertStore         *certstore.CertStore
+	certManagerClient cm.Interface
 }
 
 func New(
@@ -63,12 +65,12 @@ func New(
 	appCatalogClient appcat_cs.AppcatalogV1alpha1Interface,
 	stashClient scs.Interface,
 	storageClass string,
+	certManagerClient cm.Interface,
 ) (*Framework, error) {
 	topology, err := core_util.DetectTopology(kubeClient)
 	if err != nil {
 		return nil, err
 	}
-
 	store, err := certstore.NewCertStore(afero.NewMemMapFs(), filepath.Join("", "pki"))
 	if err != nil {
 		return nil, err
@@ -80,18 +82,19 @@ func New(
 	}
 
 	return &Framework{
-		restConfig:       restConfig,
-		kubeClient:       kubeClient,
-		apiExtKubeClient: apiExtKubeClient,
-		dbClient:         dbClient,
-		kaClient:         kaClient,
-		appCatalogClient: appCatalogClient,
-		stashClient:      stashClient,
-		name:             "mongodb-operator",
-		namespace:        rand.WithUniqSuffix(api.ResourceSingularMongoDB),
-		StorageClass:     storageClass,
-		topology:         topology,
-		CertStore:        store,
+		restConfig:        restConfig,
+		kubeClient:        kubeClient,
+		apiExtKubeClient:  apiExtKubeClient,
+		dbClient:          dbClient,
+		kaClient:          kaClient,
+		appCatalogClient:  appCatalogClient,
+		stashClient:       stashClient,
+		name:              "mongodb-operator",
+		namespace:         rand.WithUniqSuffix(api.ResourceSingularMongoDB),
+		StorageClass:      storageClass,
+		topology:          topology,
+		CertStore:         store,
+		certManagerClient: certManagerClient,
 	}, nil
 }
 

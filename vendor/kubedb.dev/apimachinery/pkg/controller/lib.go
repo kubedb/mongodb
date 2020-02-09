@@ -145,7 +145,7 @@ func (c *Controller) CreateStatefulSetPodDisruptionBudget(sts *appsv1.StatefulSe
 				MatchLabels: sts.Spec.Template.Labels,
 			}
 
-			maxUnavailable := int32(math.Floor((float64(*sts.Spec.Replicas) - 1.0) / 2.0))
+			maxUnavailable := int32(math.Max(1, math.Floor((float64(*sts.Spec.Replicas)-1.0)/2.0)))
 			in.Spec.MaxUnavailable = &intstr.IntOrString{IntVal: maxUnavailable}
 
 			in.Spec.MinAvailable = nil
