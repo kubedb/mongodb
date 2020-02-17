@@ -33,8 +33,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	meta_util "kmodules.xyz/client-go/meta"
 	ofst "kmodules.xyz/offshoot-api/api/v1"
-	stashV1alpha1 "stash.appscode.dev/stash/apis/stash/v1alpha1"
-	stashV1beta1 "stash.appscode.dev/stash/apis/stash/v1beta1"
+	stashV1alpha1 "stash.appscode.dev/apimachinery/apis/stash/v1alpha1"
+	stashV1beta1 "stash.appscode.dev/apimachinery/apis/stash/v1beta1"
 )
 
 const (
