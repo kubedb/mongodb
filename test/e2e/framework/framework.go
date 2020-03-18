@@ -36,7 +36,7 @@ import (
 
 var (
 	DockerRegistry  = "kubedbci"
-	DBCatalogName   = "4.1.13-v1"
+	DBCatalogName   = "4.2.3"
 	StorageProvider string
 )
 
