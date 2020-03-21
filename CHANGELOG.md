@@ -1,5 +1,34 @@
 # Change Log
 
+## [Unreleased](https://github.com/kubedb/mongodb/tree/HEAD)
+
+[Full Changelog](https://github.com/kubedb/mongodb/compare/v0.6.0-rc.1...HEAD)
+
+**Merged pull requests:**
+
+- Use stash.appscode.dev/apimachinery@v0.9.0-rc.6 [\#191](https://github.com/kubedb/mongodb/pull/191) ([tamalsaha](https://github.com/tamalsaha))
+- Manage SSL certificates using cert-manager [\#190](https://github.com/kubedb/mongodb/pull/190) ([tamalsaha](https://github.com/tamalsaha))
+- Use Minio storage for testing [\#188](https://github.com/kubedb/mongodb/pull/188) ([hossainemruz](https://github.com/hossainemruz))
+- Support affinity templating in mongodb-shard [\#186](https://github.com/kubedb/mongodb/pull/186) ([the-redback](https://github.com/the-redback))
+- Use stash@v0.9.0-rc.4 release [\#185](https://github.com/kubedb/mongodb/pull/185) ([tamalsaha](https://github.com/tamalsaha))
+- Fix `Pause` Logic [\#184](https://github.com/kubedb/mongodb/pull/184) ([faem](https://github.com/faem))
+- Refactor CI pipeline to build once [\#182](https://github.com/kubedb/mongodb/pull/182) ([tamalsaha](https://github.com/tamalsaha))
+- Add `Pause` Feature [\#181](https://github.com/kubedb/mongodb/pull/181) ([faem](https://github.com/faem))
+- Delete backupconfig before attempting restoresession. [\#180](https://github.com/kubedb/mongodb/pull/180) ([the-redback](https://github.com/the-redback))
+- Wipeout if custom databaseSecret has been deleted [\#179](https://github.com/kubedb/mongodb/pull/179) ([weenxin](https://github.com/weenxin))
+- Matrix test and Moved out mongo docker files [\#178](https://github.com/kubedb/mongodb/pull/178) ([the-redback](https://github.com/the-redback))
+- Add license header to files [\#177](https://github.com/kubedb/mongodb/pull/177) ([tamalsaha](https://github.com/tamalsaha))
+- Fix E2E tests in github action [\#176](https://github.com/kubedb/mongodb/pull/176) ([the-redback](https://github.com/the-redback))
+
+## [v0.6.0-rc.1](https://github.com/kubedb/mongodb/tree/v0.6.0-rc.1) (2019-10-07)
+[Full Changelog](https://github.com/kubedb/mongodb/compare/v0.6.0-rc.0...v0.6.0-rc.1)
+
+**Merged pull requests:**
+
+- Validate DBVersionSpecs and fixed broken build [\#175](https://github.com/kubedb/mongodb/pull/175) ([the-redback](https://github.com/the-redback))
+- Run e2e tests using GitHub actions [\#174](https://github.com/kubedb/mongodb/pull/174) ([tamalsaha](https://github.com/tamalsaha))
+- Use percona mongodb exporter && Fix unauthorized readiness and liveness probe [\#173](https://github.com/kubedb/mongodb/pull/173) ([the-redback](https://github.com/the-redback))
+
 ## [v0.6.0-rc.0](https://github.com/kubedb/mongodb/tree/v0.6.0-rc.0) (2019-08-22)
 [Full Changelog](https://github.com/kubedb/mongodb/compare/0.5.0...v0.6.0-rc.0)
 
