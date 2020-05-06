@@ -141,6 +141,24 @@ func (c *Controller) ensureMongosNode(mongodb *api.MongoDB) (*apps.StatefulSet, 
 	initContainers = append(initContainers, bootstrpContnr)
 	volumes = core_util.UpsertVolume(volumes, bootstrpVol...)
 
+	podTemplate := &mongodb.Spec.ShardTopology.Mongos.PodTemplate
+	if podTemplate == nil {
+		podTemplate = &ofst.PodTemplateSpec{}
+	}
+	if podTemplate.Spec.Lifecycle == nil {
+		podTemplate.Spec.Lifecycle = &core.Lifecycle{}
+	}
+
+	podTemplate.Spec.Lifecycle.PreStop = &core.Handler{
+		Exec: &core.ExecAction{
+		 Command: []string{
+		 	"bash",
+		 	"-c",
+		 	"mongo admin --username=$MONGO_INITDB_ROOT_USERNAME --password=$MONGO_INITDB_ROOT_PASSWORD --eval \"db.adminCommand({ shutdown: 1 })\"",
+		 },
+		},
+	}
+
 	opts := workloadOptions{
 		stsName:        mongodb.MongosNodeName(),
 		labels:         mongodb.MongosLabels(),
@@ -150,7 +168,7 @@ func (c *Controller) ensureMongosNode(mongodb *api.MongoDB) (*apps.StatefulSet, 
 		envList:        envList,
 		initContainers: initContainers,
 		gvrSvcName:     mongodb.GvrSvcName(mongodb.MongosNodeName()),
-		podTemplate:    &mongodb.Spec.ShardTopology.Mongos.PodTemplate,
+		podTemplate:    podTemplate,
 		configSource:   mongodb.Spec.ShardTopology.Mongos.ConfigSource,
 		pvcSpec:        mongodb.Spec.Storage,
 		replicas:       &mongodb.Spec.ShardTopology.Mongos.Replicas,
