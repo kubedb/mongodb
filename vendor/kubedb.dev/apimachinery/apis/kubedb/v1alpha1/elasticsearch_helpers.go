@@ -36,7 +36,7 @@ import (
 )
 
 const (
-	NodeAffinityTemplateVar = "NODE_ROLE"
+	ElasticsearchNodeAffinityTemplateVar = "NODE_ROLE"
 )
 
 func (_ Elasticsearch) CustomResourceDefinition() *apiextensions.CustomResourceDefinition {
@@ -243,7 +243,7 @@ func (e *Elasticsearch) GetMatchExpressions() []metav1.LabelSelectorRequirement 
 
 	return []metav1.LabelSelectorRequirement{
 		{
-			Key:      fmt.Sprintf("${%s}", NodeAffinityTemplateVar),
+			Key:      fmt.Sprintf("${%s}", ElasticsearchNodeAffinityTemplateVar),
 			Operator: metav1.LabelSelectorOpExists,
 		},
 	}
