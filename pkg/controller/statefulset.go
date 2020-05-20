@@ -875,7 +875,7 @@ func getExporterContainer(mongodb *api.MongoDB, mongodbVersion *v1alpha1.MongoDB
 	if mongodb.Spec.SSLMode != api.SSLModeDisabled && mongodb.Spec.TLS != nil {
 		clientPEM := fmt.Sprintf("%s/%s", api.MongoCertDirectory, api.MongoClientFileName)
 		clientCA := fmt.Sprintf("%s/%s", api.MongoCertDirectory, api.TLSCACertFileName)
-		args = append(args, fmt.Sprintf("--mongodb.tls"))
+		args = append(args, "--mongodb.tls")
 		args = append(args, "--mongodb.tls-ca")
 		args = append(args, clientCA)
 		args = append(args, "--mongodb.tls-cert")
