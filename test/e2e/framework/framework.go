@@ -16,6 +16,7 @@ limitations under the License.
 package framework
 
 import (
+	"context"
 	"path/filepath"
 
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
@@ -67,7 +68,7 @@ func New(
 	storageClass string,
 	certManagerClient cm.Interface,
 ) (*Framework, error) {
-	topology, err := core_util.DetectTopology(kubeClient)
+	topology, err := core_util.DetectTopology(context.TODO(), kubeClient)
 	if err != nil {
 		return nil, err
 	}

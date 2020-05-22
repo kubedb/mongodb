@@ -17,6 +17,7 @@ package controller
 
 import (
 	"context"
+
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 
 	"github.com/appscode/go/log"
@@ -30,12 +31,12 @@ import (
 
 func (c *Controller) waitUntilPaused(db *api.MongoDB) error {
 	log.Infof("waiting for pods for Mongodb %v/%v to be deleted\n", db.Namespace, db.Name)
-	if err := core_util.WaitUntilPodDeletedBySelector(c.Client, db.Namespace, metav1.SetAsLabelSelector(db.OffshootSelectors())); err != nil {
+	if err := core_util.WaitUntilPodDeletedBySelector(context.TODO(), c.Client, db.Namespace, metav1.SetAsLabelSelector(db.OffshootSelectors())); err != nil {
 		return err
 	}
 
 	log.Infof("waiting for services for Mongodb %v/%v to be deleted\n", db.Namespace, db.Name)
-	if err := core_util.WaitUntilServiceDeletedBySelector(c.Client, db.Namespace, metav1.SetAsLabelSelector(db.OffshootSelectors())); err != nil {
+	if err := core_util.WaitUntilServiceDeletedBySelector(context.TODO(), c.Client, db.Namespace, metav1.SetAsLabelSelector(db.OffshootSelectors())); err != nil {
 		return err
 	}
 
@@ -57,7 +58,7 @@ func (c *Controller) waitUntilPaused(db *api.MongoDB) error {
 func (c *Controller) waitUntilRBACStuffDeleted(db *api.MongoDB) error {
 	log.Infof("waiting for RBACs for Mongodb %v/%v to be deleted\n", db.Namespace, db.Name)
 	// Delete ServiceAccount
-	if err := core_util.WaitUntillServiceAccountDeleted(c.Client, db.ObjectMeta); err != nil {
+	if err := core_util.WaitUntillServiceAccountDeleted(context.TODO(), c.Client, db.ObjectMeta); err != nil {
 		return err
 	}
 	return nil
@@ -94,7 +95,8 @@ func (c *Controller) haltDatabase(db *api.MongoDB) error {
 		AppcatalogV1alpha1().
 		AppBindings(db.Namespace).
 		DeleteCollection(
-			&metav1.DeleteOptions{PropagationPolicy: &policy},
+			context.TODO(),
+			metav1.DeleteOptions{PropagationPolicy: &policy},
 			metav1.ListOptions{LabelSelector: labelSelector},
 		); err != nil {
 		return err

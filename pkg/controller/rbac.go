@@ -17,6 +17,7 @@ package controller
 
 import (
 	"context"
+
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 
 	"github.com/pkg/errors"
@@ -34,6 +35,7 @@ func (c *Controller) createServiceAccount(db *api.MongoDB, saName string) error 
 	owner := metav1.NewControllerRef(db, api.SchemeGroupVersion.WithKind(api.ResourceKindMongoDB))
 	// Create new ServiceAccount
 	_, _, err := core_util.CreateOrPatchServiceAccount(
+		context.TODO(),
 		c.Client,
 		metav1.ObjectMeta{
 			Name:      saName,
@@ -44,6 +46,7 @@ func (c *Controller) createServiceAccount(db *api.MongoDB, saName string) error 
 			in.Labels = db.OffshootLabels()
 			return in
 		},
+		metav1.PatchOptions{},
 	)
 	return err
 }
@@ -53,6 +56,7 @@ func (c *Controller) ensureRole(db *api.MongoDB, name string, pspName string) er
 
 	// Create new Role for ElasticSearch and it's Snapshot
 	_, _, err := rbac_util.CreateOrPatchRole(
+		context.TODO(),
 		c.Client,
 		metav1.ObjectMeta{
 			Name:      name,
@@ -81,6 +85,7 @@ func (c *Controller) ensureRole(db *api.MongoDB, name string, pspName string) er
 			in.Rules = append(in.Rules, secretRule)
 			return in
 		},
+		metav1.PatchOptions{},
 	)
 	return err
 }
@@ -89,6 +94,7 @@ func (c *Controller) createRoleBinding(db *api.MongoDB, roleName string, saName 
 	owner := metav1.NewControllerRef(db, api.SchemeGroupVersion.WithKind(api.ResourceKindMongoDB))
 	// Ensure new RoleBindings for ElasticSearch and it's Snapshot
 	_, _, err := rbac_util.CreateOrPatchRoleBinding(
+		context.TODO(),
 		c.Client,
 		metav1.ObjectMeta{
 			Name:      roleName,
@@ -111,12 +117,13 @@ func (c *Controller) createRoleBinding(db *api.MongoDB, roleName string, saName 
 			}
 			return in
 		},
+		metav1.PatchOptions{},
 	)
 	return err
 }
 
 func (c *Controller) getPolicyNames(db *api.MongoDB) (string, error) {
-	dbVersion, err := c.ExtClient.CatalogV1alpha1().MongoDBVersions().Get(string(db.Spec.Version), metav1.GetOptions{})
+	dbVersion, err := c.ExtClient.CatalogV1alpha1().MongoDBVersions().Get(context.TODO(), string(db.Spec.Version), metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

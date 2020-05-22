@@ -16,6 +16,7 @@ limitations under the License.
 package framework
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -25,6 +26,7 @@ import (
 	. "github.com/onsi/gomega"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	meta_util "kmodules.xyz/client-go/meta"
 	appcat "kmodules.xyz/custom-resources/apis/appcatalog/v1alpha1"
 	appcat_util "kmodules.xyz/custom-resources/client/clientset/versioned/typed/appcatalog/v1alpha1/util"
 )
@@ -32,7 +34,7 @@ import (
 func (f *Framework) EventuallyAppBinding(meta metav1.ObjectMeta) GomegaAsyncAssertion {
 	return Eventually(
 		func() bool {
-			_, err := f.appCatalogClient.AppBindings(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+			_, err := f.appCatalogClient.AppBindings(meta.Namespace).Get(context.TODO(), meta.Name, metav1.GetOptions{})
 			if err != nil {
 				if kerr.IsNotFound(err) {
 					return false
@@ -50,7 +52,7 @@ func (f *Framework) CheckAppBindingSpec(meta metav1.ObjectMeta) error {
 	mongodb, err := f.GetMongoDB(meta)
 	Expect(err).NotTo(HaveOccurred())
 
-	appBinding, err := f.appCatalogClient.AppBindings(mongodb.Namespace).Get(mongodb.Name, metav1.GetOptions{})
+	appBinding, err := f.appCatalogClient.AppBindings(mongodb.Namespace).Get(context.TODO(), mongodb.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -73,7 +75,7 @@ func (f *Framework) CheckAppBindingSpec(meta metav1.ObjectMeta) error {
 func (f *Framework) EnsureCustomAppBinding(db *api.MongoDB, customAppBindingName string) error {
 	appmeta := db.AppBindingMeta()
 	// get app binding
-	appBinding, err := f.appCatalogClient.AppBindings(db.Namespace).Get(appmeta.Name(), metav1.GetOptions{})
+	appBinding, err := f.appCatalogClient.AppBindings(db.Namespace).Get(context.TODO(), appmeta.Name(), metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -83,18 +85,24 @@ func (f *Framework) EnsureCustomAppBinding(db *api.MongoDB, customAppBindingName
 		Namespace: db.Namespace,
 	}
 
-	if _, _, err := appcat_util.CreateOrPatchAppBinding(f.appCatalogClient, meta, func(in *appcat.AppBinding) *appcat.AppBinding {
-		in.Labels = appBinding.Labels
-		in.Annotations = appBinding.Annotations
+	if _, _, err := appcat_util.CreateOrPatchAppBinding(
+		context.TODO(),
+		f.appCatalogClient,
+		meta,
+		func(in *appcat.AppBinding) *appcat.AppBinding {
+			in.Labels = appBinding.Labels
+			in.Annotations = appBinding.Annotations
 
-		in.Spec.Type = appBinding.Spec.Type
-		in.Spec.ClientConfig.Service = appBinding.Spec.ClientConfig.Service
-		in.Spec.ClientConfig.InsecureSkipTLSVerify = appBinding.Spec.ClientConfig.InsecureSkipTLSVerify
-		in.Spec.Secret = appBinding.Spec.Secret
-		// ignore appBinding.Spec.Parameters
+			in.Spec.Type = appBinding.Spec.Type
+			in.Spec.ClientConfig.Service = appBinding.Spec.ClientConfig.Service
+			in.Spec.ClientConfig.InsecureSkipTLSVerify = appBinding.Spec.ClientConfig.InsecureSkipTLSVerify
+			in.Spec.Secret = appBinding.Spec.Secret
+			// ignore appBinding.Spec.Parameters
 
-		return in
-	}); err != nil {
+			return in
+		},
+		metav1.PatchOptions{},
+	); err != nil {
 		return err
 	}
 
@@ -103,5 +111,5 @@ func (f *Framework) EnsureCustomAppBinding(db *api.MongoDB, customAppBindingName
 
 // DeleteAppBinding deletes the custom appBinding that is created in test
 func (f *Framework) DeleteAppBinding(meta metav1.ObjectMeta) error {
-	return f.appCatalogClient.AppBindings(meta.Namespace).Delete(meta.Name, deleteInForeground())
+	return f.appCatalogClient.AppBindings(meta.Namespace).Delete(context.TODO(), meta.Name, meta_util.DeleteInForeground())
 }

@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	meta_util "kmodules.xyz/client-go/meta"
 )
 
 func (f *Framework) EventuallyPVCCount(meta metav1.ObjectMeta) GomegaAsyncAssertion {
@@ -78,5 +79,5 @@ func (i *Invocation) CreatePersistentVolumeClaim(pvc *core.PersistentVolumeClaim
 }
 
 func (i *Invocation) DeletePersistentVolumeClaim(meta metav1.ObjectMeta) error {
-	return i.kubeClient.CoreV1().PersistentVolumeClaims(meta.Namespace).Delete(context.TODO(), meta.Name, *deleteInForeground())
+	return i.kubeClient.CoreV1().PersistentVolumeClaims(meta.Namespace).Delete(context.TODO(), meta.Name, meta_util.DeleteInForeground())
 }

@@ -36,6 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kutil "kmodules.xyz/client-go"
+	meta_util "kmodules.xyz/client-go/meta"
 	"kmodules.xyz/client-go/tools/portforward"
 	kmon "kmodules.xyz/monitoring-agent-api/api/v1"
 )
@@ -47,16 +48,6 @@ const (
 	metricsMatchedCount  = 2
 	mongodbVersionMetric = "mongodb_version_info"
 )
-
-//func deleteInBackground() *metav1.DeleteOptions {
-//	policy := metav1.DeletePropagationBackground
-//	return &metav1.DeleteOptions{PropagationPolicy: &policy}
-//}
-
-func deleteInForeground() *metav1.DeleteOptions {
-	policy := metav1.DeletePropagationForeground
-	return &metav1.DeleteOptions{PropagationPolicy: &policy}
-}
 
 func (f *Framework) DeleteCASecret(clientCASecret *v1.Secret) {
 	err := f.CheckSecret(clientCASecret)
@@ -79,7 +70,7 @@ func (f *Framework) DeleteGarbageCASecrets(secretList []*v1.Secret) {
 
 func (f *Framework) CleanWorkloadLeftOvers() {
 	// delete statefulset
-	if err := f.kubeClient.AppsV1().StatefulSets(f.namespace).DeleteCollection(context.TODO(), *deleteInForeground(), metav1.ListOptions{
+	if err := f.kubeClient.AppsV1().StatefulSets(f.namespace).DeleteCollection(context.TODO(), meta_util.DeleteInForeground(), metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
 			api.LabelDatabaseKind: api.ResourceKindMongoDB,
 		}).String(),
@@ -88,7 +79,7 @@ func (f *Framework) CleanWorkloadLeftOvers() {
 	}
 
 	// delete pvc
-	if err := f.kubeClient.CoreV1().PersistentVolumeClaims(f.namespace).DeleteCollection(context.TODO(), *deleteInForeground(), metav1.ListOptions{
+	if err := f.kubeClient.CoreV1().PersistentVolumeClaims(f.namespace).DeleteCollection(context.TODO(), meta_util.DeleteInForeground(), metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
 			api.LabelDatabaseKind: api.ResourceKindMongoDB,
 		}).String(),
@@ -111,7 +102,7 @@ func (f *Framework) AddMonitor(obj *api.MongoDB) {
 }
 
 func (f *Framework) VerifyShardExporters(meta metav1.ObjectMeta) error {
-	mongoDB, err := f.dbClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+	mongoDB, err := f.dbClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Get(context.TODO(), meta.Name, metav1.GetOptions{})
 	if err != nil {
 		log.Infoln(err)
 		return err

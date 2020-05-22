@@ -16,6 +16,7 @@ limitations under the License.
 package e2e_test
 
 import (
+	"context"
 	"fmt"
 
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
@@ -1715,7 +1716,7 @@ var _ = Describe("MongoDB", func() {
 					By("Checking Inserted Document")
 					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
 
-					_, _, err = util.PatchMongoDB(f.DBClient().KubedbV1alpha1(), mongodb, func(in *api.MongoDB) *api.MongoDB {
+					_, _, err = util.PatchMongoDB(context.TODO(), f.DBClient().KubedbV1alpha1(), mongodb, func(in *api.MongoDB) *api.MongoDB {
 						envs = []core.EnvVar{
 							{
 								Name:  MONGO_INITDB_DATABASE,
@@ -1734,7 +1735,7 @@ var _ = Describe("MongoDB", func() {
 							in.Spec.PodTemplate.Spec.Env = envs
 						}
 						return in
-					})
+					}, metav1.PatchOptions{})
 					Expect(err).NotTo(HaveOccurred())
 				}
 
