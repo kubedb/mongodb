@@ -16,6 +16,7 @@ limitations under the License.
 package controller
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -590,7 +591,7 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB, opts workloadOption
 
 func (c *Controller) checkStatefulSet(mongodb *api.MongoDB, stsName string) error {
 	// StatefulSet for MongoDB database
-	statefulSet, err := c.Client.AppsV1().StatefulSets(mongodb.Namespace).Get(stsName, metav1.GetOptions{})
+	statefulSet, err := c.Client.AppsV1().StatefulSets(mongodb.Namespace).Get(context.TODO(), stsName, metav1.GetOptions{})
 	if err != nil {
 		if kerr.IsNotFound(err) {
 			return nil

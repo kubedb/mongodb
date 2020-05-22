@@ -16,6 +16,7 @@ limitations under the License.
 package controller
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -75,7 +76,7 @@ func (c *Controller) ensureAppBinding(db *api.MongoDB) (kutil.VerbType, error) {
 	if (db.Spec.SSLMode == api.SSLModeRequireSSL || db.Spec.SSLMode == api.SSLModePreferSSL) &&
 		db.Spec.TLS != nil {
 
-		certSecret, err := c.Client.CoreV1().Secrets(db.Namespace).Get(db.Name+api.MongoDBExternalClientSecretSuffix, metav1.GetOptions{})
+		certSecret, err := c.Client.CoreV1().Secrets(db.Namespace).Get(context.TODO(), db.Name+api.MongoDBExternalClientSecretSuffix, metav1.GetOptions{})
 		if err != nil {
 			return kutil.VerbUnchanged, errors.Wrapf(err, "failed to read certificate secret for MongoDB %s/%s", db.Namespace, db.Name)
 		}

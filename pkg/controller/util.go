@@ -16,6 +16,7 @@ limitations under the License.
 package controller
 
 import (
+	"context"
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 
@@ -76,7 +77,7 @@ func (c *Controller) wipeOutDatabase(meta metav1.ObjectMeta, secrets []string, o
 
 	//Dont delete unused secrets that are not owned by kubeDB
 	for _, unusedSecret := range unusedSecrets.List() {
-		secret, err := c.Client.CoreV1().Secrets(meta.Namespace).Get(unusedSecret, metav1.GetOptions{})
+		secret, err := c.Client.CoreV1().Secrets(meta.Namespace).Get(context.TODO(), unusedSecret, metav1.GetOptions{})
 		//Maybe user has delete this secret
 		if kerr.IsNotFound(err) {
 			unusedSecrets.Delete(secret.Name)

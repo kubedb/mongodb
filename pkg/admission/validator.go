@@ -16,6 +16,7 @@ limitations under the License.
 package admission
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -247,13 +248,13 @@ func ValidateMongoDB(client kubernetes.Interface, extClient cs.Interface, mongod
 
 	if strictValidation {
 		if mongodb.Spec.DatabaseSecret != nil {
-			if _, err := client.CoreV1().Secrets(mongodb.Namespace).Get(mongodb.Spec.DatabaseSecret.SecretName, metav1.GetOptions{}); err != nil {
+			if _, err := client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), mongodb.Spec.DatabaseSecret.SecretName, metav1.GetOptions{}); err != nil {
 				return err
 			}
 		}
 
 		if mongodb.Spec.KeyFile != nil {
-			if _, err := client.CoreV1().Secrets(mongodb.Namespace).Get(mongodb.Spec.KeyFile.SecretName, metav1.GetOptions{}); err != nil {
+			if _, err := client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), mongodb.Spec.KeyFile.SecretName, metav1.GetOptions{}); err != nil {
 				return err
 			}
 		}

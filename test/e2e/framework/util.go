@@ -16,6 +16,7 @@ limitations under the License.
 package framework
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net/http"
@@ -78,7 +79,7 @@ func (f *Framework) DeleteGarbageCASecrets(secretList []*v1.Secret) {
 
 func (f *Framework) CleanWorkloadLeftOvers() {
 	// delete statefulset
-	if err := f.kubeClient.AppsV1().StatefulSets(f.namespace).DeleteCollection(deleteInForeground(), metav1.ListOptions{
+	if err := f.kubeClient.AppsV1().StatefulSets(f.namespace).DeleteCollection(context.TODO(), *deleteInForeground(), metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
 			api.LabelDatabaseKind: api.ResourceKindMongoDB,
 		}).String(),
@@ -87,7 +88,7 @@ func (f *Framework) CleanWorkloadLeftOvers() {
 	}
 
 	// delete pvc
-	if err := f.kubeClient.CoreV1().PersistentVolumeClaims(f.namespace).DeleteCollection(deleteInForeground(), metav1.ListOptions{
+	if err := f.kubeClient.CoreV1().PersistentVolumeClaims(f.namespace).DeleteCollection(context.TODO(), *deleteInForeground(), metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
 			api.LabelDatabaseKind: api.ResourceKindMongoDB,
 		}).String(),

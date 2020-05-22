@@ -16,6 +16,7 @@ limitations under the License.
 package controller
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 
@@ -87,7 +88,7 @@ func (c *Controller) ensureKeyFileSecret(mongodb *api.MongoDB) error {
 				KeyForKeyFile: base64Token,
 			},
 		}
-		if _, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Create(secret); err != nil {
+		if _, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Create(context.TODO(), secret, metav1.CreateOptions{}); err != nil {
 			return err
 		}
 	}
@@ -132,7 +133,7 @@ func (c *Controller) createDatabaseSecret(mongodb *api.MongoDB) (*core.SecretVol
 				KeyMongoDBPassword: randPassword,
 			},
 		}
-		if _, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Create(secret); err != nil {
+		if _, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Create(context.TODO(), secret, metav1.CreateOptions{}); err != nil {
 			return nil, err
 		}
 	}
@@ -142,7 +143,7 @@ func (c *Controller) createDatabaseSecret(mongodb *api.MongoDB) (*core.SecretVol
 }
 
 func (c *Controller) checkSecret(secretName string, mongodb *api.MongoDB) (*core.Secret, error) {
-	secret, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Get(secretName, metav1.GetOptions{})
+	secret, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), secretName, metav1.GetOptions{})
 	if err != nil {
 		if kerr.IsNotFound(err) {
 			return nil, nil
