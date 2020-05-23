@@ -16,6 +16,7 @@ limitations under the License.
 package framework
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"time"
@@ -185,29 +186,29 @@ func SSLModeP(v api.SSLMode) *api.SSLMode {
 }
 
 func (i *Invocation) CreateMongoDB(obj *api.MongoDB) error {
-	_, err := i.dbClient.KubedbV1alpha1().MongoDBs(obj.Namespace).Create(obj)
+	_, err := i.dbClient.KubedbV1alpha1().MongoDBs(obj.Namespace).Create(context.TODO(), obj, metav1.CreateOptions{})
 	return err
 }
 
 func (f *Framework) GetMongoDB(meta metav1.ObjectMeta) (*api.MongoDB, error) {
-	return f.dbClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+	return f.dbClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Get(context.TODO(), meta.Name, metav1.GetOptions{})
 }
 
 func (f *Framework) PatchMongoDB(meta metav1.ObjectMeta, transform func(*api.MongoDB) *api.MongoDB) (*api.MongoDB, error) {
-	mongodb, err := f.dbClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+	mongodb, err := f.dbClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Get(context.TODO(), meta.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	mongodb, _, err = util.PatchMongoDB(f.dbClient.KubedbV1alpha1(), mongodb, transform)
+	mongodb, _, err = util.PatchMongoDB(context.TODO(), f.dbClient.KubedbV1alpha1(), mongodb, transform, metav1.PatchOptions{})
 	return mongodb, err
 }
 
 func (f *Framework) DeleteMongoDB(meta metav1.ObjectMeta) error {
-	return f.dbClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Delete(meta.Name, deleteInForeground())
+	return f.dbClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Delete(context.TODO(), meta.Name, meta_util.DeleteInForeground())
 }
 
 func (f *Framework) GetMongoDBVersion(name string) (*v1alpha1.MongoDBVersion, error) {
-	return f.dbClient.CatalogV1alpha1().MongoDBVersions().Get(name, metav1.GetOptions{})
+	return f.dbClient.CatalogV1alpha1().MongoDBVersions().Get(context.TODO(), name, metav1.GetOptions{})
 }
 
 func (f *Framework) EvictPodsFromStatefulSet(meta metav1.ObjectMeta) error {
@@ -218,14 +219,14 @@ func (f *Framework) EvictPodsFromStatefulSet(meta metav1.ObjectMeta) error {
 		api.LabelDatabaseName:       meta.GetName(),
 	}
 	// get sts in the namespace
-	stsList, err := f.kubeClient.AppsV1().StatefulSets(meta.Namespace).List(metav1.ListOptions{LabelSelector: labelSelector.String()})
+	stsList, err := f.kubeClient.AppsV1().StatefulSets(meta.Namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: labelSelector.String()})
 	if err != nil {
 		return err
 	}
 	for _, sts := range stsList.Items {
 		// if PDB is not found, send error
 		var pdb *policy.PodDisruptionBudget
-		pdb, err = f.kubeClient.PolicyV1beta1().PodDisruptionBudgets(sts.Namespace).Get(sts.Name, metav1.GetOptions{})
+		pdb, err = f.kubeClient.PolicyV1beta1().PodDisruptionBudgets(sts.Namespace).Get(context.TODO(), sts.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -250,7 +251,7 @@ func (f *Framework) EvictPodsFromStatefulSet(meta metav1.ObjectMeta) error {
 		for i := 0; i < maxUnavailable; i++ {
 			eviction.Name = sts.Name + "-" + strconv.Itoa(i)
 
-			err := f.kubeClient.PolicyV1beta1().Evictions(eviction.Namespace).Evict(eviction)
+			err := f.kubeClient.PolicyV1beta1().Evictions(eviction.Namespace).Evict(context.TODO(), eviction)
 			if err != nil {
 				return err
 			}
@@ -258,7 +259,7 @@ func (f *Framework) EvictPodsFromStatefulSet(meta metav1.ObjectMeta) error {
 
 		// try to evict one extra pod. TooManyRequests err should occur
 		eviction.Name = sts.Name + "-" + strconv.Itoa(maxUnavailable)
-		err = f.kubeClient.PolicyV1beta1().Evictions(eviction.Namespace).Evict(eviction)
+		err = f.kubeClient.PolicyV1beta1().Evictions(eviction.Namespace).Evict(context.TODO(), eviction)
 		if kerr.IsTooManyRequests(err) {
 			err = nil
 		} else if err != nil {
@@ -274,7 +275,7 @@ func (f *Framework) EvictPodsFromDeployment(meta metav1.ObjectMeta) error {
 	var err error
 	deployName := meta.Name + "-mongos"
 	//if PDB is not found, send error
-	pdb, err := f.kubeClient.PolicyV1beta1().PodDisruptionBudgets(meta.Namespace).Get(deployName, metav1.GetOptions{})
+	pdb, err := f.kubeClient.PolicyV1beta1().PodDisruptionBudgets(meta.Namespace).Get(context.TODO(), deployName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -285,7 +286,7 @@ func (f *Framework) EvictPodsFromDeployment(meta metav1.ObjectMeta) error {
 	podSelector := labels.Set{
 		api.MongoDBMongosLabelKey: meta.Name + "-mongos",
 	}
-	pods, err := f.kubeClient.CoreV1().Pods(meta.Namespace).List(metav1.ListOptions{LabelSelector: podSelector.String()})
+	pods, err := f.kubeClient.CoreV1().Pods(meta.Namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: podSelector.String()})
 	eviction := &policy.Eviction{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: policy.SchemeGroupVersion.String(),
@@ -302,7 +303,7 @@ func (f *Framework) EvictPodsFromDeployment(meta metav1.ObjectMeta) error {
 	podCount := len(pods.Items)
 	for i, pod := range pods.Items {
 		eviction.Name = pod.Name
-		err = f.kubeClient.PolicyV1beta1().Evictions(eviction.Namespace).Evict(eviction)
+		err = f.kubeClient.PolicyV1beta1().Evictions(eviction.Namespace).Evict(context.TODO(), eviction)
 		if i < (podCount - minAvailable) {
 			if err != nil {
 				return err
@@ -325,7 +326,7 @@ func (f *Framework) EvictPodsFromDeployment(meta metav1.ObjectMeta) error {
 func (f *Framework) EventuallyMongoDB(meta metav1.ObjectMeta) GomegaAsyncAssertion {
 	return Eventually(
 		func() bool {
-			_, err := f.dbClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+			_, err := f.dbClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Get(context.TODO(), meta.Name, metav1.GetOptions{})
 			if err != nil {
 				if kerr.IsNotFound(err) {
 					return false
@@ -342,7 +343,7 @@ func (f *Framework) EventuallyMongoDB(meta metav1.ObjectMeta) GomegaAsyncAsserti
 func (f *Framework) EventuallyMongoDBPhase(meta metav1.ObjectMeta) GomegaAsyncAssertion {
 	return Eventually(
 		func() api.DatabasePhase {
-			db, err := f.dbClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+			db, err := f.dbClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Get(context.TODO(), meta.Name, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			return db.Status.Phase
 		},
@@ -354,7 +355,7 @@ func (f *Framework) EventuallyMongoDBPhase(meta metav1.ObjectMeta) GomegaAsyncAs
 func (f *Framework) EventuallyMongoDBRunning(meta metav1.ObjectMeta) GomegaAsyncAssertion {
 	return Eventually(
 		func() bool {
-			mongodb, err := f.dbClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Get(meta.Name, metav1.GetOptions{})
+			mongodb, err := f.dbClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Get(context.TODO(), meta.Name, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			return mongodb.Status.Phase == api.DatabasePhaseRunning
 		},
@@ -364,20 +365,20 @@ func (f *Framework) EventuallyMongoDBRunning(meta metav1.ObjectMeta) GomegaAsync
 }
 
 func (f *Framework) CleanMongoDB() {
-	mongodbList, err := f.dbClient.KubedbV1alpha1().MongoDBs(f.namespace).List(metav1.ListOptions{})
+	mongodbList, err := f.dbClient.KubedbV1alpha1().MongoDBs(f.namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return
 	}
 	for _, e := range mongodbList.Items {
-		if _, _, err := util.PatchMongoDB(f.dbClient.KubedbV1alpha1(), &e, func(in *api.MongoDB) *api.MongoDB {
+		if _, _, err := util.PatchMongoDB(context.TODO(), f.dbClient.KubedbV1alpha1(), &e, func(in *api.MongoDB) *api.MongoDB {
 			in.ObjectMeta.Finalizers = nil
 			in.Spec.TerminationPolicy = api.TerminationPolicyWipeOut
 			return in
-		}); err != nil {
+		}, metav1.PatchOptions{}); err != nil {
 			fmt.Printf("error Patching MongoDB. error: %v", err)
 		}
 	}
-	if err := f.dbClient.KubedbV1alpha1().MongoDBs(f.namespace).DeleteCollection(deleteInForeground(), metav1.ListOptions{}); err != nil {
+	if err := f.dbClient.KubedbV1alpha1().MongoDBs(f.namespace).DeleteCollection(context.TODO(), meta_util.DeleteInForeground(), metav1.ListOptions{}); err != nil {
 		fmt.Printf("error in deletion of MongoDB. Error: %v", err)
 	}
 }
@@ -393,6 +394,7 @@ func (f *Framework) EventuallyWipedOut(meta metav1.ObjectMeta) GomegaAsyncAssert
 
 			// check if pvcs is wiped out
 			pvcList, err := f.kubeClient.CoreV1().PersistentVolumeClaims(meta.Namespace).List(
+				context.TODO(),
 				metav1.ListOptions{
 					LabelSelector: labelSelector.String(),
 				},
@@ -407,6 +409,7 @@ func (f *Framework) EventuallyWipedOut(meta metav1.ObjectMeta) GomegaAsyncAssert
 
 			// check if secrets are wiped out
 			secretList, err := f.kubeClient.CoreV1().Secrets(meta.Namespace).List(
+				context.TODO(),
 				metav1.ListOptions{
 					LabelSelector: labelSelector.String(),
 				},
@@ -421,6 +424,7 @@ func (f *Framework) EventuallyWipedOut(meta metav1.ObjectMeta) GomegaAsyncAssert
 
 			// check if appbinds are wiped out
 			appBindingList, err := f.appCatalogClient.AppBindings(meta.Namespace).List(
+				context.TODO(),
 				metav1.ListOptions{
 					LabelSelector: labelSelector.String(),
 				},

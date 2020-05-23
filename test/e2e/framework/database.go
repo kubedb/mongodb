@@ -103,7 +103,7 @@ func (f *Framework) ConnectAndPing(meta metav1.ObjectMeta, clientPodName string,
 }
 
 func (f *Framework) GetMongosPodName(meta metav1.ObjectMeta) (string, error) {
-	pods, err := f.kubeClient.CoreV1().Pods(meta.Namespace).List(metav1.ListOptions{})
+	pods, err := f.kubeClient.CoreV1().Pods(meta.Namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return "", err
 	}
