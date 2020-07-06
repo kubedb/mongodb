@@ -19,6 +19,7 @@ package e2e_test
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
@@ -100,6 +101,10 @@ var _ = Describe("MongoDB", func() {
 	})
 
 	var createAndWaitForRunning = func() {
+		if skipMessage != "" {
+			Skip(skipMessage)
+		}
+
 		By("Create MongoDB: " + mongodb.Name)
 		err = f.CreateMongoDB(mongodb)
 		Expect(err).NotTo(HaveOccurred())
@@ -119,10 +124,6 @@ var _ = Describe("MongoDB", func() {
 	}
 
 	var createAndInsertData = func() {
-
-		if skipMessage != "" {
-			Skip(skipMessage)
-		}
 		// Create MongoDB
 		createAndWaitForRunning()
 
@@ -1993,6 +1994,43 @@ var _ = Describe("MongoDB", func() {
 					err = f.VerifyShardExporters(mongodb.ObjectMeta)
 					Expect(err).NotTo(HaveOccurred())
 					By("Done")
+				})
+			})
+		})
+
+		Context("Storage Engine inMemory", func() {
+			Context("With ReplicaSet", func() {
+				BeforeEach(func() {
+					if !strings.Contains(framework.DBCatalogName, "percona") {
+						skipMessage = "Only Percona Supports StorageEngine"
+					}
+
+					mongodb = f.MongoDBRS()
+					mongodb.Spec.StorageEngine = api.StorageEngineInMemory
+				})
+				It("should run successfully", func() {
+					createAndWaitForRunning()
+
+					By("Verifying inMemory Storage Engine")
+					err = f.VerifyInMemory(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
+				})
+			})
+
+			Context("With Sharding", func() {
+				BeforeEach(func() {
+					if !strings.Contains(framework.DBCatalogName, "percona") {
+						skipMessage = "Only Percona Supports StorageEngine"
+					}
+					mongodb = f.MongoDBShard()
+					mongodb.Spec.StorageEngine = api.StorageEngineInMemory
+				})
+				It("should run successfully", func() {
+					createAndWaitForRunning()
+
+					By("Verifying inMemory Storage Engine")
+					err = f.VerifyInMemory(mongodb.ObjectMeta)
+					Expect(err).NotTo(HaveOccurred())
 				})
 			})
 		})
