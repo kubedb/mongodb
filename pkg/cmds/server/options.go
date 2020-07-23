@@ -33,6 +33,7 @@ import (
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/tools/cache"
 	"kmodules.xyz/client-go/meta"
 	"kmodules.xyz/client-go/tools/cli"
@@ -116,6 +117,9 @@ func (s *ExtraOptions) ApplyTo(cfg *controller.OperatorConfig) error {
 	cfg.EnableValidatingWebhook = s.EnableValidatingWebhook
 
 	if cfg.KubeClient, err = kubernetes.NewForConfig(cfg.ClientConfig); err != nil {
+		return err
+	}
+	if cfg.MetadataClient, err = metadata.NewForConfig(cfg.ClientConfig); err != nil {
 		return err
 	}
 	if cfg.CRDClient, err = crd_cs.NewForConfig(cfg.ClientConfig); err != nil {
