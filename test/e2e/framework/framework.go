@@ -29,6 +29,7 @@ import (
 	"gomodules.xyz/cert/certstore"
 	crd_cs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/metadata"
 	"k8s.io/client-go/rest"
 	ka "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset"
 	core_util "kmodules.xyz/client-go/core/v1"
@@ -69,7 +70,7 @@ func New(
 	storageClass string,
 	certManagerClient cm.Interface,
 ) (*Framework, error) {
-	topology, err := core_util.DetectTopology(context.TODO(), kubeClient)
+	topology, err := core_util.DetectTopology(context.TODO(), metadata.NewForConfigOrDie(restConfig))
 	if err != nil {
 		return nil, err
 	}
