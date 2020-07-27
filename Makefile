@@ -337,7 +337,6 @@ $(BUILD_DIRS):
 	@mkdir -p $@
 
 REGISTRY_SECRET ?=
-ENTERPRISE_TAG  ?=
 KUBE_NAMESPACE  ?=
 
 ifeq ($(strip $(REGISTRY_SECRET)),)
@@ -371,11 +370,6 @@ install:
 		--set catalog.postgres=false \
 		--set catalog.proxysql=false \
 		--set catalog.redis=false; \
-	helm install kubedb-enterprise charts/kubedb-enterprise --wait \
-		--namespace=$(KUBE_NAMESPACE) \
-		--set operator.tag=$(ENTERPRISE_TAG) \
-		--set imagePullPolicy=Always \
-		$(IMAGE_PULL_SECRETS)
 
 .PHONY: uninstall
 uninstall:
