@@ -806,11 +806,11 @@ func installInitContainer(
 		},
 		{
 			Name:  "CLIENT_CERT_NAME",
-			Value: mongodb.Name + api.MongoDBExternalClientSecretSuffix,
+			Value: mongodb.MustCertSecretName(api.MongoDBArchiverCert),
 		},
 		{
 			Name:  "SERVER_CERT_NAME",
-			Value: mongodb.Name + api.MongoDBServerSecretSuffix,
+			Value: mongodb.MustCertSecretName(api.MongoDBServerCert),
 		},
 	}
 

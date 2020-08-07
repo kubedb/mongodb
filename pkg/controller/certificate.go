@@ -26,6 +26,7 @@ import (
 
 	"gomodules.xyz/version"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	meta_util "kmodules.xyz/client-go/meta"
 )
 
 func (c *Controller) checkTLS(mongodb *api.MongoDB) error {
@@ -34,7 +35,7 @@ func (c *Controller) checkTLS(mongodb *api.MongoDB) error {
 	}
 
 	if mongodb.Spec.ReplicaSet == nil && mongodb.Spec.ShardTopology == nil {
-		_, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), mongodb.Name+api.MongoDBServerSecretSuffix, metav1.GetOptions{})
+		_, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), mongodb.MustCertSecretName(api.MongoDBServerCert), metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -75,12 +76,12 @@ func (c *Controller) checkTLS(mongodb *api.MongoDB) error {
 		}
 	}
 	// for stash/user
-	_, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), mongodb.Name+api.MongoDBExternalClientSecretSuffix+api.MongoDBPEMSecretSuffix, metav1.GetOptions{})
+	_, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), meta_util.NameWithSuffix(mongodb.MustCertSecretName(api.MongoDBArchiverCert), api.MongoDBPEMSecretSuffix), metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 	// for prometheus exporter
-	_, err = c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), mongodb.Name+api.MongoDBExporterClientSecretSuffix, metav1.GetOptions{})
+	_, err = c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), mongodb.MustCertSecretName(api.MongoDBMetricsExporterCert), metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
