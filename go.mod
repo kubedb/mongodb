@@ -4,18 +4,18 @@ go 1.12
 
 require (
 	github.com/appscode/go v0.0.0-20200323182826-54e98e09185a
-	github.com/aws/aws-sdk-go v1.28.2
+	github.com/aws/aws-sdk-go v1.31.3
 	github.com/codeskyblue/go-sh v0.0.0-20190412065543-76bd3d59ff27
 	github.com/coreos/prometheus-operator v0.39.0
 	github.com/fatih/structs v1.1.0
-	github.com/jetstack/cert-manager v0.15.0
+	github.com/jetstack/cert-manager v0.16.0
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/prom2json v1.3.0
 	github.com/spf13/afero v1.2.2
-	github.com/spf13/cobra v0.0.5
+	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c // indirect
 	github.com/xdg/stringprep v1.0.0 // indirect
@@ -23,12 +23,12 @@ require (
 	gomodules.xyz/cert v1.0.3
 	gomodules.xyz/envsubst v0.1.0
 	gomodules.xyz/version v0.1.0
-	k8s.io/api v0.18.3
-	k8s.io/apiextensions-apiserver v0.18.3
-	k8s.io/apimachinery v0.18.3
-	k8s.io/apiserver v0.18.3
+	k8s.io/api v0.18.5
+	k8s.io/apiextensions-apiserver v0.18.5
+	k8s.io/apimachinery v0.18.5
+	k8s.io/apiserver v0.18.5
 	k8s.io/client-go v12.0.0+incompatible
-	k8s.io/kube-aggregator v0.18.3
+	k8s.io/kube-aggregator v0.18.5
 	kmodules.xyz/client-go v0.0.0-20200805154632-5bf10f227624
 	kmodules.xyz/constants v0.0.0-20200506032633-a21e58ceec72
 	kmodules.xyz/custom-resources v0.0.0-20200604135349-9e9f5c4fdba9
@@ -36,7 +36,7 @@ require (
 	kmodules.xyz/objectstore-api v0.0.0-20200521103120-92080446e04d
 	kmodules.xyz/offshoot-api v0.0.0-20200521035628-e135bf07b226
 	kmodules.xyz/webhook-runtime v0.0.0-20200522123600-ca70a7e28ed0
-	kubedb.dev/apimachinery v0.14.0-beta.1
+	kubedb.dev/apimachinery v0.14.0-beta.1.0.20200726203932-93f0af4b3d70
 	stash.appscode.dev/apimachinery v0.10.0-beta.1
 )
 

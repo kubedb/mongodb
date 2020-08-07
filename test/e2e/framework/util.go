@@ -138,6 +138,42 @@ func (f *Framework) VerifyShardExporters(meta metav1.ObjectMeta) error {
 	return nil
 }
 
+func (f *Framework) VerifyInMemory(meta metav1.ObjectMeta) error {
+	mongoDB, err := f.dbClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Get(context.TODO(), meta.Name, metav1.GetOptions{})
+	if err != nil {
+		log.Infoln(err)
+		return err
+	}
+
+	if mongoDB.Spec.ShardTopology == nil {
+		podName := fmt.Sprintf("%s-0", mongoDB.OffshootName())
+		storageEngine, err := f.getStorageEngine(mongoDB.ObjectMeta, podName)
+		if err != nil {
+			log.Infoln(err)
+			return err
+		}
+
+		if storageEngine != string(api.StorageEngineInMemory) {
+			return fmt.Errorf("storageEngine is not inMemory")
+		}
+
+		return nil
+	}
+	// for shards
+	podName := fmt.Sprintf("%s-0", mongoDB.ShardNodeName(int32(0)))
+	storageEngine, err := f.getStorageEngine(mongoDB.ObjectMeta, podName)
+	if err != nil {
+		log.Infoln(err)
+		return err
+	}
+
+	if storageEngine != string(api.StorageEngineInMemory) {
+		return fmt.Errorf("storageEngine is not inMemory")
+	}
+
+	return nil
+}
+
 //VerifyExporter uses metrics from given URL
 //and check against known key and value
 //to verify the connection is functioning as intended

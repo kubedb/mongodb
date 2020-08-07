@@ -573,3 +573,31 @@ func (f *Framework) EventuallyUserSSLSettings(meta metav1.ObjectMeta, clusterAut
 		time.Second*1,
 	)
 }
+
+func (f *Framework) getStorageEngine(meta metav1.ObjectMeta, podName string) (string, error) {
+	client, tunnel, err := f.ConnectAndPing(meta, podName, true)
+	if err != nil {
+		return "", fmt.Errorf("failed to ConnectAndPing. Reason: %v", err)
+	}
+	defer tunnel.Close()
+
+	res := make(map[string]interface{})
+	err = client.Database("admin").
+		RunCommand(context.Background(), bson.D{
+			primitive.E{Key: "serverStatus", Value: 1},
+		}).Decode(&res)
+	if err != nil {
+		log.Errorln("RunCommand serverStatus error:", err)
+		return "", err
+	}
+
+	if val, ok := res["storageEngine"]; !ok {
+		return "", fmt.Errorf("storageEngine Not found")
+	} else {
+		if se, ok := val.(map[string]interface{}); ok {
+			return se["name"].(string), nil
+		}
+	}
+
+	return "", nil
+}
