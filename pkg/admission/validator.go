@@ -330,12 +330,10 @@ func getPreconditionFunc() []mergepatch.PreconditionFunc {
 
 var preconditionSpecFields = []string{
 	"spec.storageType",
-	"spec.storage",
 	"spec.databaseSecret",
 	"spec.certificateSecret",
 	"spec.init",
 	"spec.replicaSet.name",
-	"spec.shardTopology.*.storage",
 	"spec.shardTopology.*.prefix",
 }
 
