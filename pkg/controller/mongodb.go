@@ -19,6 +19,9 @@ package controller
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"kmodules.xyz/client-go/tools/queue"
 
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
@@ -91,6 +94,8 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 	// create or patch Certificates
 	if err := c.checkTLS(mongodb); err != nil {
 		if kerr.IsNotFound(err) {
+			log.Infoln(err)
+			queue.EnqueueAfter(c.mgQueue.GetQueue(), mongodb, 5*time.Second)
 			return nil
 		}
 

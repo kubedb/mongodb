@@ -59,6 +59,12 @@ const (
 	InitScriptDirectoryName = "init-scripts"
 	InitScriptDirectoryPath = "/init-scripts"
 
+	ClientCertDirectoryName = "client-cert"
+	ClientCertDirectoryPath = "/client-cert"
+
+	ServerCertDirectoryName = "server-cert"
+	ServerCertDirectoryPath = "/server-cert"
+
 	initialConfigDirectoryName = "configdir"
 	initialConfigDirectoryPath = "/configdb-readonly"
 
@@ -198,6 +204,7 @@ func (c *Controller) ensureShardNode(mongodb *api.MongoDB) ([]*apps.StatefulSet,
 			mongodb,
 			mongodbVersion,
 			&mongodb.Spec.ShardTopology.Shard.PodTemplate,
+			mongodb.ShardNodeName(nodeNum),
 		)
 
 		var initContainers []core.Container
@@ -383,6 +390,7 @@ func (c *Controller) ensureConfigNode(mongodb *api.MongoDB) (*apps.StatefulSet, 
 		mongodb,
 		mongodbVersion,
 		&mongodb.Spec.ShardTopology.ConfigServer.PodTemplate,
+		mongodb.ConfigSvrNodeName(),
 	)
 
 	var initContainers []core.Container
@@ -460,7 +468,7 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 	}
 	args = append(args, sslArgs...)
 
-	initContnr, initvolumes := installInitContainer(mongodb, mongodbVersion, mongodb.Spec.PodTemplate)
+	initContnr, initvolumes := installInitContainer(mongodb, mongodbVersion, mongodb.Spec.PodTemplate, mongodb.OffshootName())
 
 	var initContainers []core.Container
 	var volumes []core.Volume
@@ -781,6 +789,7 @@ func installInitContainer(
 	mongodb *api.MongoDB,
 	mongodbVersion *v1alpha1.MongoDBVersion,
 	podTemplate *ofst.PodTemplateSpec,
+	certName string,
 ) (core.Container, []core.Volume) {
 	// Take value of podTemplate
 	var pt ofst.PodTemplateSpec
@@ -790,36 +799,7 @@ func installInitContainer(
 		pt = *podTemplate
 	}
 
-	envList := []core.EnvVar{
-		{
-			Name:  "HOST_NAMESPACE",
-			Value: mongodb.Namespace,
-		},
-		{
-			Name: "HOST_NAME",
-			ValueFrom: &core.EnvVarSource{
-				FieldRef: &core.ObjectFieldSelector{
-					APIVersion: "v1",
-					FieldPath:  "metadata.name",
-				},
-			},
-		},
-		{
-			Name:  "CLIENT_CERT_NAME",
-			Value: mongodb.MustCertSecretName(api.MongoDBArchiverCert),
-		},
-		{
-			Name:  "SERVER_CERT_NAME",
-			Value: mongodb.MustCertSecretName(api.MongoDBServerCert),
-		},
-	}
-
-	if mongodb.Spec.ShardTopology == nil && mongodb.Spec.ReplicaSet == nil {
-		envList = append(envList, core.EnvVar{
-			Name:  "NODE_TYPE",
-			Value: "standalone",
-		})
-	}
+	envList := make([]core.EnvVar, 0)
 
 	if mongodb.Spec.SSLMode == api.SSLModeDisabled || mongodb.Spec.TLS == nil {
 		envList = append(envList, core.EnvVar{
@@ -852,6 +832,15 @@ func installInitContainer(
 				Name:      certDirectoryName,
 				MountPath: api.MongoCertDirectory,
 			},
+
+			{
+				Name:      ClientCertDirectoryName,
+				MountPath: ClientCertDirectoryPath,
+			},
+			{
+				Name:      ServerCertDirectoryName,
+				MountPath: ServerCertDirectoryPath,
+			},
 		},
 		Resources: pt.Spec.Resources,
 	}
@@ -873,6 +862,24 @@ func installInitContainer(
 			Name: certDirectoryName,
 			VolumeSource: core.VolumeSource{
 				EmptyDir: &core.EmptyDirVolumeSource{},
+			},
+		},
+		{
+			Name: ClientCertDirectoryName,
+			VolumeSource: core.VolumeSource{
+				Secret: &core.SecretVolumeSource{
+					DefaultMode: types.Int32P(0400),
+					SecretName:  mongodb.MustCertSecretName(api.MongoDBArchiverCert),
+				},
+			},
+		},
+		{
+			Name: ServerCertDirectoryName,
+			VolumeSource: core.VolumeSource{
+				Secret: &core.SecretVolumeSource{
+					DefaultMode: types.Int32P(0400),
+					SecretName:  certName,
+				},
 			},
 		},
 	}

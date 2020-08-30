@@ -26,7 +26,6 @@ import (
 
 	"gomodules.xyz/version"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	meta_util "kmodules.xyz/client-go/meta"
 )
 
 func (c *Controller) checkTLS(mongodb *api.MongoDB) error {
@@ -41,42 +40,37 @@ func (c *Controller) checkTLS(mongodb *api.MongoDB) error {
 		}
 	} else if mongodb.Spec.ReplicaSet != nil && mongodb.Spec.ShardTopology == nil {
 		// ReplicaSet
-		for i := 0; i < int(*mongodb.Spec.Replicas); i++ {
-			_, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), fmt.Sprintf("%v-%d", mongodb.Name, i), metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
+		_, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), mongodb.OffshootName(), metav1.GetOptions{})
+		if err != nil {
+			return err
 		}
+
 		return nil
 	} else if mongodb.Spec.ShardTopology != nil {
 		// for config server
-		for i := 0; i < int(mongodb.Spec.ShardTopology.ConfigServer.Replicas); i++ {
-			_, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), fmt.Sprintf("%v-%d", mongodb.ConfigSvrNodeName(), i), metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
+
+		_, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), mongodb.ConfigSvrNodeName(), metav1.GetOptions{})
+		if err != nil {
+			return err
 		}
 
 		//for shards
 		for i := 0; i < int(mongodb.Spec.ShardTopology.Shard.Shards); i++ {
 			shardName := mongodb.ShardNodeName(int32(i))
-			for j := 0; j < int(mongodb.Spec.ShardTopology.Shard.Replicas); j++ {
-				_, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), fmt.Sprintf("%v-%d", shardName, j), metav1.GetOptions{})
-				if err != nil {
-					return err
-				}
-			}
-		}
-		//for mongos
-		for i := 0; i < int(mongodb.Spec.ShardTopology.Mongos.Replicas); i++ {
-			_, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), fmt.Sprintf("%v-%d", mongodb.MongosNodeName(), i), metav1.GetOptions{})
+			_, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), shardName, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
 		}
+		//for mongos
+
+		_, err = c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), mongodb.MongosNodeName(), metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
 	}
 	// for stash/user
-	_, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), meta_util.NameWithSuffix(mongodb.MustCertSecretName(api.MongoDBArchiverCert), api.MongoDBPEMSecretSuffix), metav1.GetOptions{})
+	_, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), mongodb.MustCertSecretName(api.MongoDBArchiverCert), metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
