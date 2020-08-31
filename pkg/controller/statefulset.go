@@ -869,7 +869,7 @@ func installInitContainer(
 			VolumeSource: core.VolumeSource{
 				Secret: &core.SecretVolumeSource{
 					DefaultMode: types.Int32P(0400),
-					SecretName:  mongodb.MustCertSecretName(api.MongoDBArchiverCert),
+					SecretName:  mongodb.MustCertSecretName(api.MongoDBClientCert),
 				},
 			},
 		},

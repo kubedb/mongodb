@@ -21,8 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	"kmodules.xyz/client-go/tools/queue"
-
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 	"kubedb.dev/apimachinery/pkg/eventer"
@@ -37,6 +35,7 @@ import (
 	kutil "kmodules.xyz/client-go"
 	dynamic_util "kmodules.xyz/client-go/dynamic"
 	meta_util "kmodules.xyz/client-go/meta"
+	"kmodules.xyz/client-go/tools/queue"
 )
 
 func (c *Controller) create(mongodb *api.MongoDB) error {

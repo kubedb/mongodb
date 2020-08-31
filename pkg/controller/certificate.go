@@ -70,7 +70,7 @@ func (c *Controller) checkTLS(mongodb *api.MongoDB) error {
 		}
 	}
 	// for stash/user
-	_, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), mongodb.MustCertSecretName(api.MongoDBArchiverCert), metav1.GetOptions{})
+	_, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), mongodb.MustCertSecretName(api.MongoDBClientCert), metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
