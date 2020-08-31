@@ -204,7 +204,7 @@ func (c *Controller) ensureShardNode(mongodb *api.MongoDB) ([]*apps.StatefulSet,
 			mongodb,
 			mongodbVersion,
 			&mongodb.Spec.ShardTopology.Shard.PodTemplate,
-			mongodb.MustCertSecretName(api.MongoDBServerCert, mongodb.ShardNodeName(nodeNum)),
+			mongodb.ShardNodeName(nodeNum),
 		)
 
 		var initContainers []core.Container
@@ -390,7 +390,7 @@ func (c *Controller) ensureConfigNode(mongodb *api.MongoDB) (*apps.StatefulSet, 
 		mongodb,
 		mongodbVersion,
 		&mongodb.Spec.ShardTopology.ConfigServer.PodTemplate,
-		mongodb.MustCertSecretName(api.MongoDBServerCert, mongodb.ConfigSvrNodeName()),
+		mongodb.ConfigSvrNodeName(),
 	)
 
 	var initContainers []core.Container
@@ -468,7 +468,11 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 	}
 	args = append(args, sslArgs...)
 
-	initContnr, initvolumes := installInitContainer(mongodb, mongodbVersion, mongodb.Spec.PodTemplate, mongodb.MustCertSecretName(api.MongoDBServerCert, ""))
+	initContnr, initvolumes := installInitContainer(
+		mongodb,
+		mongodbVersion,
+		mongodb.Spec.PodTemplate,
+		"")
 
 	var initContainers []core.Container
 	var volumes []core.Volume
@@ -789,7 +793,7 @@ func installInitContainer(
 	mongodb *api.MongoDB,
 	mongodbVersion *v1alpha1.MongoDBVersion,
 	podTemplate *ofst.PodTemplateSpec,
-	certSecretName string,
+	stsName string,
 ) (core.Container, []core.Volume) {
 	// Take value of podTemplate
 	var pt ofst.PodTemplateSpec
@@ -832,15 +836,6 @@ func installInitContainer(
 				Name:      certDirectoryName,
 				MountPath: api.MongoCertDirectory,
 			},
-
-			{
-				Name:      ClientCertDirectoryName,
-				MountPath: ClientCertDirectoryPath,
-			},
-			{
-				Name:      ServerCertDirectoryName,
-				MountPath: ServerCertDirectoryPath,
-			},
 		},
 		Resources: pt.Spec.Resources,
 	}
@@ -864,24 +859,42 @@ func installInitContainer(
 				EmptyDir: &core.EmptyDirVolumeSource{},
 			},
 		},
-		{
-			Name: ClientCertDirectoryName,
-			VolumeSource: core.VolumeSource{
-				Secret: &core.SecretVolumeSource{
-					DefaultMode: types.Int32P(0400),
-					SecretName:  mongodb.MustCertSecretName(api.MongoDBClientCert, ""),
+	}
+
+	if mongodb.Spec.TLS != nil {
+		installContainer.VolumeMounts = core_util.UpsertVolumeMount(
+			installContainer.VolumeMounts,
+			[]core.VolumeMount{
+				{
+					Name:      ClientCertDirectoryName,
+					MountPath: ClientCertDirectoryPath,
+				},
+				{
+					Name:      ServerCertDirectoryName,
+					MountPath: ServerCertDirectoryPath,
+				},
+			}...)
+
+		initVolumes = append(initVolumes, []core.Volume{
+			{
+				Name: ClientCertDirectoryName,
+				VolumeSource: core.VolumeSource{
+					Secret: &core.SecretVolumeSource{
+						DefaultMode: types.Int32P(0400),
+						SecretName:  mongodb.MustCertSecretName(api.MongoDBClientCert, ""),
+					},
 				},
 			},
-		},
-		{
-			Name: ServerCertDirectoryName,
-			VolumeSource: core.VolumeSource{
-				Secret: &core.SecretVolumeSource{
-					DefaultMode: types.Int32P(0400),
-					SecretName:  certSecretName,
+			{
+				Name: ServerCertDirectoryName,
+				VolumeSource: core.VolumeSource{
+					Secret: &core.SecretVolumeSource{
+						DefaultMode: types.Int32P(0400),
+						SecretName:  mongodb.MustCertSecretName(api.MongoDBServerCert, stsName),
+					},
 				},
 			},
-		},
+		}...)
 	}
 
 	// mongodb.Spec.SSLMode can be empty if upgraded operator from previous version.

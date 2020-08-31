@@ -586,6 +586,9 @@ func (m *MongoDB) KeyFileRequired() bool {
 // CertificateName returns the default certificate name and/or certificate secret name for a certificate alias
 func (m *MongoDB) CertificateName(alias MongoDBCertificateAlias, stsName string) string {
 	if m.Spec.ShardTopology != nil && alias == MongoDBServerCert {
+		if stsName == "" {
+			panic(fmt.Sprintf("StatefulSet name required to compute %s certificate name for MongoDB %s/%s", alias, m.Namespace, m.Name))
+		}
 		return meta_util.NameWithSuffix(m.Name, fmt.Sprintf("%s-cert", stsName))
 	}
 	return meta_util.NameWithSuffix(m.Name, fmt.Sprintf("%s-cert", string(alias)))
@@ -599,6 +602,9 @@ func (m *MongoDB) MustCertSecretName(alias MongoDBCertificateAlias, stsName stri
 		panic(fmt.Errorf("MongoDB %s/%s is missing tls spec", m.Namespace, m.Name))
 	}
 	if m.Spec.ShardTopology != nil && alias == MongoDBServerCert {
+		if stsName == "" {
+			panic(fmt.Sprintf("StatefulSet name required to compute %s certificate name for MongoDB %s/%s", alias, m.Namespace, m.Name))
+		}
 		return m.CertificateName(alias, stsName)
 	}
 	name, ok := kmapi.GetCertificateSecretName(m.Spec.TLS.Certificates, string(alias))

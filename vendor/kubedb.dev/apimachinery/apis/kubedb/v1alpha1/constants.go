@@ -59,7 +59,6 @@ const (
 	MongoDBConfigdbPort           = 27017
 	MongoDBMongosPort             = 27017
 	MongoDBKeyFileSecretSuffix    = "key"
-	MongoDBPEMSecretSuffix        = "pem"
 	MongoDBClientCertOrganization = DatabaseNamePrefix + ":client"
 	MongoDBCertificateCN          = "root"
 

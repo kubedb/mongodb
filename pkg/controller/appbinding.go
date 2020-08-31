@@ -90,7 +90,7 @@ func (c *Controller) ensureAppBinding(db *api.MongoDB) (kutil.VerbType, error) {
 
 	clientPEMSecretName := db.Spec.DatabaseSecret.SecretName
 	if caBundle != nil {
-		clientPEMSecretName = meta_util.NameWithSuffix(db.MustCertSecretName(api.MongoDBClientCert, ""), api.MongoDBPEMSecretSuffix)
+		clientPEMSecretName = db.MustCertSecretName(api.MongoDBClientCert, "")
 	}
 
 	mongodbVersion, err := c.ExtClient.CatalogV1alpha1().MongoDBVersions().Get(context.TODO(), string(db.Spec.Version), metav1.GetOptions{})

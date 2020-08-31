@@ -96,7 +96,7 @@ func (c *Controller) ensureMongosNode(mongodb *api.MongoDB) (*apps.StatefulSet, 
 		mongodb,
 		mongodbVersion,
 		&mongodb.Spec.ShardTopology.Mongos.PodTemplate,
-		mongodb.MustCertSecretName(api.MongoDBServerCert, mongodb.MongosNodeName()),
+		mongodb.MongosNodeName(),
 	)
 
 	var initContainers []core.Container
