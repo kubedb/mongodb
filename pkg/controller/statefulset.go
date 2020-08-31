@@ -204,7 +204,7 @@ func (c *Controller) ensureShardNode(mongodb *api.MongoDB) ([]*apps.StatefulSet,
 			mongodb,
 			mongodbVersion,
 			&mongodb.Spec.ShardTopology.Shard.PodTemplate,
-			mongodb.ShardNodeName(nodeNum),
+			mongodb.MustCertSecretName(api.MongoDBServerCert, mongodb.ShardNodeName(nodeNum)),
 		)
 
 		var initContainers []core.Container
@@ -390,7 +390,7 @@ func (c *Controller) ensureConfigNode(mongodb *api.MongoDB) (*apps.StatefulSet, 
 		mongodb,
 		mongodbVersion,
 		&mongodb.Spec.ShardTopology.ConfigServer.PodTemplate,
-		mongodb.ConfigSvrNodeName(),
+		mongodb.MustCertSecretName(api.MongoDBServerCert, mongodb.ConfigSvrNodeName()),
 	)
 
 	var initContainers []core.Container
@@ -468,7 +468,7 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 	}
 	args = append(args, sslArgs...)
 
-	initContnr, initvolumes := installInitContainer(mongodb, mongodbVersion, mongodb.Spec.PodTemplate, mongodb.OffshootName())
+	initContnr, initvolumes := installInitContainer(mongodb, mongodbVersion, mongodb.Spec.PodTemplate, mongodb.MustCertSecretName(api.MongoDBServerCert, ""))
 
 	var initContainers []core.Container
 	var volumes []core.Volume
@@ -789,7 +789,7 @@ func installInitContainer(
 	mongodb *api.MongoDB,
 	mongodbVersion *v1alpha1.MongoDBVersion,
 	podTemplate *ofst.PodTemplateSpec,
-	certName string,
+	certSecretName string,
 ) (core.Container, []core.Volume) {
 	// Take value of podTemplate
 	var pt ofst.PodTemplateSpec
@@ -869,7 +869,7 @@ func installInitContainer(
 			VolumeSource: core.VolumeSource{
 				Secret: &core.SecretVolumeSource{
 					DefaultMode: types.Int32P(0400),
-					SecretName:  mongodb.MustCertSecretName(api.MongoDBClientCert),
+					SecretName:  mongodb.MustCertSecretName(api.MongoDBClientCert, ""),
 				},
 			},
 		},
@@ -878,7 +878,7 @@ func installInitContainer(
 			VolumeSource: core.VolumeSource{
 				Secret: &core.SecretVolumeSource{
 					DefaultMode: types.Int32P(0400),
-					SecretName:  certName,
+					SecretName:  certSecretName,
 				},
 			},
 		},

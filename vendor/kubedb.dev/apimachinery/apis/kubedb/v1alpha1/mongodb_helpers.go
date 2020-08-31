@@ -418,9 +418,14 @@ func (m *MongoDB) setDefaultTLSConfig() {
 	if m.Spec.TLS == nil || m.Spec.TLS.IssuerRef == nil {
 		return
 	}
-	m.Spec.TLS.Certificates = kmapi.SetMissingSecretNameForCertificate(m.Spec.TLS.Certificates, string(MongoDBServerCert), m.CertificateName(MongoDBServerCert))
-	m.Spec.TLS.Certificates = kmapi.SetMissingSecretNameForCertificate(m.Spec.TLS.Certificates, string(MongoDBClientCert), m.CertificateName(MongoDBClientCert))
-	m.Spec.TLS.Certificates = kmapi.SetMissingSecretNameForCertificate(m.Spec.TLS.Certificates, string(MongoDBMetricsExporterCert), m.CertificateName(MongoDBMetricsExporterCert))
+
+	if m.Spec.ShardTopology != nil {
+		m.Spec.TLS.Certificates = kmapi.SetSecretNameForCertificate(m.Spec.TLS.Certificates, string(MongoDBServerCert), "")
+	} else {
+		m.Spec.TLS.Certificates = kmapi.SetMissingSecretNameForCertificate(m.Spec.TLS.Certificates, string(MongoDBServerCert), m.CertificateName(MongoDBServerCert, ""))
+	}
+	m.Spec.TLS.Certificates = kmapi.SetMissingSecretNameForCertificate(m.Spec.TLS.Certificates, string(MongoDBClientCert), m.CertificateName(MongoDBClientCert, ""))
+	m.Spec.TLS.Certificates = kmapi.SetMissingSecretNameForCertificate(m.Spec.TLS.Certificates, string(MongoDBMetricsExporterCert), m.CertificateName(MongoDBMetricsExporterCert, ""))
 }
 
 // setDefaultProbes sets defaults only when probe fields are nil.
@@ -579,16 +584,22 @@ func (m *MongoDB) KeyFileRequired() bool {
 }
 
 // CertificateName returns the default certificate name and/or certificate secret name for a certificate alias
-func (m *MongoDB) CertificateName(alias MongoDBCertificateAlias) string {
+func (m *MongoDB) CertificateName(alias MongoDBCertificateAlias, stsName string) string {
+	if m.Spec.ShardTopology != nil && alias == MongoDBServerCert {
+		return meta_util.NameWithSuffix(m.Name, fmt.Sprintf("%s-cert", stsName))
+	}
 	return meta_util.NameWithSuffix(m.Name, fmt.Sprintf("%s-cert", string(alias)))
 }
 
 // MustCertSecretName returns the secret name for a certificate alias
-func (m *MongoDB) MustCertSecretName(alias MongoDBCertificateAlias) string {
+func (m *MongoDB) MustCertSecretName(alias MongoDBCertificateAlias, stsName string) string {
 	if m == nil {
 		panic("missing MongoDB database")
 	} else if m.Spec.TLS == nil {
 		panic(fmt.Errorf("MongoDB %s/%s is missing tls spec", m.Namespace, m.Name))
+	}
+	if m.Spec.ShardTopology != nil && alias == MongoDBServerCert {
+		return m.CertificateName(alias, stsName)
 	}
 	name, ok := kmapi.GetCertificateSecretName(m.Spec.TLS.Certificates, string(alias))
 	if !ok {
