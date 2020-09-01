@@ -650,7 +650,7 @@ var _ = Describe("MongoDB", func() {
 
 					// eventually backupsession succeeded
 					By("Check for Succeeded restoreSession")
-					f.EventuallyRestoreSessionPhase(rs.ObjectMeta).Should(Equal(stashV1beta1.RestoreSessionSucceeded))
+					f.EventuallyRestoreSessionPhase(rs.ObjectMeta).Should(Equal(stashV1beta1.RestoreSucceeded))
 
 					By("Wait for Running mongodb")
 					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
@@ -951,7 +951,7 @@ var _ = Describe("MongoDB", func() {
 
 							// eventually backupsession succeeded
 							By("Check for Succeeded restoreSession")
-							f.EventuallyRestoreSessionPhase(rs.ObjectMeta).Should(Equal(stashV1beta1.RestoreSessionSucceeded))
+							f.EventuallyRestoreSessionPhase(rs.ObjectMeta).Should(Equal(stashV1beta1.RestoreSucceeded))
 
 							By("Wait for Running mongodb")
 							f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
