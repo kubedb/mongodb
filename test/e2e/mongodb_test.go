@@ -34,6 +34,7 @@ import (
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kmapi "kmodules.xyz/client-go/api/v1"
 	meta_util "kmodules.xyz/client-go/meta"
 	ofst "kmodules.xyz/offshoot-api/api/v1"
 	stashV1alpha1 "stash.appscode.dev/apimachinery/apis/stash/v1alpha1"
@@ -185,7 +186,7 @@ var _ = Describe("MongoDB", func() {
 		issuer := f.IssuerForMongoDB(db.ObjectMeta, clientCASecret.ObjectMeta)
 		err = f.CreateIssuer(issuer)
 		Expect(err).NotTo(HaveOccurred())
-		db.Spec.TLS = &api.TLSConfig{
+		db.Spec.TLS = &kmapi.TLSConfig{
 			IssuerRef: &core.TypedLocalObjectReference{
 				Name:     issuer.Name,
 				Kind:     issuer.Kind,

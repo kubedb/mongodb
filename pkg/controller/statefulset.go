@@ -59,6 +59,12 @@ const (
 	InitScriptDirectoryName = "init-scripts"
 	InitScriptDirectoryPath = "/init-scripts"
 
+	ClientCertDirectoryName = "client-cert"
+	ClientCertDirectoryPath = "/client-cert"
+
+	ServerCertDirectoryName = "server-cert"
+	ServerCertDirectoryPath = "/server-cert"
+
 	initialConfigDirectoryName = "configdir"
 	initialConfigDirectoryPath = "/configdb-readonly"
 
@@ -198,6 +204,7 @@ func (c *Controller) ensureShardNode(mongodb *api.MongoDB) ([]*apps.StatefulSet,
 			mongodb,
 			mongodbVersion,
 			&mongodb.Spec.ShardTopology.Shard.PodTemplate,
+			mongodb.ShardNodeName(nodeNum),
 		)
 
 		var initContainers []core.Container
@@ -250,7 +257,7 @@ func (c *Controller) ensureShardNode(mongodb *api.MongoDB) ([]*apps.StatefulSet,
 							LocalObjectReference: core.LocalObjectReference{
 								Name: mongodb.Spec.DatabaseSecret.SecretName,
 							},
-							Key: KeyMongoDBUser,
+							Key: core.BasicAuthUsernameKey,
 						},
 					},
 				},
@@ -261,7 +268,7 @@ func (c *Controller) ensureShardNode(mongodb *api.MongoDB) ([]*apps.StatefulSet,
 							LocalObjectReference: core.LocalObjectReference{
 								Name: mongodb.Spec.DatabaseSecret.SecretName,
 							},
-							Key: KeyMongoDBPassword,
+							Key: core.BasicAuthPasswordKey,
 						},
 					},
 				},
@@ -383,6 +390,7 @@ func (c *Controller) ensureConfigNode(mongodb *api.MongoDB) (*apps.StatefulSet, 
 		mongodb,
 		mongodbVersion,
 		&mongodb.Spec.ShardTopology.ConfigServer.PodTemplate,
+		mongodb.ConfigSvrNodeName(),
 	)
 
 	var initContainers []core.Container
@@ -460,7 +468,11 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 	}
 	args = append(args, sslArgs...)
 
-	initContnr, initvolumes := installInitContainer(mongodb, mongodbVersion, mongodb.Spec.PodTemplate)
+	initContnr, initvolumes := installInitContainer(
+		mongodb,
+		mongodbVersion,
+		mongodb.Spec.PodTemplate,
+		"")
 
 	var initContainers []core.Container
 	var volumes []core.Volume
@@ -532,7 +544,7 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 							LocalObjectReference: core.LocalObjectReference{
 								Name: mongodb.Spec.DatabaseSecret.SecretName,
 							},
-							Key: KeyMongoDBUser,
+							Key: core.BasicAuthUsernameKey,
 						},
 					},
 				},
@@ -543,7 +555,7 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 							LocalObjectReference: core.LocalObjectReference{
 								Name: mongodb.Spec.DatabaseSecret.SecretName,
 							},
-							Key: KeyMongoDBPassword,
+							Key: core.BasicAuthPasswordKey,
 						},
 					},
 				},
@@ -781,6 +793,7 @@ func installInitContainer(
 	mongodb *api.MongoDB,
 	mongodbVersion *v1alpha1.MongoDBVersion,
 	podTemplate *ofst.PodTemplateSpec,
+	stsName string,
 ) (core.Container, []core.Volume) {
 	// Take value of podTemplate
 	var pt ofst.PodTemplateSpec
@@ -790,36 +803,7 @@ func installInitContainer(
 		pt = *podTemplate
 	}
 
-	envList := []core.EnvVar{
-		{
-			Name:  "HOST_NAMESPACE",
-			Value: mongodb.Namespace,
-		},
-		{
-			Name: "HOST_NAME",
-			ValueFrom: &core.EnvVarSource{
-				FieldRef: &core.ObjectFieldSelector{
-					APIVersion: "v1",
-					FieldPath:  "metadata.name",
-				},
-			},
-		},
-		{
-			Name:  "CLIENT_CERT_NAME",
-			Value: mongodb.Name + api.MongoDBExternalClientSecretSuffix,
-		},
-		{
-			Name:  "SERVER_CERT_NAME",
-			Value: mongodb.Name + api.MongoDBServerSecretSuffix,
-		},
-	}
-
-	if mongodb.Spec.ShardTopology == nil && mongodb.Spec.ReplicaSet == nil {
-		envList = append(envList, core.EnvVar{
-			Name:  "NODE_TYPE",
-			Value: "standalone",
-		})
-	}
+	envList := make([]core.EnvVar, 0)
 
 	if mongodb.Spec.SSLMode == api.SSLModeDisabled || mongodb.Spec.TLS == nil {
 		envList = append(envList, core.EnvVar{
@@ -875,6 +859,42 @@ func installInitContainer(
 				EmptyDir: &core.EmptyDirVolumeSource{},
 			},
 		},
+	}
+
+	if mongodb.Spec.TLS != nil {
+		installContainer.VolumeMounts = core_util.UpsertVolumeMount(
+			installContainer.VolumeMounts,
+			[]core.VolumeMount{
+				{
+					Name:      ClientCertDirectoryName,
+					MountPath: ClientCertDirectoryPath,
+				},
+				{
+					Name:      ServerCertDirectoryName,
+					MountPath: ServerCertDirectoryPath,
+				},
+			}...)
+
+		initVolumes = append(initVolumes, []core.Volume{
+			{
+				Name: ClientCertDirectoryName,
+				VolumeSource: core.VolumeSource{
+					Secret: &core.SecretVolumeSource{
+						DefaultMode: types.Int32P(0400),
+						SecretName:  mongodb.MustCertSecretName(api.MongoDBClientCert, ""),
+					},
+				},
+			},
+			{
+				Name: ServerCertDirectoryName,
+				VolumeSource: core.VolumeSource{
+					Secret: &core.SecretVolumeSource{
+						DefaultMode: types.Int32P(0400),
+						SecretName:  mongodb.MustCertSecretName(api.MongoDBServerCert, stsName),
+					},
+				},
+			},
+		}...)
 	}
 
 	// mongodb.Spec.SSLMode can be empty if upgraded operator from previous version.
@@ -997,7 +1017,7 @@ func upsertEnv(template core.PodTemplateSpec, mongodb *api.MongoDB) core.PodTemp
 					LocalObjectReference: core.LocalObjectReference{
 						Name: mongodb.Spec.DatabaseSecret.SecretName,
 					},
-					Key: KeyMongoDBUser,
+					Key: core.BasicAuthUsernameKey,
 				},
 			},
 		},
@@ -1008,7 +1028,7 @@ func upsertEnv(template core.PodTemplateSpec, mongodb *api.MongoDB) core.PodTemp
 					LocalObjectReference: core.LocalObjectReference{
 						Name: mongodb.Spec.DatabaseSecret.SecretName,
 					},
-					Key: KeyMongoDBPassword,
+					Key: core.BasicAuthPasswordKey,
 				},
 			},
 		},
