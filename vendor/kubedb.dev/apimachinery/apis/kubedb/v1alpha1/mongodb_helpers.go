@@ -196,6 +196,9 @@ func (m MongoDB) ServiceName() string {
 // Governing Service Name. Here, name parameter is either
 // OffshootName, ShardNodeName or ConfigSvrNodeName
 func (m MongoDB) GvrSvcName(name string) string {
+	if name == "" {
+		panic(fmt.Sprintf("StatefulSet name is missing for MongoDB %s/%s", m.Namespace, m.Name))
+	}
 	return name + "-gvr"
 }
 
@@ -420,12 +423,42 @@ func (m *MongoDB) setDefaultTLSConfig() {
 	}
 
 	if m.Spec.ShardTopology != nil {
+		m.Spec.TLS.Certificates = kmapi.SetMissingSpecForCertificate(m.Spec.TLS.Certificates, kmapi.CertificateSpec{
+			Alias:      string(MongoDBServerCert),
+			SecretName: "",
+			Subject: &kmapi.X509Subject{
+				Organizations:       []string{DatabaseNamePrefix},
+				OrganizationalUnits: []string{string(MongoDBServerCert)},
+			},
+		})
+		// reset secret name to empty string, since multiple secrets will be created for each StatefulSet.
 		m.Spec.TLS.Certificates = kmapi.SetSecretNameForCertificate(m.Spec.TLS.Certificates, string(MongoDBServerCert), "")
 	} else {
-		m.Spec.TLS.Certificates = kmapi.SetMissingSecretNameForCertificate(m.Spec.TLS.Certificates, string(MongoDBServerCert), m.CertificateName(MongoDBServerCert, ""))
+		m.Spec.TLS.Certificates = kmapi.SetMissingSpecForCertificate(m.Spec.TLS.Certificates, kmapi.CertificateSpec{
+			Alias:      string(MongoDBServerCert),
+			SecretName: m.CertificateName(MongoDBServerCert, ""),
+			Subject: &kmapi.X509Subject{
+				Organizations:       []string{DatabaseNamePrefix},
+				OrganizationalUnits: []string{string(MongoDBServerCert)},
+			},
+		})
 	}
-	m.Spec.TLS.Certificates = kmapi.SetMissingSecretNameForCertificate(m.Spec.TLS.Certificates, string(MongoDBClientCert), m.CertificateName(MongoDBClientCert, ""))
-	m.Spec.TLS.Certificates = kmapi.SetMissingSecretNameForCertificate(m.Spec.TLS.Certificates, string(MongoDBMetricsExporterCert), m.CertificateName(MongoDBMetricsExporterCert, ""))
+	m.Spec.TLS.Certificates = kmapi.SetMissingSpecForCertificate(m.Spec.TLS.Certificates, kmapi.CertificateSpec{
+		Alias:      string(MongoDBClientCert),
+		SecretName: m.CertificateName(MongoDBClientCert, ""),
+		Subject: &kmapi.X509Subject{
+			Organizations:       []string{DatabaseNamePrefix},
+			OrganizationalUnits: []string{string(MongoDBClientCert)},
+		},
+	})
+	m.Spec.TLS.Certificates = kmapi.SetMissingSpecForCertificate(m.Spec.TLS.Certificates, kmapi.CertificateSpec{
+		Alias:      string(MongoDBMetricsExporterCert),
+		SecretName: m.CertificateName(MongoDBMetricsExporterCert, ""),
+		Subject: &kmapi.X509Subject{
+			Organizations:       []string{DatabaseNamePrefix},
+			OrganizationalUnits: []string{string(MongoDBMetricsExporterCert)},
+		},
+	})
 }
 
 // setDefaultProbes sets defaults only when probe fields are nil.
