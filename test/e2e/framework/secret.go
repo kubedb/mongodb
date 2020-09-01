@@ -23,7 +23,6 @@ import (
 	"time"
 
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
-	"kubedb.dev/mongodb/pkg/controller"
 
 	"github.com/appscode/go/crypto/rand"
 	"github.com/appscode/go/log"
@@ -176,7 +175,7 @@ func (f *Framework) GetMongoDBRootPassword(mongodb *api.MongoDB) (string, error)
 	if err != nil {
 		return "", err
 	}
-	password := string(secret.Data[controller.KeyMongoDBPassword])
+	password := string(secret.Data[core.BasicAuthPasswordKey])
 	return password, nil
 }
 

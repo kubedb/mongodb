@@ -19,7 +19,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"time"
 
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
@@ -29,13 +28,11 @@ import (
 	"github.com/appscode/go/log"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
-	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kutil "kmodules.xyz/client-go"
 	dynamic_util "kmodules.xyz/client-go/dynamic"
 	meta_util "kmodules.xyz/client-go/meta"
-	"kmodules.xyz/client-go/tools/queue"
 )
 
 func (c *Controller) create(mongodb *api.MongoDB) error {
@@ -90,16 +87,42 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 		}
 	}
 
-	// create or patch Certificates
-	if err := c.checkTLS(mongodb); err != nil {
-		if kerr.IsNotFound(err) {
-			log.Infoln(err)
-			queue.EnqueueAfter(c.mgQueue.GetQueue(), mongodb, 5*time.Second)
+	// wait for certificates
+	if mongodb.Spec.TLS != nil {
+		var secrets []string
+		if mongodb.Spec.ReplicaSet == nil && mongodb.Spec.ShardTopology == nil {
+			secrets = append(secrets, mongodb.MustCertSecretName(api.MongoDBServerCert, ""))
+		} else if mongodb.Spec.ReplicaSet != nil && mongodb.Spec.ShardTopology == nil {
+			// ReplicaSet
+			secrets = append(secrets, mongodb.MustCertSecretName(api.MongoDBServerCert, ""))
+		} else if mongodb.Spec.ShardTopology != nil {
+			// for config server
+			secrets = append(secrets, mongodb.MustCertSecretName(api.MongoDBServerCert, mongodb.ConfigSvrNodeName()))
+			// for shards
+			for i := 0; i < int(mongodb.Spec.ShardTopology.Shard.Shards); i++ {
+				secrets = append(secrets, mongodb.MustCertSecretName(api.MongoDBServerCert, mongodb.ShardNodeName(int32(i))))
+			}
+			// for mongos
+			secrets = append(secrets, mongodb.MustCertSecretName(api.MongoDBServerCert, mongodb.MongosNodeName()))
+		}
+		// for stash/user
+		secrets = append(secrets, mongodb.MustCertSecretName(api.MongoDBClientCert, ""))
+		// for prometheus exporter
+		secrets = append(secrets, mongodb.MustCertSecretName(api.MongoDBMetricsExporterCert, ""))
+
+		ok, err := dynamic_util.ResourcesExists(
+			c.DynamicClient,
+			core.SchemeGroupVersion.WithResource("secrets"),
+			mongodb.Namespace,
+			secrets...,
+		)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			log.Infof("wait for all certificate secrets for pgbouncer %s/%s", mongodb.Namespace, mongodb.Name)
 			return nil
 		}
-
-		log.Infoln(err)
-		return err
 	}
 
 	// ensure database StatefulSet

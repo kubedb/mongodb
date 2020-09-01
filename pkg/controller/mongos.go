@@ -218,7 +218,7 @@ func mongosInitContainer(
 						LocalObjectReference: core.LocalObjectReference{
 							Name: mongodb.Spec.DatabaseSecret.SecretName,
 						},
-						Key: KeyMongoDBUser,
+						Key: core.BasicAuthUsernameKey,
 					},
 				},
 			},
@@ -229,7 +229,7 @@ func mongosInitContainer(
 						LocalObjectReference: core.LocalObjectReference{
 							Name: mongodb.Spec.DatabaseSecret.SecretName,
 						},
-						Key: KeyMongoDBPassword,
+						Key: core.BasicAuthPasswordKey,
 					},
 				},
 			},

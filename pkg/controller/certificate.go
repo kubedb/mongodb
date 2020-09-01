@@ -17,7 +17,6 @@ limitations under the License.
 package controller
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
@@ -25,62 +24,7 @@ import (
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 
 	"gomodules.xyz/version"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-func (c *Controller) checkTLS(mongodb *api.MongoDB) error {
-	if mongodb.Spec.TLS == nil {
-		return nil
-	}
-
-	if mongodb.Spec.ReplicaSet == nil && mongodb.Spec.ShardTopology == nil {
-		_, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), mongodb.MustCertSecretName(api.MongoDBServerCert, ""), metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-	} else if mongodb.Spec.ReplicaSet != nil && mongodb.Spec.ShardTopology == nil {
-		// ReplicaSet
-		_, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), mongodb.MustCertSecretName(api.MongoDBServerCert, ""), metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-
-		return nil
-	} else if mongodb.Spec.ShardTopology != nil {
-		// for config server
-
-		_, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), mongodb.MustCertSecretName(api.MongoDBServerCert, mongodb.ConfigSvrNodeName()), metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-
-		//for shards
-		for i := 0; i < int(mongodb.Spec.ShardTopology.Shard.Shards); i++ {
-			shardName := mongodb.ShardNodeName(int32(i))
-			_, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), mongodb.MustCertSecretName(api.MongoDBServerCert, shardName), metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
-		}
-		//for mongos
-
-		_, err = c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), mongodb.MustCertSecretName(api.MongoDBServerCert, mongodb.MongosNodeName()), metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-	}
-	// for stash/user
-	_, err := c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), mongodb.MustCertSecretName(api.MongoDBClientCert, ""), metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	// for prometheus exporter
-	_, err = c.Client.CoreV1().Secrets(mongodb.Namespace).Get(context.TODO(), mongodb.MustCertSecretName(api.MongoDBMetricsExporterCert, ""), metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	return nil
-}
 
 func (c *Controller) getTLSArgs(mongoDB *api.MongoDB, mgVersion *v1alpha1.MongoDBVersion) ([]string, error) {
 	var sslArgs []string

@@ -257,7 +257,7 @@ func (c *Controller) ensureShardNode(mongodb *api.MongoDB) ([]*apps.StatefulSet,
 							LocalObjectReference: core.LocalObjectReference{
 								Name: mongodb.Spec.DatabaseSecret.SecretName,
 							},
-							Key: KeyMongoDBUser,
+							Key: core.BasicAuthUsernameKey,
 						},
 					},
 				},
@@ -268,7 +268,7 @@ func (c *Controller) ensureShardNode(mongodb *api.MongoDB) ([]*apps.StatefulSet,
 							LocalObjectReference: core.LocalObjectReference{
 								Name: mongodb.Spec.DatabaseSecret.SecretName,
 							},
-							Key: KeyMongoDBPassword,
+							Key: core.BasicAuthPasswordKey,
 						},
 					},
 				},
@@ -544,7 +544,7 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 							LocalObjectReference: core.LocalObjectReference{
 								Name: mongodb.Spec.DatabaseSecret.SecretName,
 							},
-							Key: KeyMongoDBUser,
+							Key: core.BasicAuthUsernameKey,
 						},
 					},
 				},
@@ -555,7 +555,7 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 							LocalObjectReference: core.LocalObjectReference{
 								Name: mongodb.Spec.DatabaseSecret.SecretName,
 							},
-							Key: KeyMongoDBPassword,
+							Key: core.BasicAuthPasswordKey,
 						},
 					},
 				},
@@ -1017,7 +1017,7 @@ func upsertEnv(template core.PodTemplateSpec, mongodb *api.MongoDB) core.PodTemp
 					LocalObjectReference: core.LocalObjectReference{
 						Name: mongodb.Spec.DatabaseSecret.SecretName,
 					},
-					Key: KeyMongoDBUser,
+					Key: core.BasicAuthUsernameKey,
 				},
 			},
 		},
@@ -1028,7 +1028,7 @@ func upsertEnv(template core.PodTemplateSpec, mongodb *api.MongoDB) core.PodTemp
 					LocalObjectReference: core.LocalObjectReference{
 						Name: mongodb.Spec.DatabaseSecret.SecretName,
 					},
-					Key: KeyMongoDBPassword,
+					Key: core.BasicAuthPasswordKey,
 				},
 			},
 		},
