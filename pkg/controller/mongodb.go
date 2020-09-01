@@ -90,12 +90,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 	// wait for certificates
 	if mongodb.Spec.TLS != nil {
 		var secrets []string
-		if mongodb.Spec.ReplicaSet == nil && mongodb.Spec.ShardTopology == nil {
-			secrets = append(secrets, mongodb.MustCertSecretName(api.MongoDBServerCert, ""))
-		} else if mongodb.Spec.ReplicaSet != nil && mongodb.Spec.ShardTopology == nil {
-			// ReplicaSet
-			secrets = append(secrets, mongodb.MustCertSecretName(api.MongoDBServerCert, ""))
-		} else if mongodb.Spec.ShardTopology != nil {
+		if mongodb.Spec.ShardTopology != nil {
 			// for config server
 			secrets = append(secrets, mongodb.MustCertSecretName(api.MongoDBServerCert, mongodb.ConfigSvrNodeName()))
 			// for shards
@@ -104,6 +99,9 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 			}
 			// for mongos
 			secrets = append(secrets, mongodb.MustCertSecretName(api.MongoDBServerCert, mongodb.MongosNodeName()))
+		} else {
+			// ReplicaSet or Standalone
+			secrets = append(secrets, mongodb.MustCertSecretName(api.MongoDBServerCert, ""))
 		}
 		// for stash/user
 		secrets = append(secrets, mongodb.MustCertSecretName(api.MongoDBClientCert, ""))
@@ -120,7 +118,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 			return err
 		}
 		if !ok {
-			log.Infof("wait for all certificate secrets for pgbouncer %s/%s", mongodb.Namespace, mongodb.Name)
+			log.Infof("wait for all certificate secrets for MongoDB %s/%s", mongodb.Namespace, mongodb.Name)
 			return nil
 		}
 	}
