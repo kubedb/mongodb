@@ -751,7 +751,9 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB, opts workloadOption
 			in.Spec.Template.Spec.Priority = pt.Spec.Priority
 			in.Spec.Template.Spec.SecurityContext = pt.Spec.SecurityContext
 			in.Spec.Template.Spec.ServiceAccountName = pt.Spec.ServiceAccountName
-			in.Spec.UpdateStrategy = mongodb.Spec.UpdateStrategy
+			in.Spec.UpdateStrategy = apps.StatefulSetUpdateStrategy{
+				Type: apps.OnDeleteStatefulSetStrategyType,
+			}
 			return in
 		},
 		metav1.PatchOptions{},

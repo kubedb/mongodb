@@ -278,10 +278,6 @@ func ValidateMongoDB(client kubernetes.Interface, extClient cs.Interface, mongod
 		}
 	}
 
-	if mongodb.Spec.UpdateStrategy.Type == "" {
-		return fmt.Errorf(`'spec.updateStrategy.type' is missing`)
-	}
-
 	if mongodb.Spec.TerminationPolicy == "" {
 		return fmt.Errorf(`'spec.terminationPolicy' is missing`)
 	}
