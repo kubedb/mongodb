@@ -1286,8 +1286,6 @@ kmodules.xyz/client-go v0.0.0-20200522120609-c6430d66212f/go.mod h1:sY/eoe4ktxZE
 kmodules.xyz/client-go v0.0.0-20200524205059-e986bc44c91b/go.mod h1:sY/eoe4ktxZEoHpr5NpAQ5s22VSwTE8psJtKVeVgLRY=
 kmodules.xyz/client-go v0.0.0-20200525195850-2fd180961371/go.mod h1:sY/eoe4ktxZEoHpr5NpAQ5s22VSwTE8psJtKVeVgLRY=
 kmodules.xyz/client-go v0.0.0-20200818171030-24b2ce405feb/go.mod h1:sY/eoe4ktxZEoHpr5NpAQ5s22VSwTE8psJtKVeVgLRY=
-kmodules.xyz/client-go v0.0.0-20200901064306-0f1faee534af h1:Ly3rbfwRgQumrPnXVpdQsW2UqZiBpsEe40oik8AFNAY=
-kmodules.xyz/client-go v0.0.0-20200901064306-0f1faee534af/go.mod h1:sY/eoe4ktxZEoHpr5NpAQ5s22VSwTE8psJtKVeVgLRY=
 kmodules.xyz/client-go v0.0.0-20200903033732-dab39b86c81b h1:Erhqi9TZEqKmiIO2Lc7gX18JMH474wIJsoZ6xf//Lf0=
 kmodules.xyz/client-go v0.0.0-20200903033732-dab39b86c81b/go.mod h1:sY/eoe4ktxZEoHpr5NpAQ5s22VSwTE8psJtKVeVgLRY=
 kmodules.xyz/constants v0.0.0-20200506032633-a21e58ceec72 h1:0sM6nE7aJon/PSdqZTj0bKJlPyzobXkG0wVYKpjcJJE=
@@ -1306,8 +1304,8 @@ kmodules.xyz/prober v0.0.0-20200521101241-adf06150535c h1:aV6O9NbDpnFVra/D8c7b7T
 kmodules.xyz/prober v0.0.0-20200521101241-adf06150535c/go.mod h1:XYWZkfQquD09Mn+O7piHS+SEPq9oFV1Wy2WZ9DA+oeA=
 kmodules.xyz/webhook-runtime v0.0.0-20200522123600-ca70a7e28ed0 h1:rEOWPdiRYShJdJxX0sf76JYWOMzPQH4v8ByT+DRCmVY=
 kmodules.xyz/webhook-runtime v0.0.0-20200522123600-ca70a7e28ed0/go.mod h1:9hUftUcjvzDSiO5LIbe2U8Naz4tyS9Ndf1LRzsytMzs=
-kubedb.dev/apimachinery v0.14.0-beta.1.0.20200902231907-24c5e829936a h1:EcHHAQ+W3Pzvj6ST6ZNnjJTIkSXLE3YYFb4khjDF3ZA=
-kubedb.dev/apimachinery v0.14.0-beta.1.0.20200902231907-24c5e829936a/go.mod h1:638U/7S/q1RbNzG3t8KXRaH3BNrp7nk96fLMVsOANjU=
+kubedb.dev/apimachinery v0.14.0-beta.2 h1:Ws+DYzQmESOP7mwaaeXcDjWae9joiG/Xi8yYoSBnLD0=
+kubedb.dev/apimachinery v0.14.0-beta.2/go.mod h1:WQ/oXfTfXNRfz6JvRBIoHwi3Dg4eumKnXu5WXquGF0Y=
 modernc.org/cc v1.0.0/go.mod h1:1Sk4//wdnYJiUIxnW8ddKpaOJCF37yAdqYnkxUpaYxw=
 modernc.org/golex v1.0.0/go.mod h1:b/QX9oBD/LhixY6NDh+IdGv17hgB+51fET1i2kPSmvk=
 modernc.org/mathutil v1.0.0/go.mod h1:wU0vUrJsVWBZ4P6e7xtFJEhFSNsfRLJ8H458uRjg03k=
