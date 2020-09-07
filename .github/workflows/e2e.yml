@@ -31,7 +31,7 @@ jobs:
       - id: set-matrix
         name: Generate test matrix
         run: |
-          k8s=(v1.12.10 v1.14.10 v1.16.9 v1.18.4)
+          k8s=(v1.12.10 v1.14.10 v1.16.9 v1.18.8 v1.19.0)
           db=(4.1.13-v1 4.1.7-v3 4.1.4-v1 4.0.11-v1 4.0.5-v3 4.0.3-v1 3.6.13-v1 3.6.8-v1 3.4.22-v1 3.4.17-v1)
 
           IFS=' '
@@ -139,9 +139,9 @@ jobs:
           eval MAJOR=`echo ${{ matrix.k8s }} | sed -e "s#$RE#\1#"`
           eval MINOR=`echo ${{ matrix.k8s }} | sed -e "s#$RE#\2#"`
           if [ $MAJOR -eq 1 ] && [ $MINOR -lt 15 ]; then
-            kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v0.15.1/cert-manager-legacy.yaml
+            kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v1.0.1/cert-manager-legacy.yaml
           else
-            kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v0.15.1/cert-manager.yaml
+            kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v1.0.1/cert-manager.yaml
           fi
 
       - name: Check out installer
@@ -154,6 +154,20 @@ jobs:
       - name: Install stash and addons
         run: |
           make stash-install
+
+      - name: Install operator
+        env:
+          REGISTRY: kubedbci
+          REGISTRY_SECRET: regcred
+          TEST_CREDENTIALS: ${{ secrets.TEST_CREDENTIALS }}
+          GOOGLE_SERVICE_ACCOUNT_JSON_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON_KEY }}
+        run: |
+          echo "preparing test credentials"
+          mkdir -p hack/config
+          echo -n "$TEST_CREDENTIALS" > hack/config/.env
+          echo >> hack/config/.env
+          echo "GOOGLE_SERVICE_ACCOUNT_JSON_KEY=$(echo $GOOGLE_SERVICE_ACCOUNT_JSON_KEY)" >> hack/config/.env
+          make install
 
       - name: Run e2e tests
         env:
@@ -171,6 +185,4 @@ jobs:
           echo -n "$TEST_CREDENTIALS" > hack/config/.env
           echo >> hack/config/.env
           echo "GOOGLE_SERVICE_ACCOUNT_JSON_KEY=$(echo $GOOGLE_SERVICE_ACCOUNT_JSON_KEY)" >> hack/config/.env
-          make install
-          echo
           make e2e-tests GINKGO_ARGS="--flakeAttempts=2" TEST_ARGS="--db-catalog=${{ matrix.db }}" || (kubectl describe deployment -n kube-system kubedb-mg-operator; kubectl logs -n kube-system deployment/kubedb-mg-operator; kubectl describe deployment -n kube-system stash-operator; kubectl logs -n kube-system deployment/stash-operator operator; exit 1;)
