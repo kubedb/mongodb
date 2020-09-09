@@ -185,4 +185,4 @@ jobs:
           echo -n "$TEST_CREDENTIALS" > hack/config/.env
           echo >> hack/config/.env
           echo "GOOGLE_SERVICE_ACCOUNT_JSON_KEY=$(echo $GOOGLE_SERVICE_ACCOUNT_JSON_KEY)" >> hack/config/.env
-          make e2e-tests GINKGO_ARGS="--flakeAttempts=2" TEST_ARGS="--db-catalog=${{ matrix.db }}" || (kubectl describe deployment -n kube-system kubedb-mg-operator; kubectl logs -n kube-system deployment/kubedb-mg-operator; kubectl describe deployment -n kube-system stash-operator; kubectl logs -n kube-system deployment/stash-operator operator; exit 1;)
+          make e2e-tests GINKGO_ARGS="--flakeAttempts=2" TEST_ARGS="--db-version=${{ matrix.db }} --test-profiles community" || (kubectl describe deployment -n kube-system kubedb-mg-operator; kubectl logs -n kube-system deployment/kubedb-mg-operator; kubectl describe deployment -n kube-system stash-operator; kubectl logs -n kube-system deployment/stash-operator operator; exit 1;)
