@@ -26,10 +26,15 @@ import (
 )
 
 const (
-	ResourceCodeMongoDB     = "mg"
-	ResourceKindMongoDB     = "MongoDB"
-	ResourceSingularMongoDB = "mongodb"
-	ResourcePluralMongoDB   = "mongodbs"
+	ResourceCodeMongoDB        = "mg"
+	ResourceKindMongoDB        = "MongoDB"
+	ResourceSingularMongoDB    = "mongodb"
+	ResourcePluralMongoDB      = "mongodbs"
+	InitInstallContainerName   = "copy-config"
+	InitBootstrapContainerName = "bootstrap"
+	ConfigDirectoryName        = "configdir"
+	MongoDBContainerName       = ResourceSingularMongoDB
+	ExporterContainerName      = "exporter"
 )
 
 // MongoDB defines a MongoDB database.

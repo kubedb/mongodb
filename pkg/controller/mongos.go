@@ -190,7 +190,7 @@ func mongosInitContainer(
 	}
 
 	bootstrapContainer := core.Container{
-		Name:            InitBootstrapContainerName,
+		Name:            api.InitBootstrapContainerName,
 		Image:           mongodbVersion.Spec.DB.Image,
 		ImagePullPolicy: core.PullIfNotPresent,
 		Command:         []string{"/bin/sh"},

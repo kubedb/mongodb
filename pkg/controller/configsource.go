@@ -31,7 +31,7 @@ import (
 // So, This initial file is copied to configDirectoryPath "/data/configdb" by init-container.
 func (c *Controller) upsertConfigSourceVolume(template core.PodTemplateSpec, configSource *core.VolumeSource) core.PodTemplateSpec {
 	for i, container := range template.Spec.Containers {
-		if container.Name == api.ResourceSingularMongoDB {
+		if container.Name == api.MongoDBContainerName {
 			template.Spec.Containers[i].Args = meta_util.UpsertArgumentList(
 				template.Spec.Containers[i].Args,
 				[]string{"--config=" + filepath.Join(configDirectoryPath, "mongod.conf")},
@@ -40,11 +40,11 @@ func (c *Controller) upsertConfigSourceVolume(template core.PodTemplateSpec, con
 	}
 
 	for i, container := range template.Spec.InitContainers {
-		if container.Name == InitInstallContainerName {
+		if container.Name == api.InitInstallContainerName {
 			template.Spec.InitContainers[i].VolumeMounts = core_util.UpsertVolumeMount(
 				template.Spec.InitContainers[i].VolumeMounts,
 				core.VolumeMount{
-					Name:      initialConfigDirectoryName,
+					Name:      api.ConfigDirectoryName,
 					MountPath: initialConfigDirectoryPath,
 				})
 		}
@@ -53,7 +53,7 @@ func (c *Controller) upsertConfigSourceVolume(template core.PodTemplateSpec, con
 	template.Spec.Volumes = core_util.UpsertVolume(
 		template.Spec.Volumes,
 		core.Volume{
-			Name:         initialConfigDirectoryName,
+			Name:         api.ConfigDirectoryName,
 			VolumeSource: *configSource,
 		})
 

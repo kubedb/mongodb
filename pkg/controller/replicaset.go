@@ -57,7 +57,7 @@ func (c *Controller) topologyInitContainer(
 	}
 
 	bootstrapContainer := core.Container{
-		Name:            InitBootstrapContainerName,
+		Name:            api.InitBootstrapContainerName,
 		Image:           mongodbVersion.Spec.DB.Image,
 		ImagePullPolicy: core.PullIfNotPresent,
 		Command:         []string{fmt.Sprintf("%v/peer-finder", InitScriptDirectoryPath)},
