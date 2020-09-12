@@ -811,7 +811,7 @@ func installInitContainer(
 	}
 
 	installContainer = core.Container{
-		Name:            api.InitInstallContainerName,
+		Name:            api.MongoDBInitInstallContainerName,
 		Image:           mongodbVersion.Spec.InitContainer.Image,
 		ImagePullPolicy: core.PullIfNotPresent,
 		Command:         []string{"/bin/sh"},
@@ -1032,7 +1032,7 @@ func upsertEnv(template core.PodTemplateSpec, mongodb *api.MongoDB) core.PodTemp
 		},
 	}
 	for i, container := range template.Spec.Containers {
-		if container.Name == api.MongoDBContainerName || container.Name == api.ExporterContainerName {
+		if container.Name == api.MongoDBContainerName || container.Name == api.ContainerExporterName {
 			template.Spec.Containers[i].Env = core_util.UpsertEnvVars(container.Env, envList...)
 		}
 	}
@@ -1078,7 +1078,7 @@ func getExporterContainer(mongodb *api.MongoDB, mongodbVersion *v1alpha1.MongoDB
 	}
 
 	return core.Container{
-		Name:  api.ExporterContainerName,
+		Name:  api.ContainerExporterName,
 		Args:  args,
 		Image: mongodbVersion.Spec.Exporter.Image,
 		Ports: []core.ContainerPort{

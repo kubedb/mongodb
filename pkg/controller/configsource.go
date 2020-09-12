@@ -40,11 +40,11 @@ func (c *Controller) upsertConfigSourceVolume(template core.PodTemplateSpec, con
 	}
 
 	for i, container := range template.Spec.InitContainers {
-		if container.Name == api.InitInstallContainerName {
+		if container.Name == api.MongoDBInitInstallContainerName {
 			template.Spec.InitContainers[i].VolumeMounts = core_util.UpsertVolumeMount(
 				template.Spec.InitContainers[i].VolumeMounts,
 				core.VolumeMount{
-					Name:      api.ConfigDirectoryName,
+					Name:      api.MongoDBConfigDirectoryName,
 					MountPath: initialConfigDirectoryPath,
 				})
 		}
@@ -53,7 +53,7 @@ func (c *Controller) upsertConfigSourceVolume(template core.PodTemplateSpec, con
 	template.Spec.Volumes = core_util.UpsertVolume(
 		template.Spec.Volumes,
 		core.Volume{
-			Name:         api.ConfigDirectoryName,
+			Name:         api.MongoDBConfigDirectoryName,
 			VolumeSource: *configSource,
 		})
 
