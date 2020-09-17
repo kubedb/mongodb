@@ -18,6 +18,8 @@ require (
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	github.com/xdg/stringprep v1.0.0 // indirect
+	go.bytebuilders.dev/license-verifier v0.3.0
+	go.bytebuilders.dev/license-verifier/kubernetes v0.3.0
 	go.mongodb.org/mongo-driver v1.3.2
 	gomodules.xyz/cert v1.0.3
 	gomodules.xyz/envsubst v0.1.0
