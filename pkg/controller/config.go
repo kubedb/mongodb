@@ -42,6 +42,7 @@ import (
 type OperatorConfig struct {
 	amc.Config
 
+	LicenseFile      string
 	ClientConfig     *rest.Config
 	KubeClient       kubernetes.Interface
 	CRDClient        crd_cs.Interface
