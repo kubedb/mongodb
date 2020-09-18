@@ -478,10 +478,10 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 	initContainers = append(initContainers, initContnr)
 	volumes = core_util.UpsertVolume(volumes, initvolumes...)
 
-	if mongodb.Spec.Init != nil && mongodb.Spec.Init.ScriptSource != nil {
+	if mongodb.Spec.Init != nil && mongodb.Spec.Init.Script != nil {
 		volumes = core_util.UpsertVolume(volumes, core.Volume{
 			Name:         "initial-script",
-			VolumeSource: mongodb.Spec.Init.ScriptSource.VolumeSource,
+			VolumeSource: mongodb.Spec.Init.Script.VolumeSource,
 		})
 
 		volumeMounts = []core.VolumeMount{

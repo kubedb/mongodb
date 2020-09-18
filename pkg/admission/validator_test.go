@@ -310,7 +310,7 @@ func sampleMongoDB() api.MongoDB {
 				},
 			},
 			Init: &api.InitSpec{
-				ScriptSource: &api.ScriptSourceSpec{
+				Script: &api.ScriptSourceSpec{
 					VolumeSource: core.VolumeSource{
 						GitRepo: &core.GitRepoVolumeSource{
 							Repository: "https://kubedb.dev/mongodb-init-scripts.git",
