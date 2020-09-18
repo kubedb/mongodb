@@ -604,7 +604,7 @@ var _ = Describe("MongoDB SSL", func() {
 
 						BeforeEach(func() {
 							mongodb.Spec.Init = &api.InitSpec{
-								ScriptSource: &api.ScriptSourceSpec{
+								Script: &api.ScriptSourceSpec{
 									VolumeSource: core.VolumeSource{
 										ConfigMap: &core.ConfigMapVolumeSource{
 											LocalObjectReference: core.LocalObjectReference{
@@ -652,7 +652,7 @@ var _ = Describe("MongoDB SSL", func() {
 
 							BeforeEach(func() {
 								mongodb.Spec.Init = &api.InitSpec{
-									ScriptSource: &api.ScriptSourceSpec{
+									Script: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											ConfigMap: &core.ConfigMapVolumeSource{
 												LocalObjectReference: core.LocalObjectReference{
@@ -697,7 +697,7 @@ var _ = Describe("MongoDB SSL", func() {
 								verifySharding = true
 								enableSharding = true
 								mongodb.Spec.Init = &api.InitSpec{
-									ScriptSource: &api.ScriptSourceSpec{
+									Script: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											ConfigMap: &core.ConfigMapVolumeSource{
 												LocalObjectReference: core.LocalObjectReference{
@@ -761,7 +761,7 @@ var _ = Describe("MongoDB SSL", func() {
 								verifySharding = true
 								enableSharding = true
 								mongodb.Spec.Init = &api.InitSpec{
-									ScriptSource: &api.ScriptSourceSpec{
+									Script: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											ConfigMap: &core.ConfigMapVolumeSource{
 												LocalObjectReference: core.LocalObjectReference{
@@ -812,7 +812,7 @@ var _ = Describe("MongoDB SSL", func() {
 
 							BeforeEach(func() {
 								mongodb.Spec.Init = &api.InitSpec{
-									ScriptSource: &api.ScriptSourceSpec{
+									Script: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											ConfigMap: &core.ConfigMapVolumeSource{
 												LocalObjectReference: core.LocalObjectReference{
@@ -857,7 +857,7 @@ var _ = Describe("MongoDB SSL", func() {
 								verifySharding = true
 								enableSharding = true
 								mongodb.Spec.Init = &api.InitSpec{
-									ScriptSource: &api.ScriptSourceSpec{
+									Script: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											ConfigMap: &core.ConfigMapVolumeSource{
 												LocalObjectReference: core.LocalObjectReference{
@@ -908,7 +908,7 @@ var _ = Describe("MongoDB SSL", func() {
 
 							BeforeEach(func() {
 								mongodb.Spec.Init = &api.InitSpec{
-									ScriptSource: &api.ScriptSourceSpec{
+									Script: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											ConfigMap: &core.ConfigMapVolumeSource{
 												LocalObjectReference: core.LocalObjectReference{
@@ -953,7 +953,7 @@ var _ = Describe("MongoDB SSL", func() {
 								verifySharding = true
 								enableSharding = true
 								mongodb.Spec.Init = &api.InitSpec{
-									ScriptSource: &api.ScriptSourceSpec{
+									Script: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											ConfigMap: &core.ConfigMapVolumeSource{
 												LocalObjectReference: core.LocalObjectReference{
@@ -1003,7 +1003,7 @@ var _ = Describe("MongoDB SSL", func() {
 						})
 						BeforeEach(func() {
 							mongodb.Spec.Init = &api.InitSpec{
-								ScriptSource: &api.ScriptSourceSpec{
+								Script: &api.ScriptSourceSpec{
 									VolumeSource: core.VolumeSource{
 										ConfigMap: &core.ConfigMapVolumeSource{
 											LocalObjectReference: core.LocalObjectReference{
@@ -1051,7 +1051,7 @@ var _ = Describe("MongoDB SSL", func() {
 
 							BeforeEach(func() {
 								mongodb.Spec.Init = &api.InitSpec{
-									ScriptSource: &api.ScriptSourceSpec{
+									Script: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											ConfigMap: &core.ConfigMapVolumeSource{
 												LocalObjectReference: core.LocalObjectReference{
@@ -1096,7 +1096,7 @@ var _ = Describe("MongoDB SSL", func() {
 								verifySharding = true
 								enableSharding = true
 								mongodb.Spec.Init = &api.InitSpec{
-									ScriptSource: &api.ScriptSourceSpec{
+									Script: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											ConfigMap: &core.ConfigMapVolumeSource{
 												LocalObjectReference: core.LocalObjectReference{
@@ -1179,7 +1179,7 @@ var _ = Describe("MongoDB SSL", func() {
 
 							BeforeEach(func() {
 								mongodb.Spec.Init = &api.InitSpec{
-									ScriptSource: &api.ScriptSourceSpec{
+									Script: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											ConfigMap: &core.ConfigMapVolumeSource{
 												LocalObjectReference: core.LocalObjectReference{
@@ -1224,7 +1224,7 @@ var _ = Describe("MongoDB SSL", func() {
 								verifySharding = true
 								enableSharding = true
 								mongodb.Spec.Init = &api.InitSpec{
-									ScriptSource: &api.ScriptSourceSpec{
+									Script: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											ConfigMap: &core.ConfigMapVolumeSource{
 												LocalObjectReference: core.LocalObjectReference{
@@ -1305,7 +1305,7 @@ var _ = Describe("MongoDB SSL", func() {
 							Expect(err).NotTo(HaveOccurred())
 
 							mongodb.Spec.Init = &api.InitSpec{
-								ScriptSource: &api.ScriptSourceSpec{
+								Script: &api.ScriptSourceSpec{
 									VolumeSource: core.VolumeSource{
 										ConfigMap: &core.ConfigMapVolumeSource{
 											LocalObjectReference: core.LocalObjectReference{
@@ -1353,7 +1353,7 @@ var _ = Describe("MongoDB SSL", func() {
 								Expect(err).NotTo(HaveOccurred())
 
 								mongodb.Spec.Init = &api.InitSpec{
-									ScriptSource: &api.ScriptSourceSpec{
+									Script: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											ConfigMap: &core.ConfigMapVolumeSource{
 												LocalObjectReference: core.LocalObjectReference{
@@ -1400,7 +1400,7 @@ var _ = Describe("MongoDB SSL", func() {
 								verifySharding = true
 								enableSharding = true
 								mongodb.Spec.Init = &api.InitSpec{
-									ScriptSource: &api.ScriptSourceSpec{
+									Script: &api.ScriptSourceSpec{
 										VolumeSource: core.VolumeSource{
 											ConfigMap: &core.ConfigMapVolumeSource{
 												LocalObjectReference: core.LocalObjectReference{

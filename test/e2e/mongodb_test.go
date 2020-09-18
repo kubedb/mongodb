@@ -462,7 +462,7 @@ var _ = Describe("MongoDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					mongodb.Spec.Init = &api.InitSpec{
-						ScriptSource: &api.ScriptSourceSpec{
+						Script: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{
@@ -492,7 +492,7 @@ var _ = Describe("MongoDB", func() {
 						mongodb = f.MongoDBRS()
 						mongodb.Spec.Replicas = types.Int32P(3)
 						mongodb.Spec.Init = &api.InitSpec{
-							ScriptSource: &api.ScriptSourceSpec{
+							Script: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									ConfigMap: &core.ConfigMapVolumeSource{
 										LocalObjectReference: core.LocalObjectReference{
@@ -516,7 +516,7 @@ var _ = Describe("MongoDB", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBShard()
 						mongodb.Spec.Init = &api.InitSpec{
-							ScriptSource: &api.ScriptSourceSpec{
+							Script: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									ConfigMap: &core.ConfigMapVolumeSource{
 										LocalObjectReference: core.LocalObjectReference{
@@ -637,8 +637,10 @@ var _ = Describe("MongoDB", func() {
 					rs = f.RestoreSession(mongodb.ObjectMeta, repo)
 					mongodb.Spec.DatabaseSecret = oldMongoDB.Spec.DatabaseSecret
 					mongodb.Spec.Init = &api.InitSpec{
-						StashRestoreSession: &core.LocalObjectReference{
-							Name: rs.Name,
+						Initializer: &core.TypedLocalObjectReference{
+							APIGroup: types.StringP(stashV1beta1.SchemeGroupVersion.Group),
+							Kind:     rs.Kind,
+							Name:     rs.Name,
 						},
 					}
 					// Create and wait for running MongoDB
@@ -937,8 +939,10 @@ var _ = Describe("MongoDB", func() {
 							rs = f.RestoreSession(mongodb.ObjectMeta, repo)
 							mongodb.Spec.DatabaseSecret = oldMongoDB.Spec.DatabaseSecret
 							mongodb.Spec.Init = &api.InitSpec{
-								StashRestoreSession: &core.LocalObjectReference{
-									Name: rs.Name,
+								Initializer: &core.TypedLocalObjectReference{
+									APIGroup: types.StringP(stashV1beta1.SchemeGroupVersion.Group),
+									Kind:     rs.Kind,
+									Name:     rs.Name,
 								},
 							}
 
@@ -1091,7 +1095,7 @@ var _ = Describe("MongoDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					mongodb.Spec.Init = &api.InitSpec{
-						ScriptSource: &api.ScriptSourceSpec{
+						Script: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{
@@ -1153,7 +1157,7 @@ var _ = Describe("MongoDB", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
 						mongodb.Spec.Init = &api.InitSpec{
-							ScriptSource: &api.ScriptSourceSpec{
+							Script: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									ConfigMap: &core.ConfigMapVolumeSource{
 										LocalObjectReference: core.LocalObjectReference{
@@ -1171,7 +1175,7 @@ var _ = Describe("MongoDB", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBShard()
 						mongodb.Spec.Init = &api.InitSpec{
-							ScriptSource: &api.ScriptSourceSpec{
+							Script: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									ConfigMap: &core.ConfigMapVolumeSource{
 										LocalObjectReference: core.LocalObjectReference{
@@ -1198,7 +1202,7 @@ var _ = Describe("MongoDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					mongodb.Spec.Init = &api.InitSpec{
-						ScriptSource: &api.ScriptSourceSpec{
+						Script: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{
@@ -1262,7 +1266,7 @@ var _ = Describe("MongoDB", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
 						mongodb.Spec.Init = &api.InitSpec{
-							ScriptSource: &api.ScriptSourceSpec{
+							Script: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									ConfigMap: &core.ConfigMapVolumeSource{
 										LocalObjectReference: core.LocalObjectReference{
@@ -1280,7 +1284,7 @@ var _ = Describe("MongoDB", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBShard()
 						mongodb.Spec.Init = &api.InitSpec{
-							ScriptSource: &api.ScriptSourceSpec{
+							Script: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									ConfigMap: &core.ConfigMapVolumeSource{
 										LocalObjectReference: core.LocalObjectReference{
@@ -1516,7 +1520,7 @@ var _ = Describe("MongoDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					mongodb.Spec.Init = &api.InitSpec{
-						ScriptSource: &api.ScriptSourceSpec{
+						Script: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{
@@ -1566,7 +1570,7 @@ var _ = Describe("MongoDB", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
 						mongodb.Spec.Init = &api.InitSpec{
-							ScriptSource: &api.ScriptSourceSpec{
+							Script: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									ConfigMap: &core.ConfigMapVolumeSource{
 										LocalObjectReference: core.LocalObjectReference{
@@ -1584,7 +1588,7 @@ var _ = Describe("MongoDB", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBShard()
 						mongodb.Spec.Init = &api.InitSpec{
-							ScriptSource: &api.ScriptSourceSpec{
+							Script: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									ConfigMap: &core.ConfigMapVolumeSource{
 										LocalObjectReference: core.LocalObjectReference{
@@ -1675,7 +1679,7 @@ var _ = Describe("MongoDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					mongodb.Spec.Init = &api.InitSpec{
-						ScriptSource: &api.ScriptSourceSpec{
+						Script: &api.ScriptSourceSpec{
 							VolumeSource: core.VolumeSource{
 								ConfigMap: &core.ConfigMapVolumeSource{
 									LocalObjectReference: core.LocalObjectReference{
@@ -1748,7 +1752,7 @@ var _ = Describe("MongoDB", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBRS()
 						mongodb.Spec.Init = &api.InitSpec{
-							ScriptSource: &api.ScriptSourceSpec{
+							Script: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									ConfigMap: &core.ConfigMapVolumeSource{
 										LocalObjectReference: core.LocalObjectReference{
@@ -1767,7 +1771,7 @@ var _ = Describe("MongoDB", func() {
 					BeforeEach(func() {
 						mongodb = f.MongoDBShard()
 						mongodb.Spec.Init = &api.InitSpec{
-							ScriptSource: &api.ScriptSourceSpec{
+							Script: &api.ScriptSourceSpec{
 								VolumeSource: core.VolumeSource{
 									ConfigMap: &core.ConfigMapVolumeSource{
 										LocalObjectReference: core.LocalObjectReference{

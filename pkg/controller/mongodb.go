@@ -153,7 +153,7 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 	}
 
 	if _, err := meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized); err == kutil.ErrNotFound &&
-		mongodb.Spec.Init != nil && mongodb.Spec.Init.StashRestoreSession != nil {
+		mongodb.Spec.Init != nil && mongodb.Spec.Init.Initializer != nil {
 
 		if mongodb.Status.Phase == api.DatabasePhaseInitializing {
 			return nil
@@ -170,8 +170,8 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 		mongodb.Status = mg.Status
 
 		init := mongodb.Spec.Init
-		if init.StashRestoreSession != nil {
-			log.Debugf("MongoDB %v/%v is waiting for restoreSession to be succeeded", mongodb.Namespace, mongodb.Name)
+		if init.Initializer != nil {
+			log.Debugf("MongoDB %v/%v is waiting for the initializer to complete it's initialization", mongodb.Namespace, mongodb.Name)
 			return nil
 		}
 	}
