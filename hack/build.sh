@@ -34,6 +34,8 @@ export GOARCH="${ARCH}"
 export GOOS="${OS}"
 export GO111MODULE=on
 export GOFLAGS="-mod=vendor"
+export PRODUCT_OWNER_NAME="appscode"
+export PRODUCT_NAME="kubedb"
 
 ENFORCE_LICENSE=${ENFORCE_LICENSE:-}
 if [ ! -z "${git_tag:-}" ]; then
