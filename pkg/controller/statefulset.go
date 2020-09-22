@@ -121,7 +121,7 @@ func (c *Controller) ensureTopologyCluster(mongodb *api.MongoDB) (kutil.VerbType
 			if err := c.checkStatefulSetPodStatus(st); err != nil {
 				return kutil.VerbUnchanged, err
 			}
-			c.recorder.Eventf(
+			c.Recorder.Eventf(
 				mongodb,
 				core.EventTypeNormal,
 				eventer.EventReasonSuccessful,
@@ -140,7 +140,7 @@ func (c *Controller) ensureTopologyCluster(mongodb *api.MongoDB) (kutil.VerbType
 		if err := c.checkStatefulSetPodStatus(mongosSts); err != nil {
 			return kutil.VerbUnchanged, err
 		}
-		c.recorder.Eventf(
+		c.Recorder.Eventf(
 			mongodb,
 			core.EventTypeNormal,
 			eventer.EventReasonSuccessful,
@@ -618,7 +618,7 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 		if err := c.checkStatefulSetPodStatus(st); err != nil {
 			return kutil.VerbUnchanged, err
 		}
-		c.recorder.Eventf(
+		c.Recorder.Eventf(
 			mongodb,
 			core.EventTypeNormal,
 			eventer.EventReasonSuccessful,

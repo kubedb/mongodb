@@ -23,6 +23,7 @@ import (
 	cs "kubedb.dev/apimachinery/client/clientset/versioned"
 	kubedbinformers "kubedb.dev/apimachinery/client/informers/externalversions"
 	"kubedb.dev/apimachinery/pkg/controller/initializer/stash"
+	"kubedb.dev/apimachinery/pkg/eventer"
 	"kubedb.dev/mongodb/pkg/controller"
 
 	prom "github.com/prometheus-operator/prometheus-operator/pkg/client/versioned/typed/monitoring/v1"
@@ -147,6 +148,8 @@ func (s *ExtraOptions) ApplyTo(cfg *controller.OperatorConfig) error {
 		)
 	})
 	cfg.SecretLister = corelisters.NewSecretLister(cfg.SecretInformer.GetIndexer())
+	// Create event recorder
+	cfg.Recorder = eventer.NewEventRecorder(cfg.KubeClient, "MongoDB operator")
 	// Configure Stash initializer
 	return stash.Configure(cfg.ClientConfig, &cfg.Initializers.Stash, cfg.ResyncPeriod)
 }
