@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	"kubedb.dev/apimachinery/apis/kubedb"
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 	"kubedb.dev/apimachinery/pkg/eventer"
@@ -30,9 +31,10 @@ import (
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	kutil "kmodules.xyz/client-go"
 	dynamic_util "kmodules.xyz/client-go/dynamic"
-	meta_util "kmodules.xyz/client-go/meta"
+	dmcond "kmodules.xyz/client-go/dynamic/conditions"
 )
 
 func (c *Controller) create(mongodb *api.MongoDB) error {
@@ -152,26 +154,46 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 		return err
 	}
 
-	if _, err := meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized); err == kutil.ErrNotFound &&
-		mongodb.Spec.Init != nil && mongodb.Spec.Init.Initializer != nil {
-
-		if mongodb.Status.Phase == api.DatabasePhaseInitializing {
-			return nil
+	if mongodb.Spec.Init != nil && mongodb.Spec.Init.Initializer != nil && mongodb.Status.Phase != api.DatabasePhaseRunning {
+		do := dmcond.DynamicOptions{
+			Client: c.DynamicClient,
+			GVR: schema.GroupVersionResource{
+				Group:    kubedb.GroupName,
+				Version:  api.SchemeGroupVersion.Version,
+				Resource: api.ResourcePluralMongoDB,
+			},
+			Name:      mongodb.Name,
+			Namespace: mongodb.Namespace,
 		}
+		dbPhase := api.DatabasePhaseInitializing
 
-		// add phase that database is being initialized
-		mg, err := util.UpdateMongoDBStatus(context.TODO(), c.ExtClient.KubedbV1alpha1(), mongodb.ObjectMeta, func(in *api.MongoDBStatus) *api.MongoDBStatus {
-			in.Phase = api.DatabasePhaseInitializing
+		initCompleted, err := do.HasCondition(api.DatabaseInitialized)
+		if err != nil {
+			return err
+		}
+		if initCompleted {
+			initSucceeded, err := do.IsConditionTrue(api.DatabaseInitialized)
+			if err != nil {
+				return err
+			}
+			if initSucceeded {
+				dbPhase = api.DatabasePhaseRunning
+			} else {
+				dbPhase = api.DatabasePhaseFailed
+			}
+			// Write event
+			c.pushInitCompletionEvent(mongodb, initSucceeded)
+		}
+		mongodb, err = util.UpdateMongoDBStatus(context.TODO(), c.ExtClient.KubedbV1alpha1(), mongodb.ObjectMeta, func(in *api.MongoDBStatus) *api.MongoDBStatus {
+			in.Phase = dbPhase
+			in.ObservedGeneration = mongodb.Generation
 			return in
 		}, metav1.UpdateOptions{})
 		if err != nil {
 			return err
 		}
-		mongodb.Status = mg.Status
-
-		init := mongodb.Spec.Init
-		if init.Initializer != nil {
-			log.Debugf("MongoDB %v/%v is waiting for the initializer to complete it's initialization", mongodb.Namespace, mongodb.Name)
+		if mongodb.Status.Phase == api.DatabasePhaseInitializing {
+			log.Infof("Waiting for MongoDB %s/%s to be initialized by initializer", mongodb.Namespace, mongodb.Name)
 			return nil
 		}
 	}
@@ -241,7 +263,7 @@ func (c *Controller) terminate(db *api.MongoDB) error {
 
 	// If TerminationPolicy is "halt", keep PVCs and Secrets intact.
 	// TerminationPolicyPause is deprecated and will be removed in future.
-	if db.Spec.TerminationPolicy == api.TerminationPolicyHalt || db.Spec.TerminationPolicy == api.TerminationPolicyPause {
+	if db.Spec.TerminationPolicy == api.TerminationPolicyHalt {
 		if err := c.removeOwnerReferenceFromOffshoots(db); err != nil {
 			return err
 		}
@@ -318,4 +340,22 @@ func (c *Controller) removeOwnerReferenceFromOffshoots(db *api.MongoDB) error {
 		return err
 	}
 	return nil
+}
+
+func (c *Controller) pushInitCompletionEvent(mongodb *api.MongoDB, initSucceeded bool) {
+	eventType := core.EventTypeNormal
+	eventReason := eventer.EventReasonSuccessfulDatabaseInitialization
+	message := fmt.Sprintf("Successfully initialized MongoDB %s/%s", mongodb.Namespace, mongodb.Name)
+
+	if !initSucceeded {
+		eventType = core.EventTypeWarning
+		eventReason = eventer.EventReasonFailureInDatabaseInitialization
+		message = fmt.Sprintf("Failed to initialize MongoDB %s/%s", mongodb.Namespace, mongodb.Name)
+	}
+	c.Recorder.Eventf(
+		mongodb,
+		eventType,
+		eventReason,
+		message,
+	)
 }

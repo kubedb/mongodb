@@ -35,7 +35,6 @@ import (
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kmapi "kmodules.xyz/client-go/api/v1"
-	meta_util "kmodules.xyz/client-go/meta"
 	ofst "kmodules.xyz/offshoot-api/api/v1"
 	stashV1alpha1 "stash.appscode.dev/apimachinery/apis/stash/v1alpha1"
 	stashV1beta1 "stash.appscode.dev/apimachinery/apis/stash/v1beta1"
@@ -1145,9 +1144,9 @@ var _ = Describe("MongoDB", func() {
 
 					*mongodb = *mg
 					if usedInitScript {
+						By("Checking MongoDB crd does not have Initialized condition")
 						Expect(mongodb.Spec.Init).ShouldNot(BeNil())
-						_, err := meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized)
-						Expect(err).To(HaveOccurred())
+						Expect(kmapi.HasCondition(mg.Status.Conditions, api.DatabaseInitialized)).To(BeFalse())
 					}
 				}
 
@@ -1253,9 +1252,9 @@ var _ = Describe("MongoDB", func() {
 						f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
 
 						if usedInitScript {
+							By("Checking MongoDB crd does not have Initialized condition")
 							Expect(mongodb.Spec.Init).ShouldNot(BeNil())
-							_, err := meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized)
-							Expect(err).To(HaveOccurred())
+							Expect(kmapi.HasCondition(mongodb.Status.Conditions, api.DatabaseInitialized)).To(BeFalse())
 						}
 					}
 				}
