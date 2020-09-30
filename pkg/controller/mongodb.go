@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	"kubedb.dev/apimachinery/apis/kubedb"
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
 	"kubedb.dev/apimachinery/pkg/eventer"
@@ -31,10 +30,9 @@ import (
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	kutil "kmodules.xyz/client-go"
+	kmapi "kmodules.xyz/client-go/api/v1"
 	dynamic_util "kmodules.xyz/client-go/dynamic"
-	dmcond "kmodules.xyz/client-go/dynamic/conditions"
 )
 
 func (c *Controller) create(mongodb *api.MongoDB) error {
@@ -154,47 +152,43 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 		return err
 	}
 
-	if mongodb.Spec.Init != nil && mongodb.Spec.Init.Initializer != nil && mongodb.Status.Phase != api.DatabasePhaseRunning {
-		do := dmcond.DynamicOptions{
-			Client: c.DynamicClient,
-			GVR: schema.GroupVersionResource{
-				Group:    kubedb.GroupName,
-				Version:  api.SchemeGroupVersion.Version,
-				Resource: api.ResourcePluralMongoDB,
-			},
-			Name:      mongodb.Name,
-			Namespace: mongodb.Namespace,
-		}
-		dbPhase := api.DatabasePhaseInitializing
-
-		initCompleted, err := do.HasCondition(api.DatabaseInitialized)
-		if err != nil {
-			return err
-		}
-		if initCompleted {
-			initSucceeded, err := do.IsConditionTrue(api.DatabaseInitialized)
+	if mongodb.Spec.Init != nil && mongodb.Spec.Init.Initializer != nil {
+		// If "Initialized" condition is not present, it means restore process hasn't completed yet.
+		// In this case, make database phase "Initializing".
+		if !kmapi.HasCondition(mongodb.Status.Conditions, api.DatabaseInitialized) {
+			mongodb, err := util.UpdateMongoDBStatus(context.TODO(), c.ExtClient.KubedbV1alpha1(), mongodb.ObjectMeta, func(in *api.MongoDBStatus) *api.MongoDBStatus {
+				in.Phase = api.DatabasePhaseInitializing
+				in.ObservedGeneration = mongodb.Generation
+				return in
+			}, metav1.UpdateOptions{})
 			if err != nil {
 				return err
 			}
-			if initSucceeded {
-				dbPhase = api.DatabasePhaseRunning
-			} else {
+			// write log indicating that the database is waiting for the data to be restored by external initializer
+			log.Infof("Database %s %s/%s is waiting for data to be restored by initializer %s/%s/%s",
+				mongodb.Kind,
+				mongodb.Namespace,
+				mongodb.Name,
+				*mongodb.Spec.Init.Initializer.APIGroup,
+				mongodb.Spec.Init.Initializer.Kind,
+				mongodb.Spec.Init.Initializer.Name,
+			)
+			// Rest of the processing will execute after the the restore process completed. So, just return for now.
+			return nil
+		} else {
+			// Restore process has completed. It has either succeeded or failed. Update database phase accordingly.
+			dbPhase := api.DatabasePhaseRunning
+			if !kmapi.IsConditionTrue(mongodb.Status.Conditions, api.DatabaseInitialized) {
 				dbPhase = api.DatabasePhaseFailed
 			}
-			// Write event
-			c.pushInitCompletionEvent(mongodb, initSucceeded)
-		}
-		mongodb, err = util.UpdateMongoDBStatus(context.TODO(), c.ExtClient.KubedbV1alpha1(), mongodb.ObjectMeta, func(in *api.MongoDBStatus) *api.MongoDBStatus {
-			in.Phase = dbPhase
-			in.ObservedGeneration = mongodb.Generation
-			return in
-		}, metav1.UpdateOptions{})
-		if err != nil {
-			return err
-		}
-		if mongodb.Status.Phase == api.DatabasePhaseInitializing {
-			log.Infof("Waiting for MongoDB %s/%s to be initialized by initializer", mongodb.Namespace, mongodb.Name)
-			return nil
+			mongodb, err = util.UpdateMongoDBStatus(context.TODO(), c.ExtClient.KubedbV1alpha1(), mongodb.ObjectMeta, func(in *api.MongoDBStatus) *api.MongoDBStatus {
+				in.Phase = dbPhase
+				in.ObservedGeneration = mongodb.Generation
+				return in
+			}, metav1.UpdateOptions{})
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -340,22 +334,4 @@ func (c *Controller) removeOwnerReferenceFromOffshoots(db *api.MongoDB) error {
 		return err
 	}
 	return nil
-}
-
-func (c *Controller) pushInitCompletionEvent(mongodb *api.MongoDB, initSucceeded bool) {
-	eventType := core.EventTypeNormal
-	eventReason := eventer.EventReasonSuccessfulDatabaseInitialization
-	message := fmt.Sprintf("Successfully initialized MongoDB %s/%s", mongodb.Namespace, mongodb.Name)
-
-	if !initSucceeded {
-		eventType = core.EventTypeWarning
-		eventReason = eventer.EventReasonFailureInDatabaseInitialization
-		message = fmt.Sprintf("Failed to initialize MongoDB %s/%s", mongodb.Namespace, mongodb.Name)
-	}
-	c.Recorder.Eventf(
-		mongodb,
-		eventType,
-		eventReason,
-		message,
-	)
 }
