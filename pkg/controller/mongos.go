@@ -125,7 +125,7 @@ func (c *Controller) ensureMongosNode(mongodb *api.MongoDB) (*apps.StatefulSet, 
 			VolumeSource: mongodb.Spec.Init.Script.VolumeSource,
 		})
 
-		volumeMounts = append(
+		volumeMounts = core_util.UpsertVolumeMount(
 			volumeMounts,
 			core.VolumeMount{
 				Name:      "initial-script",
@@ -257,7 +257,7 @@ func mongosInitContainer(
 	var rsVolumes []core.Volume
 
 	if mongodb.Spec.KeyFile != nil {
-		rsVolumes = append(rsVolumes, core.Volume{
+		rsVolumes = core_util.UpsertVolume(rsVolumes, core.Volume{
 			Name: initialKeyDirectoryName, // FIXIT: mounted where?
 			VolumeSource: core.VolumeSource{
 				Secret: &core.SecretVolumeSource{
@@ -269,7 +269,7 @@ func mongosInitContainer(
 	}
 
 	if mongodb.Spec.Init != nil && mongodb.Spec.Init.Script != nil {
-		rsVolumes = append(rsVolumes, core.Volume{
+		rsVolumes = core_util.UpsertVolume(rsVolumes, core.Volume{
 			Name:         "initial-script",
 			VolumeSource: mongodb.Spec.Init.Script.VolumeSource,
 		})
