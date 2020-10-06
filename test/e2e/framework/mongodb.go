@@ -354,12 +354,12 @@ func (f *Framework) EventuallyMongoDBPhase(meta metav1.ObjectMeta) GomegaAsyncAs
 	)
 }
 
-func (f *Framework) EventuallyMongoDBRunning(meta metav1.ObjectMeta) GomegaAsyncAssertion {
+func (f *Framework) EventuallyMongoDBReady(meta metav1.ObjectMeta) GomegaAsyncAssertion {
 	return Eventually(
 		func() bool {
 			mongodb, err := f.dbClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Get(context.TODO(), meta.Name, metav1.GetOptions{})
 			Expect(err).NotTo(HaveOccurred())
-			return mongodb.Status.Phase == api.DatabasePhaseRunning
+			return mongodb.Status.Phase == api.DatabasePhaseReady
 		},
 		time.Minute*13,
 		time.Second*5,
