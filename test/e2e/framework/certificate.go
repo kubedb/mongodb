@@ -20,7 +20,7 @@ import (
 	"context"
 	"path/filepath"
 
-	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha2"
 
 	"github.com/appscode/go/ioutil"
 	"github.com/pkg/errors"

@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"strings"
 
-	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
-	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha2"
+	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha2/util"
 	"kubedb.dev/mongodb/test/e2e/framework"
 	"kubedb.dev/mongodb/test/e2e/matcher"
 
@@ -1714,7 +1714,7 @@ var _ = Describe("MongoDB", func() {
 					By("Checking Inserted Document")
 					f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
 
-					_, _, err = util.PatchMongoDB(context.TODO(), f.DBClient().KubedbV1alpha1(), mongodb, func(in *api.MongoDB) *api.MongoDB {
+					_, _, err = util.PatchMongoDB(context.TODO(), f.DBClient().KubedbV1alpha2(), mongodb, func(in *api.MongoDB) *api.MongoDB {
 						envs = []core.EnvVar{
 							{
 								Name:  MONGO_INITDB_DATABASE,

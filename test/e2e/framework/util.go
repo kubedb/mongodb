@@ -24,7 +24,7 @@ import (
 	"strings"
 	"time"
 
-	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha2"
 
 	"github.com/appscode/go/log"
 	"github.com/aws/aws-sdk-go/aws"
@@ -104,7 +104,7 @@ func (f *Framework) AddMonitor(obj *api.MongoDB) {
 }
 
 func (f *Framework) VerifyShardExporters(meta metav1.ObjectMeta) error {
-	mongoDB, err := f.dbClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Get(context.TODO(), meta.Name, metav1.GetOptions{})
+	mongoDB, err := f.dbClient.KubedbV1alpha2().MongoDBs(meta.Namespace).Get(context.TODO(), meta.Name, metav1.GetOptions{})
 	if err != nil {
 		log.Infoln(err)
 		return err
@@ -140,7 +140,7 @@ func (f *Framework) VerifyShardExporters(meta metav1.ObjectMeta) error {
 }
 
 func (f *Framework) VerifyInMemory(meta metav1.ObjectMeta) error {
-	mongoDB, err := f.dbClient.KubedbV1alpha1().MongoDBs(meta.Namespace).Get(context.TODO(), meta.Name, metav1.GetOptions{})
+	mongoDB, err := f.dbClient.KubedbV1alpha2().MongoDBs(meta.Namespace).Get(context.TODO(), meta.Name, metav1.GetOptions{})
 	if err != nil {
 		log.Infoln(err)
 		return err
