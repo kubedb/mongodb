@@ -40,6 +40,7 @@ import (
 	meta_util "kmodules.xyz/client-go/meta"
 	"kmodules.xyz/client-go/tools/portforward"
 	kmon "kmodules.xyz/monitoring-agent-api/api/v1"
+	mona "kmodules.xyz/monitoring-agent-api/api/v1"
 )
 
 const (
@@ -92,8 +93,8 @@ func (f *Framework) CleanWorkloadLeftOvers() {
 func (f *Framework) AddMonitor(obj *api.MongoDB) {
 	obj.Spec.Monitor = &kmon.AgentSpec{
 		Prometheus: &kmon.PrometheusSpec{
-			Exporter: &kmon.PrometheusExporterSpec{
-				Port:            api.PrometheusExporterPortNumber,
+			Exporter: kmon.PrometheusExporterSpec{
+				Port:            mona.PrometheusExporterPortNumber,
 				Resources:       v1.ResourceRequirements{},
 				SecurityContext: nil,
 			},
@@ -178,7 +179,7 @@ func (f *Framework) VerifyInMemory(meta metav1.ObjectMeta) error {
 //and check against known key and value
 //to verify the connection is functioning as intended
 func (f *Framework) VerifyExporter(meta metav1.ObjectMeta) error {
-	tunnel, err := f.ForwardToPort(meta, fmt.Sprintf("%v-0", meta.Name), aws.Int(api.PrometheusExporterPortNumber))
+	tunnel, err := f.ForwardToPort(meta, fmt.Sprintf("%v-0", meta.Name), aws.Int(mona.PrometheusExporterPortNumber))
 	if err != nil {
 		log.Infoln(err)
 		return err
@@ -220,7 +221,7 @@ func makeTransport() *http.Transport {
 }
 
 func (f *Framework) ForwardToPort(meta metav1.ObjectMeta, clientPodName string, port *int) (*portforward.Tunnel, error) {
-	var defaultPort = api.PrometheusExporterPortNumber
+	var defaultPort = mona.PrometheusExporterPortNumber
 	if port != nil {
 		defaultPort = *port
 	}

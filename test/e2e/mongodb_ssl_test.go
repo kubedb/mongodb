@@ -113,7 +113,7 @@ var _ = Describe("MongoDB SSL", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Wait for Running mongodb")
-		f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+		f.EventuallyMongoDBReady(mongodb.ObjectMeta).Should(BeTrue())
 
 		By("Wait for AppBinding to create")
 		f.EventuallyAppBinding(mongodb.ObjectMeta).Should(BeTrue())
@@ -201,7 +201,7 @@ var _ = Describe("MongoDB SSL", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Wait for Running mongodb")
-		f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+		f.EventuallyMongoDBReady(mongodb.ObjectMeta).Should(BeTrue())
 
 		By("Ping mongodb database")
 		f.EventuallyPingMongo(mongodb.ObjectMeta)

@@ -38,6 +38,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	clientSetScheme "k8s.io/client-go/kubernetes/scheme"
+	kmapi "kmodules.xyz/client-go/api/v1"
 	core_util "kmodules.xyz/client-go/core/v1"
 	"kmodules.xyz/client-go/meta"
 	mona "kmodules.xyz/monitoring-agent-api/api/v1"
@@ -282,6 +283,26 @@ var cases = []struct {
 		false,
 		true,
 	},
+	{"Edit spec.Init before provisioning complete",
+		requestKind,
+		"foo",
+		"default",
+		admission.Update,
+		updateInit(sampleMongoDB()),
+		sampleMongoDB(),
+		true,
+		true,
+	},
+	{"Edit spec.Init after provisioning complete",
+		requestKind,
+		"foo",
+		"default",
+		admission.Update,
+		updateInit(completeProvisioning(sampleMongoDB())),
+		sampleMongoDB(),
+		true,
+		false,
+	},
 }
 
 func sampleMongoDB() api.MongoDB {
@@ -310,14 +331,7 @@ func sampleMongoDB() api.MongoDB {
 				},
 			},
 			Init: &api.InitSpec{
-				Script: &api.ScriptSourceSpec{
-					VolumeSource: core.VolumeSource{
-						GitRepo: &core.GitRepoVolumeSource{
-							Repository: "https://kubedb.dev/mongodb-init-scripts.git",
-							Directory:  ".",
-						},
-					},
-				},
+				WaitForInitialRestore: true,
 			},
 			TerminationPolicy: api.TerminationPolicyDoNotTerminate,
 		},
@@ -395,7 +409,7 @@ func editNonExistingSecret(old api.MongoDB) api.MongoDB {
 
 func editStatus(old api.MongoDB) api.MongoDB {
 	old.Status = api.MongoDBStatus{
-		Phase: api.DatabasePhaseCreating,
+		Phase: api.DatabasePhaseReady,
 	}
 	return old
 }
@@ -404,7 +418,7 @@ func editSpecMonitor(old api.MongoDB) api.MongoDB {
 	old.Spec.Monitor = &mona.AgentSpec{
 		Agent: mona.AgentPrometheusBuiltin,
 		Prometheus: &mona.PrometheusSpec{
-			Exporter: &mona.PrometheusExporterSpec{
+			Exporter: mona.PrometheusExporterSpec{
 				Port: 1289,
 			},
 		},
@@ -427,5 +441,20 @@ func haltDatabase(old api.MongoDB) api.MongoDB {
 
 func editShardPrefix(old api.MongoDB) api.MongoDB {
 	old.Spec.ShardTopology.Shard.Prefix = "demo-prefix"
+	return old
+}
+
+func completeProvisioning(old api.MongoDB) api.MongoDB {
+	old.Status.Conditions = []kmapi.Condition{
+		{
+			Type:   api.DatabaseProvisioned,
+			Status: kmapi.ConditionTrue,
+		},
+	}
+	return old
+}
+
+func updateInit(old api.MongoDB) api.MongoDB {
+	old.Spec.Init.WaitForInitialRestore = false
 	return old
 }

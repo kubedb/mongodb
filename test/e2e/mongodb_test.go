@@ -35,7 +35,6 @@ import (
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kmapi "kmodules.xyz/client-go/api/v1"
-	meta_util "kmodules.xyz/client-go/meta"
 	ofst "kmodules.xyz/offshoot-api/api/v1"
 	stashV1alpha1 "stash.appscode.dev/apimachinery/apis/stash/v1alpha1"
 	stashV1beta1 "stash.appscode.dev/apimachinery/apis/stash/v1beta1"
@@ -111,7 +110,7 @@ var _ = Describe("MongoDB", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("Wait for Running mongodb")
-		f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+		f.EventuallyMongoDBReady(mongodb.ObjectMeta).Should(BeTrue())
 
 		By("Wait for AppBinding to create")
 		f.EventuallyAppBinding(mongodb.ObjectMeta).Should(BeTrue())
@@ -266,7 +265,7 @@ var _ = Describe("MongoDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for Running mongodb")
-					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+					f.EventuallyMongoDBReady(mongodb.ObjectMeta).Should(BeTrue())
 
 					By("Ping mongodb database")
 					f.EventuallyPingMongo(mongodb.ObjectMeta)
@@ -570,8 +569,8 @@ var _ = Describe("MongoDB", func() {
 					err = f.CreateMongoDB(mongodb)
 					Expect(err).NotTo(HaveOccurred())
 
-					By("Wait for Initializing mongodb")
-					f.EventuallyMongoDBPhase(mongodb.ObjectMeta).Should(Equal(api.DatabasePhaseInitializing))
+					By("Wait for restoring mongodb")
+					f.EventuallyMongoDBPhase(mongodb.ObjectMeta).Should(Equal(api.DatabasePhaseDataRestoring))
 
 					By("Wait for AppBinding to create")
 					f.EventuallyAppBinding(mongodb.ObjectMeta).Should(BeTrue())
@@ -637,11 +636,7 @@ var _ = Describe("MongoDB", func() {
 					rs = f.RestoreSession(mongodb.ObjectMeta, repo)
 					mongodb.Spec.DatabaseSecret = oldMongoDB.Spec.DatabaseSecret
 					mongodb.Spec.Init = &api.InitSpec{
-						Initializer: &core.TypedLocalObjectReference{
-							APIGroup: types.StringP(stashV1beta1.SchemeGroupVersion.Group),
-							Kind:     rs.Kind,
-							Name:     rs.Name,
-						},
+						WaitForInitialRestore: true,
 					}
 					// Create and wait for running MongoDB
 					createAndWaitForInitializing()
@@ -655,7 +650,7 @@ var _ = Describe("MongoDB", func() {
 					f.EventuallyRestoreSessionPhase(rs.ObjectMeta).Should(Equal(stashV1beta1.RestoreSucceeded))
 
 					By("Wait for Running mongodb")
-					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+					f.EventuallyMongoDBReady(mongodb.ObjectMeta).Should(BeTrue())
 
 					if verifySharding && mongodb.Spec.ShardTopology != nil {
 						By("Check if db " + dbName + " is set to partitioned")
@@ -939,11 +934,7 @@ var _ = Describe("MongoDB", func() {
 							rs = f.RestoreSession(mongodb.ObjectMeta, repo)
 							mongodb.Spec.DatabaseSecret = oldMongoDB.Spec.DatabaseSecret
 							mongodb.Spec.Init = &api.InitSpec{
-								Initializer: &core.TypedLocalObjectReference{
-									APIGroup: types.StringP(stashV1beta1.SchemeGroupVersion.Group),
-									Kind:     rs.Kind,
-									Name:     rs.Name,
-								},
+								WaitForInitialRestore: true,
 							}
 
 							// Create and wait for running MongoDB
@@ -958,7 +949,7 @@ var _ = Describe("MongoDB", func() {
 							f.EventuallyRestoreSessionPhase(rs.ObjectMeta).Should(Equal(stashV1beta1.RestoreSucceeded))
 
 							By("Wait for Running mongodb")
-							f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+							f.EventuallyMongoDBReady(mongodb.ObjectMeta).Should(BeTrue())
 
 							if verifySharding && mongodb.Spec.ShardTopology != nil {
 								By("Check if db " + dbName + " is set to partitioned")
@@ -1016,7 +1007,7 @@ var _ = Describe("MongoDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for Running mongodb")
-					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+					f.EventuallyMongoDBReady(mongodb.ObjectMeta).Should(BeTrue())
 
 					By("Ping mongodb database")
 					f.EventuallyPingMongo(mongodb.ObjectMeta)
@@ -1054,7 +1045,7 @@ var _ = Describe("MongoDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for Running mongodb")
-					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+					f.EventuallyMongoDBReady(mongodb.ObjectMeta).Should(BeTrue())
 
 					By("Ping mongodb database")
 					f.EventuallyPingMongo(mongodb.ObjectMeta)
@@ -1132,7 +1123,7 @@ var _ = Describe("MongoDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for Running mongodb")
-					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+					f.EventuallyMongoDBReady(mongodb.ObjectMeta).Should(BeTrue())
 
 					By("Ping mongodb database")
 					f.EventuallyPingMongo(mongodb.ObjectMeta)
@@ -1145,9 +1136,9 @@ var _ = Describe("MongoDB", func() {
 
 					*mongodb = *mg
 					if usedInitScript {
+						By("Checking MongoDB crd does not have DataRestored condition")
 						Expect(mongodb.Spec.Init).ShouldNot(BeNil())
-						_, err := meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized)
-						Expect(err).To(HaveOccurred())
+						Expect(kmapi.HasCondition(mg.Status.Conditions, api.DatabaseDataRestored)).To(BeFalse())
 					}
 				}
 
@@ -1241,7 +1232,7 @@ var _ = Describe("MongoDB", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						By("Wait for Running mongodb")
-						f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+						f.EventuallyMongoDBReady(mongodb.ObjectMeta).Should(BeTrue())
 
 						_, err := f.GetMongoDB(mongodb.ObjectMeta)
 						Expect(err).NotTo(HaveOccurred())
@@ -1253,9 +1244,9 @@ var _ = Describe("MongoDB", func() {
 						f.EventuallyDocumentExists(mongodb.ObjectMeta, dbName, 1).Should(BeTrue())
 
 						if usedInitScript {
+							By("Checking MongoDB crd does not have DataRestored condition")
 							Expect(mongodb.Spec.Init).ShouldNot(BeNil())
-							_, err := meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized)
-							Expect(err).To(HaveOccurred())
+							Expect(kmapi.HasCondition(mongodb.Status.Conditions, api.DatabaseDataRestored)).To(BeFalse())
 						}
 					}
 				}
@@ -1321,7 +1312,7 @@ var _ = Describe("MongoDB", func() {
 					f.EventuallyMongoDB(mongodb.ObjectMeta).Should(BeTrue())
 
 					By("Check for Running mongodb")
-					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+					f.EventuallyMongoDBReady(mongodb.ObjectMeta).Should(BeTrue())
 
 					By("Update mongodb to set spec.terminationPolicy = Pause")
 					_, err := f.PatchMongoDB(mongodb.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
@@ -1374,7 +1365,7 @@ var _ = Describe("MongoDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for Running mongodb")
-					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+					f.EventuallyMongoDBReady(mongodb.ObjectMeta).Should(BeTrue())
 
 					By("Ping mongodb database")
 					f.EventuallyPingMongo(mongodb.ObjectMeta)
@@ -1395,7 +1386,7 @@ var _ = Describe("MongoDB", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					By("Wait for Running mongodb")
-					f.EventuallyMongoDBRunning(mongodb.ObjectMeta).Should(BeTrue())
+					f.EventuallyMongoDBReady(mongodb.ObjectMeta).Should(BeTrue())
 
 					By("Ping mongodb database")
 					f.EventuallyPingMongo(mongodb.ObjectMeta)
