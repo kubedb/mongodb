@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha2"
 
 	"github.com/appscode/go/log"
 	. "github.com/onsi/gomega"
@@ -67,11 +67,11 @@ func (f *Framework) GetMongoDBClient(meta metav1.ObjectMeta, tunnel *portforward
 	}
 
 	clientOpts := options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%s@127.0.0.1:%v", user, pass, tunnel.Local))
-	if mongodb.Spec.SSLMode == v1alpha1.SSLModeRequireSSL {
+	if mongodb.Spec.SSLMode == api.SSLModeRequireSSL {
 		if err := f.GetSSLCertificate(meta); err != nil {
 			return nil, err
 		}
-		clientOpts = options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%s@localhost:%v/?ssl=true&sslclientcertificatekeyfile=/tmp/mongodb/%v&&sslcertificateauthorityfile=/tmp/mongodb/%v", user, pass, tunnel.Local, v1alpha1.MongoPemFileName, v1alpha1.TLSCACertFileName))
+		clientOpts = options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%s@localhost:%v/?ssl=true&sslclientcertificatekeyfile=/tmp/mongodb/%v&&sslcertificateauthorityfile=/tmp/mongodb/%v", user, pass, tunnel.Local, api.MongoPemFileName, api.TLSCACertFileName))
 	}
 
 	if (len(isReplSet) > 0 && isReplSet[0]) || IsRepSet(mongodb) {
@@ -531,7 +531,7 @@ func (f *Framework) getSSLModeFromDB(meta metav1.ObjectMeta) (string, error) {
 	return val.(string), nil
 }
 
-func (f *Framework) EventuallyUserSSLSettings(meta metav1.ObjectMeta, clusterAuthMode *v1alpha1.ClusterAuthMode, sslMode *v1alpha1.SSLMode) GomegaAsyncAssertion {
+func (f *Framework) EventuallyUserSSLSettings(meta metav1.ObjectMeta, clusterAuthMode *api.ClusterAuthMode, sslMode *api.SSLMode) GomegaAsyncAssertion {
 	return Eventually(
 		func() (bool, error) {
 			mongodb, err := f.GetMongoDB(meta)

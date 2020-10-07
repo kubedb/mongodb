@@ -30,7 +30,7 @@ func (f *Framework) EventuallyCRD() GomegaAsyncAssertion {
 	return Eventually(
 		func() error {
 			// Check MongoDB TPR
-			if _, err := f.dbClient.KubedbV1alpha1().MongoDBs(core.NamespaceAll).List(context.TODO(), metav1.ListOptions{}); err != nil {
+			if _, err := f.dbClient.KubedbV1alpha2().MongoDBs(core.NamespaceAll).List(context.TODO(), metav1.ListOptions{}); err != nil {
 				return errors.New("CRD MongoDB is not ready")
 			}
 

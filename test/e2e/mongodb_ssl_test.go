@@ -17,7 +17,7 @@ limitations under the License.
 package e2e_test
 
 import (
-	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha2"
 	"kubedb.dev/mongodb/test/e2e/framework"
 
 	"github.com/appscode/go/types"
