@@ -132,13 +132,6 @@ func (p Postgres) StatsServiceLabels() map[string]string {
 	return lbl
 }
 
-func (p *Postgres) GetMonitoringVendor() string {
-	if p.Spec.Monitor != nil {
-		return p.Spec.Monitor.Agent.Vendor()
-	}
-	return ""
-}
-
 func (p Postgres) ReplicasServiceName() string {
 	return fmt.Sprintf("%v-replicas", p.Name)
 }
@@ -193,7 +186,7 @@ func (e *PostgresSpec) GetSecrets() []string {
 	return secrets
 }
 
-func (p *Postgres) IsReplicasReady(stsLister appslister.StatefulSetLister) (bool, string, error) {
+func (p *Postgres) ReplicasAreReady(stsLister appslister.StatefulSetLister) (bool, string, error) {
 	// TODO: Implement database specific logic here
 	// return isReplicasReady, message, error
 	return false, "", nil

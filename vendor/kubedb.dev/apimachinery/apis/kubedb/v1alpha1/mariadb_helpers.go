@@ -136,13 +136,6 @@ func (m MariaDB) StatsServiceLabels() map[string]string {
 	return lbl
 }
 
-func (m *MariaDB) GetMonitoringVendor() string {
-	if m.Spec.Monitor != nil {
-		return m.Spec.Monitor.Agent.Vendor()
-	}
-	return ""
-}
-
 func (m *MariaDB) SetDefaults() {
 	if m == nil {
 		return
@@ -175,7 +168,7 @@ func (m *MariaDBSpec) GetSecrets() []string {
 	return secrets
 }
 
-func (m *MariaDB) IsReplicasReady(stsLister appslister.StatefulSetLister) (bool, string, error) {
+func (m *MariaDB) ReplicasAreReady(stsLister appslister.StatefulSetLister) (bool, string, error) {
 	// TODO: Implement database specific logic here
 	// return isReplicasReady, message, error
 	return false, "", nil

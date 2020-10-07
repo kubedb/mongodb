@@ -133,13 +133,6 @@ func (p ProxySQL) StatsServiceLabels() map[string]string {
 	return lbl
 }
 
-func (p *ProxySQL) GetMonitoringVendor() string {
-	if p.Spec.Monitor != nil {
-		return p.Spec.Monitor.Agent.Vendor()
-	}
-	return ""
-}
-
 func (p *ProxySQL) SetDefaults() {
 	if p == nil {
 		return
@@ -168,7 +161,7 @@ func (p *ProxySQLSpec) GetSecrets() []string {
 	return secrets
 }
 
-func (p *ProxySQL) IsReplicasReady(stsLister appslister.StatefulSetLister) (bool, string, error) {
+func (p *ProxySQL) ReplicasAreReady(stsLister appslister.StatefulSetLister) (bool, string, error) {
 	// TODO: Implement database specific logic here
 	// return isReplicasReady, message, error
 	return false, "", nil

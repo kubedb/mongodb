@@ -866,7 +866,7 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB, opts workloadOption
 				opts.initContainers,
 			)
 
-			if mongodb.GetMonitoringVendor() == mona.VendorPrometheus {
+			if mongodb.Spec.Monitor != nil && mongodb.Spec.Monitor.Agent.Vendor() == mona.VendorPrometheus {
 				in.Spec.Template.Spec.Containers = core_util.UpsertContainer(
 					in.Spec.Template.Spec.Containers,
 					getExporterContainer(mongodb, mongodbVersion),
@@ -1214,7 +1214,7 @@ func getExporterContainer(mongodb *api.MongoDB, mongodbVersion *v1alpha1.MongoDB
 		"--mongodb.uri=mongodb://$(MONGO_INITDB_ROOT_USERNAME):$(MONGO_INITDB_ROOT_PASSWORD)@localhost:27017/admin",
 		fmt.Sprintf("--web.listen-address=:%d", mongodb.Spec.Monitor.Prometheus.Exporter.Port),
 		metricsPath,
-	}, mongodb.Spec.Monitor.Args...)
+	}, mongodb.Spec.Monitor.Prometheus.Exporter.Args...)
 
 	if mongodb.Spec.SSLMode != api.SSLModeDisabled && mongodb.Spec.TLS != nil {
 		clientPEM := fmt.Sprintf("%s/%s", api.MongoCertDirectory, api.MongoClientFileName)
@@ -1232,7 +1232,7 @@ func getExporterContainer(mongodb *api.MongoDB, mongodbVersion *v1alpha1.MongoDB
 		Image: mongodbVersion.Spec.Exporter.Image,
 		Ports: []core.ContainerPort{
 			{
-				Name:          api.PrometheusExporterPortName,
+				Name:          mona.PrometheusExporterPortName,
 				Protocol:      core.ProtocolTCP,
 				ContainerPort: mongodb.Spec.Monitor.Prometheus.Exporter.Port,
 			},

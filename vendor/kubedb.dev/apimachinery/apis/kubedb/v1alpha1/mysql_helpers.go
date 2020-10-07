@@ -150,13 +150,6 @@ func (m MySQL) StatsServiceLabels() map[string]string {
 	return lbl
 }
 
-func (m *MySQL) GetMonitoringVendor() string {
-	if m.Spec.Monitor != nil {
-		return m.Spec.Monitor.Agent.Vendor()
-	}
-	return ""
-}
-
 func (m *MySQL) UsesGroupReplication() bool {
 	return m.Spec.Topology != nil && m.Spec.Topology.Mode != nil && *m.Spec.Topology.Mode == MySQLClusterModeGroup
 }
@@ -189,10 +182,10 @@ func (m *MySQL) SetDefaults() {
 
 	m.Spec.Monitor.SetDefaults()
 
-	m.setDefaultTLSConfig()
+	m.SetTLSDefaults()
 }
 
-func (m *MySQL) setDefaultTLSConfig() {
+func (m *MySQL) SetTLSDefaults() {
 	if m.Spec.TLS == nil || m.Spec.TLS.IssuerRef == nil {
 		return
 	}
@@ -262,7 +255,7 @@ func (m *MySQL) MustCertSecretName(alias MySQLCertificateAlias) string {
 	return name
 }
 
-func (m *MySQL) IsReplicasReady(stsLister appslister.StatefulSetLister) (bool, string, error) {
+func (m *MySQL) ReplicasAreReady(stsLister appslister.StatefulSetLister) (bool, string, error) {
 	// TODO: Implement database specific logic here
 	// return isReplicasReady, message, error
 	return false, "", nil

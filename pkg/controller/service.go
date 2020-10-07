@@ -135,8 +135,8 @@ func (c *Controller) createService(mongodb *api.MongoDB) (kutil.VerbType, error)
 
 func (c *Controller) ensureStatsService(mongodb *api.MongoDB) (kutil.VerbType, error) {
 	// return if monitoring is not prometheus
-	if mongodb.GetMonitoringVendor() != mona.VendorPrometheus {
-		log.Infoln("spec.monitor.agent is not coreos-operator or builtin.")
+	if mongodb.Spec.Monitor == nil || mongodb.Spec.Monitor.Agent.Vendor() != mona.VendorPrometheus {
+		log.Infoln("spec.monitor.agent is not provided by prometheus.io")
 		return kutil.VerbUnchanged, nil
 	}
 
@@ -162,10 +162,10 @@ func (c *Controller) ensureStatsService(mongodb *api.MongoDB) (kutil.VerbType, e
 			in.Spec.Selector = mongodb.OffshootSelectors()
 			in.Spec.Ports = core_util.MergeServicePorts(in.Spec.Ports, []core.ServicePort{
 				{
-					Name:       api.PrometheusExporterPortName,
+					Name:       mona.PrometheusExporterPortName,
 					Protocol:   core.ProtocolTCP,
 					Port:       mongodb.Spec.Monitor.Prometheus.Exporter.Port,
-					TargetPort: intstr.FromString(api.PrometheusExporterPortName),
+					TargetPort: intstr.FromString(mona.PrometheusExporterPortName),
 				},
 			})
 			return in

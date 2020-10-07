@@ -153,13 +153,6 @@ func (p PerconaXtraDB) StatsServiceLabels() map[string]string {
 	return lbl
 }
 
-func (p *PerconaXtraDB) GetMonitoringVendor() string {
-	if p.Spec.Monitor != nil {
-		return p.Spec.Monitor.Agent.Vendor()
-	}
-	return ""
-}
-
 func (p *PerconaXtraDB) SetDefaults() {
 	if p == nil {
 		return
@@ -234,7 +227,7 @@ func (p *PerconaXtraDBSpec) GetSecrets() []string {
 	return secrets
 }
 
-func (p *PerconaXtraDB) IsReplicasReady(stsLister appslister.StatefulSetLister) (bool, string, error) {
+func (p *PerconaXtraDB) ReplicasAreReady(stsLister appslister.StatefulSetLister) (bool, string, error) {
 	// TODO: Implement database specific logic here
 	// return isReplicasReady, message, error
 	return false, "", nil

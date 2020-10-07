@@ -131,13 +131,6 @@ func (m Memcached) StatsServiceLabels() map[string]string {
 	return lbl
 }
 
-func (m *Memcached) GetMonitoringVendor() string {
-	if m.Spec.Monitor != nil {
-		return m.Spec.Monitor.Agent.Vendor()
-	}
-	return ""
-}
-
 func (m *Memcached) SetDefaults() {
 	if m == nil {
 		return
@@ -159,7 +152,7 @@ func (m *MemcachedSpec) GetSecrets() []string {
 	return nil
 }
 
-func (m *Memcached) IsReplicasReady(stsLister appslister.StatefulSetLister) (bool, string, error) {
+func (m *Memcached) ReplicasAreReady(stsLister appslister.StatefulSetLister) (bool, string, error) {
 	// TODO: Implement database specific logic here
 	// return isReplicasReady, message, error
 	return false, "", nil

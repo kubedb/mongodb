@@ -136,13 +136,6 @@ func (e Etcd) StatsServiceLabels() map[string]string {
 	return lbl
 }
 
-func (e *Etcd) GetMonitoringVendor() string {
-	if e.Spec.Monitor != nil {
-		return e.Spec.Monitor.Agent.Vendor()
-	}
-	return ""
-}
-
 func (e *Etcd) SetDefaults() {
 	if e == nil {
 		return
@@ -166,7 +159,7 @@ func (e *EtcdSpec) GetSecrets() []string {
 	return nil
 }
 
-func (e *Etcd) IsReplicasReady(stsLister appslister.StatefulSetLister) (bool, string, error) {
+func (e *Etcd) ReplicasAreReady(stsLister appslister.StatefulSetLister) (bool, string, error) {
 	// TODO: Implement database specific logic here
 	// return isReplicasReady, message, error
 	return false, "", nil
