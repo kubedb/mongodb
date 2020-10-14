@@ -873,6 +873,25 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB, opts workloadOption
 				)
 			}
 
+			if mongodb.Spec.TLS == nil {
+				idx := getVolumeIndex(in.Spec.Template.Spec.Volumes, ClientCertDirectoryName)
+				if idx != -1 {
+					in.Spec.Template.Spec.Volumes = append(in.Spec.Template.Spec.Volumes[:idx], in.Spec.Template.Spec.Volumes[idx+1:]...)
+				}
+
+				idx = getVolumeIndex(in.Spec.Template.Spec.Volumes, ServerCertDirectoryName)
+				if idx != -1 {
+					in.Spec.Template.Spec.Volumes = append(in.Spec.Template.Spec.Volumes[:idx], in.Spec.Template.Spec.Volumes[idx+1:]...)
+				}
+			}
+
+			if mongodb.Spec.KeyFile == nil {
+				idx := getVolumeIndex(in.Spec.Template.Spec.Volumes, initialKeyDirectoryName)
+				if idx != -1 {
+					in.Spec.Template.Spec.Volumes = append(in.Spec.Template.Spec.Volumes[:idx], in.Spec.Template.Spec.Volumes[idx+1:]...)
+				}
+			}
+
 			in.Spec.Template.Spec.Volumes = core_util.UpsertVolume(in.Spec.Template.Spec.Volumes, opts.volumes...)
 
 			in.Spec.Template = upsertEnv(in.Spec.Template, mongodb)
@@ -950,13 +969,11 @@ func installInitContainer(
 		pt = *podTemplate
 	}
 
-	envList := make([]core.EnvVar, 0)
-
-	if mongodb.Spec.SSLMode == api.SSLModeDisabled || mongodb.Spec.TLS == nil {
-		envList = append(envList, core.EnvVar{
+	envList := []core.EnvVar{
+		{
 			Name:  "SSL_MODE",
-			Value: string(api.SSLModeDisabled),
-		})
+			Value: string(mongodb.Spec.SSLMode),
+		},
 	}
 
 	installContainer = core.Container{
@@ -1270,4 +1287,14 @@ func parseAffinityTemplate(podTemplate *ofst.PodTemplateSpec, nodeNum int32) (*o
 
 	err = json.Unmarshal([]byte(resolved), podTemplate)
 	return podTemplate, err
+}
+
+func getVolumeIndex(volumes []core.Volume, name string) int {
+	for i, vol := range volumes {
+		if vol.Name == name {
+			return i
+		}
+	}
+
+	return -1
 }

@@ -623,7 +623,7 @@ func (m *MongoDB) CertificateName(alias MongoDBCertificateAlias, stsName string)
 		if stsName == "" {
 			panic(fmt.Sprintf("StatefulSet name required to compute %s certificate name for MongoDB %s/%s", alias, m.Namespace, m.Name))
 		}
-		return meta_util.NameWithSuffix(m.Name, fmt.Sprintf("%s-cert", stsName))
+		return meta_util.NameWithSuffix(stsName, fmt.Sprintf("%s-cert", string(alias)))
 	}
 	return meta_util.NameWithSuffix(m.Name, fmt.Sprintf("%s-cert", string(alias)))
 }

@@ -23,6 +23,7 @@ require (
 	go.mongodb.org/mongo-driver v1.3.2
 	gomodules.xyz/cert v1.0.3
 	gomodules.xyz/envsubst v0.1.0
+	gomodules.xyz/password-generator v0.2.5 // indirect
 	gomodules.xyz/version v0.1.0
 	k8s.io/api v0.18.9
 	k8s.io/apiextensions-apiserver v0.18.9
