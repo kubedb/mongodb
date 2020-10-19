@@ -4,24 +4,13 @@ go 1.12
 
 require (
 	github.com/appscode/go v0.0.0-20201006035845-a0302ac8e3d3
-	github.com/aws/aws-sdk-go v1.31.9
-	github.com/codeskyblue/go-sh v0.0.0-20200712050446-30169cf553fe
 	github.com/fatih/structs v1.1.0
-	github.com/jetstack/cert-manager v0.16.0
-	github.com/onsi/ginkgo v1.11.0
-	github.com/onsi/gomega v1.8.1
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus-operator/prometheus-operator v0.42.0
-	github.com/prometheus/client_model v0.2.0
-	github.com/prometheus/prom2json v1.3.0
-	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
-	github.com/xdg/stringprep v1.0.0 // indirect
 	go.bytebuilders.dev/license-verifier v0.3.0
 	go.bytebuilders.dev/license-verifier/kubernetes v0.3.0
-	go.mongodb.org/mongo-driver v1.3.2
-	gomodules.xyz/cert v1.0.3
 	gomodules.xyz/envsubst v0.1.0
 	gomodules.xyz/password-generator v0.2.5
 	gomodules.xyz/sets v0.0.0-20200817084356-ae6e5e14ce3d
@@ -31,15 +20,12 @@ require (
 	k8s.io/apimachinery v0.18.9
 	k8s.io/apiserver v0.18.9
 	k8s.io/client-go v0.18.9
-	k8s.io/kube-aggregator v0.18.9
 	kmodules.xyz/client-go v0.0.0-20201013083546-b17c1e15f1a3
-	kmodules.xyz/constants v0.0.0-20200506032633-a21e58ceec72
 	kmodules.xyz/custom-resources v0.0.0-20201008012351-6d8090f759d4
 	kmodules.xyz/monitoring-agent-api v0.0.0-20201007104803-408a1ff2de8d
-	kmodules.xyz/objectstore-api v0.0.0-20200922210707-59bab27e5d41
 	kmodules.xyz/offshoot-api v0.0.0-20200922211229-36acc531abab
 	kmodules.xyz/webhook-runtime v0.0.0-20200922211931-8337935590de
-	kubedb.dev/apimachinery v0.14.0-beta.3.0.20201014072700-2eabe4c2a6b7
+	kubedb.dev/apimachinery v0.14.0-beta.3.0.20201019120142-0d4040b4ef21
 	stash.appscode.dev/apimachinery v0.11.2
 )
 

@@ -173,7 +173,7 @@ var cases = []struct {
 		false,
 		false,
 	},
-	{"Edit MongoDB Spec.DatabaseSecret with Existing Secret",
+	{"Edit MongoDB Spec.AuthSecret with Existing Secret",
 		requestKind,
 		"foo",
 		"default",
@@ -183,7 +183,7 @@ var cases = []struct {
 		false,
 		true,
 	},
-	{"Edit MongoDB Spec.DatabaseSecret with non Existing Secret",
+	{"Edit MongoDB Spec.AuthSecret with non Existing Secret",
 		requestKind,
 		"foo",
 		"default",
@@ -193,7 +193,7 @@ var cases = []struct {
 		false,
 		true,
 	},
-	{"Edit MongoDB Spec.DatabaseSecret",
+	{"Edit MongoDB Spec.AuthSecret",
 		requestKind,
 		"foo",
 		"default",
@@ -394,15 +394,15 @@ func getAwkwardMongoDB() api.MongoDB {
 }
 
 func editExistingSecret(old api.MongoDB) api.MongoDB {
-	old.Spec.DatabaseSecret = &core.SecretVolumeSource{
-		SecretName: "foo-auth",
+	old.Spec.AuthSecret = &core.LocalObjectReference{
+		Name: "foo-auth",
 	}
 	return old
 }
 
 func editNonExistingSecret(old api.MongoDB) api.MongoDB {
-	old.Spec.DatabaseSecret = &core.SecretVolumeSource{
-		SecretName: "foo-auth-fused",
+	old.Spec.AuthSecret = &core.LocalObjectReference{
+		Name: "foo-auth-fused",
 	}
 	return old
 }
