@@ -5,12 +5,14 @@ go 1.12
 require (
 	github.com/appscode/go v0.0.0-20201006035845-a0302ac8e3d3
 	github.com/fatih/structs v1.1.0
+	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus-operator/prometheus-operator v0.42.0
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	go.bytebuilders.dev/license-verifier v0.3.0
 	go.bytebuilders.dev/license-verifier/kubernetes v0.3.0
+	go.mongodb.org/mongo-driver v1.3.2
 	gomodules.xyz/envsubst v0.1.0
 	gomodules.xyz/password-generator v0.2.5
 	gomodules.xyz/sets v0.0.0-20200817084356-ae6e5e14ce3d
