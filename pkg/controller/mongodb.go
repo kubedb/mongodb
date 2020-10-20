@@ -114,8 +114,12 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 
 	// ensure database StatefulSet
 	vt2, err := c.ensureMongoDBNode(mongodb)
-	if err != nil {
+	if err != nil && err != ErrStsNotReady {
 		return err
+	}
+
+	if err == ErrStsNotReady {
+		return nil
 	}
 
 	if vt1 == kutil.VerbCreated && vt2 == kutil.VerbCreated {

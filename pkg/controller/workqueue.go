@@ -20,8 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	v1 "kmodules.xyz/client-go/apps/v1"
-
 	"kubedb.dev/apimachinery/apis/kubedb"
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha2"
 	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha2/util"
@@ -33,6 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 	kmapi "kmodules.xyz/client-go/api/v1"
+	v1 "kmodules.xyz/client-go/apps/v1"
 	core_util "kmodules.xyz/client-go/core/v1"
 	"kmodules.xyz/client-go/tools/queue"
 )

@@ -57,7 +57,7 @@ func (c *Controller) CheckMongoDBHealth(stopCh <-chan struct{}) {
 			shardClient := make([]*mongo.Client, 0)
 			// Create database client
 			if db.Spec.ShardTopology == nil {
-				dbClient, err = c.GetMongoClient(db, db.Host())
+				dbClient, err = c.GetMongoClient(db, strings.Join(db.Hosts(), ","))
 				if err != nil {
 					// Since the client was unable to connect the database,
 					// update "AcceptingConnection" to "false".
@@ -67,7 +67,7 @@ func (c *Controller) CheckMongoDBHealth(stopCh <-chan struct{}) {
 					continue
 				}
 			} else {
-				configSvrClient, err = c.GetMongoClient(db, db.ConfigSvrHost())
+				configSvrClient, err = c.GetMongoClient(db, strings.Join(db.ConfigSvrHosts(), ","))
 				if err != nil {
 					// Since the client was unable to connect to the config server,
 					// update "AcceptingConnection" to "false".
@@ -80,7 +80,7 @@ func (c *Controller) CheckMongoDBHealth(stopCh <-chan struct{}) {
 				cont := false
 				shardClient = make([]*mongo.Client, db.Spec.ShardTopology.Shard.Shards)
 				for i := int32(0); i < db.Spec.ShardTopology.Shard.Shards; i++ {
-					shardClient[i], err = c.GetMongoClient(db, db.ShardHost(i))
+					shardClient[i], err = c.GetMongoClient(db, strings.Join(db.ShardHosts(i), ","))
 					if err != nil {
 						// Since the client was unable to connect to the shard nodes,
 						// update "AcceptingConnection" to "false".
@@ -96,7 +96,7 @@ func (c *Controller) CheckMongoDBHealth(stopCh <-chan struct{}) {
 					continue
 				}
 
-				mongosClient, err = c.GetMongoClient(db, db.MongosHost())
+				mongosClient, err = c.GetMongoClient(db, strings.Join(db.MongosHosts(), ","))
 				if err != nil {
 					// Since the client was unable to connect to the mongos,
 					// update "AcceptingConnection" to "false".
@@ -233,10 +233,10 @@ func (c *Controller) GetMongoDBClientOpts(db *api.MongoDB, url string, isReplSet
 }
 
 func (c *Controller) GetMongoDBRootCredentials(db *api.MongoDB) (string, string, error) {
-	if db.Spec.DatabaseSecret == nil {
+	if db.Spec.AuthSecret == nil {
 		return "", "", errors.New("no database secret")
 	}
-	secret, err := c.Client.CoreV1().Secrets(db.Namespace).Get(context.TODO(), db.Spec.DatabaseSecret.SecretName, metav1.GetOptions{})
+	secret, err := c.Client.CoreV1().Secrets(db.Namespace).Get(context.TODO(), db.Spec.AuthSecret.Name, metav1.GetOptions{})
 	if err != nil {
 		return "", "", err
 	}
