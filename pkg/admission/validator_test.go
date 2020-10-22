@@ -298,7 +298,7 @@ var cases = []struct {
 		"default",
 		admission.Update,
 		updateInit(completeInitialization(sampleMongoDB())),
-		sampleMongoDB(),
+		completeInitialization(sampleMongoDB()),
 		true,
 		false,
 	},
