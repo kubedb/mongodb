@@ -38,7 +38,6 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	clientSetScheme "k8s.io/client-go/kubernetes/scheme"
-	kmapi "kmodules.xyz/client-go/api/v1"
 	core_util "kmodules.xyz/client-go/core/v1"
 	"kmodules.xyz/client-go/meta"
 	mona "kmodules.xyz/monitoring-agent-api/api/v1"
@@ -298,7 +297,7 @@ var cases = []struct {
 		"foo",
 		"default",
 		admission.Update,
-		updateInit(completeProvisioning(sampleMongoDB())),
+		updateInit(completeInitialization(sampleMongoDB())),
 		sampleMongoDB(),
 		true,
 		false,
@@ -444,13 +443,8 @@ func editShardPrefix(old api.MongoDB) api.MongoDB {
 	return old
 }
 
-func completeProvisioning(old api.MongoDB) api.MongoDB {
-	old.Status.Conditions = []kmapi.Condition{
-		{
-			Type:   api.DatabaseProvisioned,
-			Status: core.ConditionTrue,
-		},
-	}
+func completeInitialization(old api.MongoDB) api.MongoDB {
+	old.Spec.Init.Initialized = true
 	return old
 }
 
