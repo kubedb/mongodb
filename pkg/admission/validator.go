@@ -292,7 +292,7 @@ func ValidateMongoDB(client kubernetes.Interface, extClient cs.Interface, mongod
 }
 
 func validateUpdate(obj, oldObj *api.MongoDB) error {
-	preconditions := getPreconditionFunc(obj)
+	preconditions := getPreconditionFunc(oldObj)
 	_, err := meta_util.CreateStrategicPatch(oldObj, obj, preconditions...)
 	if err != nil {
 		if mergepatch.IsPreconditionFailed(err) {
