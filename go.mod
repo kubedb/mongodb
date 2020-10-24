@@ -14,7 +14,7 @@ require (
 	go.bytebuilders.dev/license-verifier/kubernetes v0.3.0
 	go.mongodb.org/mongo-driver v1.3.2
 	gomodules.xyz/envsubst v0.1.0
-	gomodules.xyz/password-generator v0.2.5
+	gomodules.xyz/password-generator v0.2.6
 	gomodules.xyz/sets v0.0.0-20200817084356-ae6e5e14ce3d
 	gomodules.xyz/version v0.1.0
 	k8s.io/api v0.18.9
