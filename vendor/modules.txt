@@ -1087,6 +1087,7 @@ kmodules.xyz/client-go/meta
 kmodules.xyz/client-go/policy/v1beta1
 kmodules.xyz/client-go/rbac/v1
 kmodules.xyz/client-go/tools/analytics
+kmodules.xyz/client-go/tools/certholder
 kmodules.xyz/client-go/tools/cli
 kmodules.xyz/client-go/tools/clientcmd
 kmodules.xyz/client-go/tools/clusterid
