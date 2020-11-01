@@ -24,7 +24,7 @@ import (
 	"strings"
 
 	"kubedb.dev/apimachinery/apis/catalog/v1alpha1"
-	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha2"
 	"kubedb.dev/apimachinery/pkg/eventer"
 
 	"github.com/appscode/go/log"
@@ -65,15 +65,13 @@ const (
 	ServerCertDirectoryName = "server-cert"
 	ServerCertDirectoryPath = "/server-cert"
 
-	initialConfigDirectoryName = "configdir"
 	initialConfigDirectoryPath = "/configdb-readonly"
 
 	initialKeyDirectoryName = "keydir"
 	initialKeyDirectoryPath = "/keydir-readonly"
-
-	InitInstallContainerName   = "copy-config"
-	InitBootstrapContainerName = "bootstrap"
 )
+
+var ErrStsNotReady = fmt.Errorf("statefulSet is not updated yet")
 
 type workloadOptions struct {
 	// App level options
@@ -86,7 +84,7 @@ type workloadOptions struct {
 	args         []string      // args of `mongodb` container
 	envList      []core.EnvVar // envList of `mongodb` container
 	volumeMount  []core.VolumeMount
-	configSource *core.VolumeSource
+	configSecret *core.LocalObjectReference
 
 	// pod Template level options
 	replicas       *int32
@@ -98,22 +96,22 @@ type workloadOptions struct {
 	isMongos       bool
 }
 
-func (c *Controller) ensureMongoDBNode(mongodb *api.MongoDB) (kutil.VerbType, error) {
+func (c *Controller) ensureMongoDBNode(db *api.MongoDB) (kutil.VerbType, error) {
 	// Standalone, replicaset, shard
-	if mongodb.Spec.ShardTopology != nil {
-		return c.ensureTopologyCluster(mongodb)
+	if db.Spec.ShardTopology != nil {
+		return c.ensureTopologyCluster(db)
 	}
 
-	return c.ensureNonTopology(mongodb)
+	return c.ensureNonTopology(db)
 }
 
-func (c *Controller) ensureTopologyCluster(mongodb *api.MongoDB) (kutil.VerbType, error) {
-	st, vt1, err := c.ensureConfigNode(mongodb)
+func (c *Controller) ensureTopologyCluster(db *api.MongoDB) (kutil.VerbType, error) {
+	st, vt1, err := c.ensureConfigNode(db)
 	if err != nil {
 		return vt1, err
 	}
 
-	sts, vt2, err := c.ensureShardNode(mongodb)
+	sts, vt2, err := c.ensureShardNode(db)
 	if err != nil {
 		return vt2, err
 	}
@@ -122,34 +120,34 @@ func (c *Controller) ensureTopologyCluster(mongodb *api.MongoDB) (kutil.VerbType
 	sts = append(sts, st)
 	if vt1 != kutil.VerbUnchanged || vt2 != kutil.VerbUnchanged {
 		for _, st := range sts {
-			if err := c.checkStatefulSetPodStatus(st); err != nil {
-				return kutil.VerbUnchanged, err
+			if !app_util.IsStatefulSetReady(st) {
+				return "", ErrStsNotReady
 			}
-			c.recorder.Eventf(
-				mongodb,
+			c.Recorder.Eventf(
+				db,
 				core.EventTypeNormal,
 				eventer.EventReasonSuccessful,
 				"Successfully %v StatefulSet %v/%v",
-				vt2, mongodb.Namespace, st.Name,
+				vt2, db.Namespace, st.Name,
 			)
 		}
 	}
 
-	mongosSts, vt3, err := c.ensureMongosNode(mongodb)
+	mongosSts, vt3, err := c.ensureMongosNode(db)
 	if err != nil {
 		return vt3, err
 	}
 
 	if vt3 != kutil.VerbUnchanged {
-		if err := c.checkStatefulSetPodStatus(mongosSts); err != nil {
-			return kutil.VerbUnchanged, err
+		if !app_util.IsStatefulSetReady(mongosSts) {
+			return "", ErrStsNotReady
 		}
-		c.recorder.Eventf(
-			mongodb,
+		c.Recorder.Eventf(
+			db,
 			core.EventTypeNormal,
 			eventer.EventReasonSuccessful,
 			"Successfully %v StatefulSet %v/%v",
-			vt3, mongodb.Namespace, mongosSts.Name,
+			vt3, db.Namespace, mongosSts.Name,
 		)
 	}
 
@@ -162,20 +160,20 @@ func (c *Controller) ensureTopologyCluster(mongodb *api.MongoDB) (kutil.VerbType
 	return kutil.VerbUnchanged, nil
 }
 
-func (c *Controller) ensureShardNode(mongodb *api.MongoDB) ([]*apps.StatefulSet, kutil.VerbType, error) {
+func (c *Controller) ensureShardNode(db *api.MongoDB) ([]*apps.StatefulSet, kutil.VerbType, error) {
 	shardSts := func(nodeNum int32) (*apps.StatefulSet, kutil.VerbType, error) {
-		mongodbVersion, err := c.ExtClient.CatalogV1alpha1().MongoDBVersions().Get(context.TODO(), string(mongodb.Spec.Version), metav1.GetOptions{})
+		mongodbVersion, err := c.DBClient.CatalogV1alpha1().MongoDBVersions().Get(context.TODO(), string(db.Spec.Version), metav1.GetOptions{})
 		if err != nil {
 			return nil, kutil.VerbUnchanged, err
 		}
 
 		// mongodb.Spec.SSLMode & mongodb.Spec.ClusterAuthMode can be empty if upgraded operator from
 		// previous version. But, eventually it will be defaulted. TODO: delete in future.
-		sslMode := mongodb.Spec.SSLMode
+		sslMode := db.Spec.SSLMode
 		if sslMode == "" {
 			sslMode = api.SSLModeDisabled
 		}
-		clusterAuth := mongodb.Spec.ClusterAuthMode
+		clusterAuth := db.Spec.ClusterAuthMode
 		if clusterAuth == "" {
 			clusterAuth = api.ClusterAuthModeKeyFile
 			if sslMode != api.SSLModeDisabled {
@@ -187,155 +185,176 @@ func (c *Controller) ensureShardNode(mongodb *api.MongoDB) ([]*apps.StatefulSet,
 			"--dbpath=" + dataDirectoryPath,
 			"--auth",
 			"--bind_ip=0.0.0.0",
-			"--port=" + strconv.Itoa(MongoDBPort),
+			"--port=" + strconv.Itoa(api.MongoDBDatabasePort),
 			"--shardsvr",
-			"--replSet=" + mongodb.ShardRepSetName(nodeNum),
+			"--replSet=" + db.ShardRepSetName(nodeNum),
 			"--clusterAuthMode=" + string(clusterAuth),
 			"--keyFile=" + configDirectoryPath + "/" + KeyForKeyFile,
 		}
 
-		sslArgs, err := c.getTLSArgs(mongodb, mongodbVersion)
+		sslArgs, err := c.getTLSArgs(db, mongodbVersion)
 		if err != nil {
 			return &apps.StatefulSet{}, "", err
 		}
 		args = append(args, sslArgs...)
 
 		initContnr, initvolumes := installInitContainer(
-			mongodb,
+			db,
 			mongodbVersion,
-			&mongodb.Spec.ShardTopology.Shard.PodTemplate,
-			mongodb.ShardNodeName(nodeNum),
+			&db.Spec.ShardTopology.Shard.PodTemplate,
+			db.ShardNodeName(nodeNum),
 		)
 
-		var initContainers []core.Container
-		var volumes []core.Volume
-		var volumeMounts []core.VolumeMount
-		var opts workloadOptions
-		var envs []core.EnvVar
 		cmds := []string{"mongod"}
 
-		initContainers = append(initContainers, initContnr)
-		volumes = core_util.UpsertVolume(volumes, initvolumes...)
-
-		if mongodb.Spec.StorageEngine == api.StorageEngineInMemory {
-			podTemplate := &mongodb.Spec.ShardTopology.Shard.PodTemplate
-
-			args = append(args, []string{
-				"--storageEngine=inMemory",
-			}...)
-
-			envs = core_util.UpsertEnvVars([]core.EnvVar{
-				{
-					Name: "POD_NAMESPACE",
-					ValueFrom: &core.EnvVarSource{
-						FieldRef: &core.ObjectFieldSelector{
-							APIVersion: "v1",
-							FieldPath:  "metadata.namespace",
-						},
+		podTemplate := &db.Spec.ShardTopology.Shard.PodTemplate
+		envs := core_util.UpsertEnvVars([]core.EnvVar{
+			{
+				Name: "POD_NAMESPACE",
+				ValueFrom: &core.EnvVarSource{
+					FieldRef: &core.ObjectFieldSelector{
+						APIVersion: "v1",
+						FieldPath:  "metadata.namespace",
 					},
 				},
-				{
-					Name:  "REPLICA_SET",
-					Value: mongodb.ShardRepSetName(nodeNum),
-				},
-				{
-					Name:  "AUTH",
-					Value: "true",
-				},
-				{
-					Name:  "SSL_MODE",
-					Value: string(sslMode),
-				},
-				{
-					Name:  "CLUSTER_AUTH_MODE",
-					Value: string(clusterAuth),
-				},
-				{
-					Name: "MONGO_INITDB_ROOT_USERNAME",
-					ValueFrom: &core.EnvVarSource{
-						SecretKeyRef: &core.SecretKeySelector{
-							LocalObjectReference: core.LocalObjectReference{
-								Name: mongodb.Spec.DatabaseSecret.SecretName,
-							},
-							Key: core.BasicAuthUsernameKey,
+			},
+			{
+				Name:  "REPLICA_SET",
+				Value: db.ShardRepSetName(nodeNum),
+			},
+			{
+				Name:  "AUTH",
+				Value: "true",
+			},
+			{
+				Name:  "SSL_MODE",
+				Value: string(sslMode),
+			},
+			{
+				Name:  "CLUSTER_AUTH_MODE",
+				Value: string(clusterAuth),
+			},
+			{
+				Name: "MONGO_INITDB_ROOT_USERNAME",
+				ValueFrom: &core.EnvVarSource{
+					SecretKeyRef: &core.SecretKeySelector{
+						LocalObjectReference: core.LocalObjectReference{
+							Name: db.Spec.AuthSecret.Name,
 						},
+						Key: core.BasicAuthUsernameKey,
 					},
 				},
-				{
-					Name: "MONGO_INITDB_ROOT_PASSWORD",
-					ValueFrom: &core.EnvVarSource{
-						SecretKeyRef: &core.SecretKeySelector{
-							LocalObjectReference: core.LocalObjectReference{
-								Name: mongodb.Spec.DatabaseSecret.SecretName,
-							},
-							Key: core.BasicAuthPasswordKey,
+			},
+			{
+				Name: "MONGO_INITDB_ROOT_PASSWORD",
+				ValueFrom: &core.EnvVarSource{
+					SecretKeyRef: &core.SecretKeySelector{
+						LocalObjectReference: core.LocalObjectReference{
+							Name: db.Spec.AuthSecret.Name,
 						},
+						Key: core.BasicAuthPasswordKey,
 					},
 				},
-			}, podTemplate.Spec.Env...)
+			},
+		}, podTemplate.Spec.Env...)
+		volumes := initvolumes
 
-			peerFinderLocation := fmt.Sprintf("%v/peer-finder", InitScriptDirectoryPath)
-			inMemoryShardScriptName := fmt.Sprintf("%v/sharding-inmemory.sh", InitScriptDirectoryPath)
-			podTemplate.Spec.Lifecycle = &core.Lifecycle{
-				PostStart: &core.Handler{
-					Exec: &core.ExecAction{
-						Command: []string{
-							"/bin/bash",
-							"-c",
-							peerFinderLocation + " -on-start=" + inMemoryShardScriptName + " -service=" + mongodb.GvrSvcName(mongodb.ShardNodeName(nodeNum)),
-						},
+		peerFinderLocation := fmt.Sprintf("%v/peer-finder", InitScriptDirectoryPath)
+		shardScriptName := fmt.Sprintf("%v/sharding.sh", InitScriptDirectoryPath)
+		podTemplate.Spec.Lifecycle = &core.Lifecycle{
+			PostStart: &core.Handler{
+				Exec: &core.ExecAction{
+					Command: []string{
+						"/bin/bash",
+						"-c",
+						peerFinderLocation + " -on-start=" + shardScriptName + " -service=" + db.GoverningServiceName(db.ShardNodeName(nodeNum)),
 					},
 				},
-			}
+			},
+		}
+
+		volumeMounts := []core.VolumeMount{
+			{
+				Name:      workDirectoryName,
+				MountPath: workDirectoryPath,
+			},
+			{
+				Name:      configDirectoryName,
+				MountPath: configDirectoryPath,
+			},
+			{
+				Name:      dataDirectoryName,
+				MountPath: dataDirectoryPath,
+			},
+			{
+				Name:      InitScriptDirectoryName,
+				MountPath: InitScriptDirectoryPath,
+			},
+		}
+
+		if db.Spec.KeyFileSecret != nil {
+			volumes = core_util.UpsertVolume(volumes, core.Volume{
+				Name: initialKeyDirectoryName, // FIXIT: mounted where?
+				VolumeSource: core.VolumeSource{
+					Secret: &core.SecretVolumeSource{
+						DefaultMode: types.Int32P(0400),
+						SecretName:  db.Spec.KeyFileSecret.Name,
+					},
+				},
+			})
+		}
+
+		//only on mongos in case of sharding (which is handled on 'ensureMongosNode'.
+		if db.Spec.ShardTopology == nil && db.Spec.Init != nil && db.Spec.Init.Script != nil {
+			volumes = core_util.UpsertVolume(volumes, core.Volume{
+				Name:         "initial-script",
+				VolumeSource: db.Spec.Init.Script.VolumeSource,
+			})
 
 			volumeMounts = core_util.UpsertVolumeMount(
 				volumeMounts,
 				core.VolumeMount{
-					Name:      workDirectoryName,
-					MountPath: workDirectoryPath,
-				})
-		} else {
-			bootstrpContnr, bootstrpVol := c.topologyInitContainer(
-				mongodb,
-				mongodbVersion,
-				&mongodb.Spec.ShardTopology.Shard.PodTemplate,
-				mongodb.ShardRepSetName(nodeNum),
-				mongodb.GvrSvcName(mongodb.ShardNodeName(nodeNum)),
-				"sharding.sh",
+					Name:      "initial-script",
+					MountPath: "/docker-entrypoint-initdb.d",
+				},
 			)
-			initContainers = append(initContainers, bootstrpContnr)
-			volumes = core_util.UpsertVolume(volumes, bootstrpVol...)
 		}
 
-		podTemplate := mongodb.Spec.ShardTopology.Shard.PodTemplate.DeepCopy()
+		if db.Spec.StorageEngine == api.StorageEngineInMemory {
+			args = append(args, []string{
+				"--storageEngine=inMemory",
+			}...)
+		}
+
+		podTemplate = db.Spec.ShardTopology.Shard.PodTemplate.DeepCopy()
 		podTemplate, err = parseAffinityTemplate(podTemplate, nodeNum)
 		if err != nil {
 			return nil, kutil.VerbUnchanged, errors.Wrap(err, "error while templating affinity for shard nodes")
 		}
 
-		opts = workloadOptions{
-			stsName:        mongodb.ShardNodeName(nodeNum),
-			labels:         mongodb.ShardLabels(nodeNum),
-			selectors:      mongodb.ShardSelectors(nodeNum),
+		opts := workloadOptions{
+			stsName:        db.ShardNodeName(nodeNum),
+			labels:         db.ShardLabels(nodeNum),
+			selectors:      db.ShardSelectors(nodeNum),
 			args:           args,
 			cmd:            cmds,
 			envList:        envs,
-			initContainers: initContainers,
-			gvrSvcName:     mongodb.GvrSvcName(mongodb.ShardNodeName(nodeNum)),
+			initContainers: []core.Container{initContnr},
+			gvrSvcName:     db.GoverningServiceName(db.ShardNodeName(nodeNum)),
 			podTemplate:    podTemplate,
-			configSource:   mongodb.Spec.ShardTopology.Shard.ConfigSource,
-			pvcSpec:        mongodb.Spec.ShardTopology.Shard.Storage,
-			replicas:       &mongodb.Spec.ShardTopology.Shard.Replicas,
+			configSecret:   db.Spec.ShardTopology.Shard.ConfigSecret,
+			pvcSpec:        db.Spec.ShardTopology.Shard.Storage,
+			replicas:       &db.Spec.ShardTopology.Shard.Replicas,
 			volumes:        volumes,
 			volumeMount:    volumeMounts,
 		}
 
-		return c.ensureStatefulSet(mongodb, opts)
+		return c.ensureStatefulSet(db, opts)
 	}
 
 	var sts []*apps.StatefulSet
 	vt := kutil.VerbUnchanged
-	for i := int32(0); i < mongodb.Spec.ShardTopology.Shard.Shards; i++ {
+	for i := int32(0); i < db.Spec.ShardTopology.Shard.Shards; i++ {
 		st, vt1, err := shardSts(i)
 		if err != nil {
 			return nil, kutil.VerbUnchanged, err
@@ -349,19 +368,19 @@ func (c *Controller) ensureShardNode(mongodb *api.MongoDB) ([]*apps.StatefulSet,
 	return sts, vt, nil
 }
 
-func (c *Controller) ensureConfigNode(mongodb *api.MongoDB) (*apps.StatefulSet, kutil.VerbType, error) {
-	mongodbVersion, err := c.ExtClient.CatalogV1alpha1().MongoDBVersions().Get(context.TODO(), string(mongodb.Spec.Version), metav1.GetOptions{})
+func (c *Controller) ensureConfigNode(db *api.MongoDB) (*apps.StatefulSet, kutil.VerbType, error) {
+	mongodbVersion, err := c.DBClient.CatalogV1alpha1().MongoDBVersions().Get(context.TODO(), string(db.Spec.Version), metav1.GetOptions{})
 	if err != nil {
 		return nil, kutil.VerbUnchanged, err
 	}
 
 	// mongodb.Spec.SSLMode & mongodb.Spec.ClusterAuthMode can be empty if upgraded operator from
 	// previous version. But, eventually it will be defaulted. TODO: delete in future.
-	sslMode := mongodb.Spec.SSLMode
+	sslMode := db.Spec.SSLMode
 	if sslMode == "" {
 		sslMode = api.SSLModeDisabled
 	}
-	clusterAuth := mongodb.Spec.ClusterAuthMode
+	clusterAuth := db.Spec.ClusterAuthMode
 	if clusterAuth == "" {
 		clusterAuth = api.ClusterAuthModeKeyFile
 		if sslMode != api.SSLModeDisabled {
@@ -373,81 +392,184 @@ func (c *Controller) ensureConfigNode(mongodb *api.MongoDB) (*apps.StatefulSet, 
 		"--dbpath=" + dataDirectoryPath,
 		"--auth",
 		"--bind_ip=0.0.0.0",
-		"--port=" + strconv.Itoa(MongoDBPort),
+		"--port=" + strconv.Itoa(api.MongoDBDatabasePort),
 		"--configsvr",
-		"--replSet=" + mongodb.ConfigSvrRepSetName(),
+		"--replSet=" + db.ConfigSvrRepSetName(),
 		"--clusterAuthMode=" + string(clusterAuth),
 		"--keyFile=" + configDirectoryPath + "/" + KeyForKeyFile,
 	}
 
-	sslArgs, err := c.getTLSArgs(mongodb, mongodbVersion)
+	sslArgs, err := c.getTLSArgs(db, mongodbVersion)
 	if err != nil {
 		return &apps.StatefulSet{}, "", err
 	}
 	args = append(args, sslArgs...)
 
 	initContnr, initvolumes := installInitContainer(
-		mongodb,
+		db,
 		mongodbVersion,
-		&mongodb.Spec.ShardTopology.ConfigServer.PodTemplate,
-		mongodb.ConfigSvrNodeName(),
+		&db.Spec.ShardTopology.ConfigServer.PodTemplate,
+		db.ConfigSvrNodeName(),
 	)
 
-	var initContainers []core.Container
-	var volumes []core.Volume
-	var volumeMounts []core.VolumeMount
 	cmds := []string{"mongod"}
 
-	initContainers = append(initContainers, initContnr)
-	volumes = core_util.UpsertVolume(volumes, initvolumes...)
+	podTemplate := &db.Spec.ShardTopology.ConfigServer.PodTemplate
+	envs := core_util.UpsertEnvVars([]core.EnvVar{
+		{
+			Name: "POD_NAMESPACE",
+			ValueFrom: &core.EnvVarSource{
+				FieldRef: &core.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "metadata.namespace",
+				},
+			},
+		},
+		{
+			Name:  "REPLICA_SET",
+			Value: db.ConfigSvrRepSetName(),
+		},
+		{
+			Name:  "AUTH",
+			Value: "true",
+		},
+		{
+			Name:  "SSL_MODE",
+			Value: string(sslMode),
+		},
+		{
+			Name:  "CLUSTER_AUTH_MODE",
+			Value: string(clusterAuth),
+		},
+		{
+			Name: "MONGO_INITDB_ROOT_USERNAME",
+			ValueFrom: &core.EnvVarSource{
+				SecretKeyRef: &core.SecretKeySelector{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: db.Spec.AuthSecret.Name,
+					},
+					Key: core.BasicAuthUsernameKey,
+				},
+			},
+		},
+		{
+			Name: "MONGO_INITDB_ROOT_PASSWORD",
+			ValueFrom: &core.EnvVarSource{
+				SecretKeyRef: &core.SecretKeySelector{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: db.Spec.AuthSecret.Name,
+					},
+					Key: core.BasicAuthPasswordKey,
+				},
+			},
+		},
+	}, podTemplate.Spec.Env...)
+	volumes := initvolumes
 
-	bootstrpContnr, bootstrpVol := c.topologyInitContainer(
-		mongodb,
-		mongodbVersion,
-		&mongodb.Spec.ShardTopology.ConfigServer.PodTemplate,
-		mongodb.ConfigSvrRepSetName(),
-		mongodb.GvrSvcName(mongodb.ConfigSvrNodeName()),
-		"configdb.sh",
-	)
-	initContainers = append(initContainers, bootstrpContnr)
-	volumes = core_util.UpsertVolume(volumes, bootstrpVol...)
+	peerFinderLocation := fmt.Sprintf("%v/peer-finder", InitScriptDirectoryPath)
+	replicasetScriptName := fmt.Sprintf("%v/configdb.sh", InitScriptDirectoryPath)
+	podTemplate.Spec.Lifecycle = &core.Lifecycle{
+		PostStart: &core.Handler{
+			Exec: &core.ExecAction{
+				Command: []string{
+					"/bin/bash",
+					"-c",
+					peerFinderLocation + " -on-start=" + replicasetScriptName + " -service=" + db.GoverningServiceName(db.ConfigSvrNodeName()),
+				},
+			},
+		},
+	}
+
+	volumeMounts := []core.VolumeMount{
+		{
+			Name:      workDirectoryName,
+			MountPath: workDirectoryPath,
+		},
+		{
+			Name:      configDirectoryName,
+			MountPath: configDirectoryPath,
+		},
+		{
+			Name:      dataDirectoryName,
+			MountPath: dataDirectoryPath,
+		},
+		{
+			Name:      InitScriptDirectoryName,
+			MountPath: InitScriptDirectoryPath,
+		},
+	}
+
+	if db.Spec.KeyFileSecret != nil {
+		volumes = core_util.UpsertVolume(volumes, core.Volume{
+			Name: initialKeyDirectoryName, // FIXIT: mounted where?
+			VolumeSource: core.VolumeSource{
+				Secret: &core.SecretVolumeSource{
+					DefaultMode: types.Int32P(0400),
+					SecretName:  db.Spec.KeyFileSecret.Name,
+				},
+			},
+		})
+	}
+
+	//only on mongos in case of sharding (which is handled on 'ensureMongosNode'.
+	if db.Spec.ShardTopology == nil && db.Spec.Init != nil && db.Spec.Init.Script != nil {
+		volumes = core_util.UpsertVolume(volumes, core.Volume{
+			Name:         "initial-script",
+			VolumeSource: db.Spec.Init.Script.VolumeSource,
+		})
+
+		volumeMounts = core_util.UpsertVolumeMount(
+			volumeMounts,
+			core.VolumeMount{
+				Name:      "initial-script",
+				MountPath: "/docker-entrypoint-initdb.d",
+			},
+		)
+	}
+
+	if db.Spec.StorageEngine == api.StorageEngineInMemory {
+		args = append(args, []string{
+			"--storageEngine=inMemory",
+		}...)
+	}
 
 	opts := workloadOptions{
-		stsName:        mongodb.ConfigSvrNodeName(),
-		labels:         mongodb.ConfigSvrLabels(),
-		selectors:      mongodb.ConfigSvrSelectors(),
+		stsName:        db.ConfigSvrNodeName(),
+		labels:         db.ConfigSvrLabels(),
+		selectors:      db.ConfigSvrSelectors(),
 		args:           args,
 		cmd:            cmds,
-		envList:        nil,
-		initContainers: initContainers,
-		gvrSvcName:     mongodb.GvrSvcName(mongodb.ConfigSvrNodeName()),
-		podTemplate:    &mongodb.Spec.ShardTopology.ConfigServer.PodTemplate,
-		configSource:   mongodb.Spec.ShardTopology.ConfigServer.ConfigSource,
-		pvcSpec:        mongodb.Spec.ShardTopology.ConfigServer.Storage,
-		replicas:       &mongodb.Spec.ShardTopology.ConfigServer.Replicas,
+		envList:        envs,
+		initContainers: []core.Container{initContnr},
+		gvrSvcName:     db.GoverningServiceName(db.ConfigSvrNodeName()),
+		podTemplate:    &db.Spec.ShardTopology.ConfigServer.PodTemplate,
+		configSecret:   db.Spec.ShardTopology.ConfigServer.ConfigSecret,
+		pvcSpec:        db.Spec.ShardTopology.ConfigServer.Storage,
+		replicas:       &db.Spec.ShardTopology.ConfigServer.Replicas,
 		volumes:        volumes,
 		volumeMount:    volumeMounts,
 	}
 
-	return c.ensureStatefulSet(mongodb, opts)
+	return c.ensureStatefulSet(db, opts)
 }
 
-func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, error) {
-	mongodbVersion, err := c.ExtClient.CatalogV1alpha1().MongoDBVersions().Get(context.TODO(), string(mongodb.Spec.Version), metav1.GetOptions{})
+func (c *Controller) ensureNonTopology(db *api.MongoDB) (kutil.VerbType, error) {
+	mongodbVersion, err := c.DBClient.CatalogV1alpha1().MongoDBVersions().Get(context.TODO(), string(db.Spec.Version), metav1.GetOptions{})
 	if err != nil {
 		return kutil.VerbUnchanged, err
 	}
 
 	// mongodb.Spec.SSLMode & mongodb.Spec.ClusterAuthMode can be empty if upgraded operator from
 	// previous version. But, eventually it will be defaulted. TODO: delete in future.
-	sslMode := mongodb.Spec.SSLMode
+	sslMode := db.Spec.SSLMode
 	if sslMode == "" {
 		sslMode = api.SSLModeDisabled
 	}
+	podTemplate := db.Spec.PodTemplate
 
-	envList := []core.EnvVar{{Name: "SSL_MODE", Value: string(sslMode)}}
+	envList := core_util.UpsertEnvVars([]core.EnvVar{{Name: "SSL_MODE", Value: string(sslMode)}}, podTemplate.Spec.Env...)
 
-	clusterAuth := mongodb.Spec.ClusterAuthMode
+	clusterAuth := db.Spec.ClusterAuthMode
 	if clusterAuth == "" {
 		clusterAuth = api.ClusterAuthModeKeyFile
 		if sslMode != api.SSLModeDisabled {
@@ -459,19 +581,19 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 		"--dbpath=" + dataDirectoryPath,
 		"--auth",
 		"--bind_ip=0.0.0.0",
-		"--port=" + strconv.Itoa(MongoDBPort),
+		"--port=" + strconv.Itoa(api.MongoDBDatabasePort),
 	}
 
-	sslArgs, err := c.getTLSArgs(mongodb, mongodbVersion)
+	sslArgs, err := c.getTLSArgs(db, mongodbVersion)
 	if err != nil {
 		return "", err
 	}
 	args = append(args, sslArgs...)
 
 	initContnr, initvolumes := installInitContainer(
-		mongodb,
+		db,
 		mongodbVersion,
-		mongodb.Spec.PodTemplate,
+		db.Spec.PodTemplate,
 		"")
 
 	var initContainers []core.Container
@@ -482,10 +604,10 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 	initContainers = append(initContainers, initContnr)
 	volumes = core_util.UpsertVolume(volumes, initvolumes...)
 
-	if mongodb.Spec.Init != nil && mongodb.Spec.Init.ScriptSource != nil {
+	if db.Spec.Init != nil && db.Spec.Init.Script != nil {
 		volumes = core_util.UpsertVolume(volumes, core.Volume{
 			Name:         "initial-script",
-			VolumeSource: mongodb.Spec.Init.ScriptSource.VolumeSource,
+			VolumeSource: db.Spec.Init.Script.VolumeSource,
 		})
 
 		volumeMounts = []core.VolumeMount{
@@ -496,154 +618,179 @@ func (c *Controller) ensureNonTopology(mongodb *api.MongoDB) (kutil.VerbType, er
 		}
 	}
 
-	if mongodb.Spec.ReplicaSet != nil {
+	if db.Spec.ReplicaSet != nil {
 		cmds = []string{"mongod"}
 		args = meta_util.UpsertArgumentList(args, []string{
-			"--replSet=" + mongodb.RepSetName(),
+			"--replSet=" + db.RepSetName(),
 			"--keyFile=" + configDirectoryPath + "/" + KeyForKeyFile,
 			"--clusterAuthMode=" + string(clusterAuth),
 		})
 
-		if mongodb.Spec.StorageEngine == api.StorageEngineInMemory {
-			podTemplate := mongodb.Spec.PodTemplate
-
-			args = append(args, []string{
-				"--storageEngine=inMemory",
-			}...)
-
-			envList = core_util.UpsertEnvVars([]core.EnvVar{
-				{
-					Name: "POD_NAMESPACE",
-					ValueFrom: &core.EnvVarSource{
-						FieldRef: &core.ObjectFieldSelector{
-							APIVersion: "v1",
-							FieldPath:  "metadata.namespace",
-						},
+		envList = core_util.UpsertEnvVars([]core.EnvVar{
+			{
+				Name: "POD_NAMESPACE",
+				ValueFrom: &core.EnvVarSource{
+					FieldRef: &core.ObjectFieldSelector{
+						APIVersion: "v1",
+						FieldPath:  "metadata.namespace",
 					},
 				},
-				{
-					Name:  "REPLICA_SET",
-					Value: mongodb.RepSetName(),
-				},
-				{
-					Name:  "AUTH",
-					Value: "true",
-				},
-				{
-					Name:  "SSL_MODE",
-					Value: string(sslMode),
-				},
-				{
-					Name:  "CLUSTER_AUTH_MODE",
-					Value: string(clusterAuth),
-				},
-				{
-					Name: "MONGO_INITDB_ROOT_USERNAME",
-					ValueFrom: &core.EnvVarSource{
-						SecretKeyRef: &core.SecretKeySelector{
-							LocalObjectReference: core.LocalObjectReference{
-								Name: mongodb.Spec.DatabaseSecret.SecretName,
-							},
-							Key: core.BasicAuthUsernameKey,
+			},
+			{
+				Name:  "REPLICA_SET",
+				Value: db.RepSetName(),
+			},
+			{
+				Name:  "AUTH",
+				Value: "true",
+			},
+			{
+				Name:  "SSL_MODE",
+				Value: string(sslMode),
+			},
+			{
+				Name:  "CLUSTER_AUTH_MODE",
+				Value: string(clusterAuth),
+			},
+			{
+				Name: "MONGO_INITDB_ROOT_USERNAME",
+				ValueFrom: &core.EnvVarSource{
+					SecretKeyRef: &core.SecretKeySelector{
+						LocalObjectReference: core.LocalObjectReference{
+							Name: db.Spec.AuthSecret.Name,
 						},
+						Key: core.BasicAuthUsernameKey,
 					},
 				},
-				{
-					Name: "MONGO_INITDB_ROOT_PASSWORD",
-					ValueFrom: &core.EnvVarSource{
-						SecretKeyRef: &core.SecretKeySelector{
-							LocalObjectReference: core.LocalObjectReference{
-								Name: mongodb.Spec.DatabaseSecret.SecretName,
-							},
-							Key: core.BasicAuthPasswordKey,
+			},
+			{
+				Name: "MONGO_INITDB_ROOT_PASSWORD",
+				ValueFrom: &core.EnvVarSource{
+					SecretKeyRef: &core.SecretKeySelector{
+						LocalObjectReference: core.LocalObjectReference{
+							Name: db.Spec.AuthSecret.Name,
 						},
+						Key: core.BasicAuthPasswordKey,
 					},
 				},
-			}, podTemplate.Spec.Env...)
+			},
+		}, envList...)
 
-			peerFinderLocation := fmt.Sprintf("%v/peer-finder", InitScriptDirectoryPath)
-			inMemoryReplicaSetScriptName := fmt.Sprintf("%v/replicaset-inmemory.sh", InitScriptDirectoryPath)
-
-			podTemplate.Spec.Lifecycle = &core.Lifecycle{
-				PostStart: &core.Handler{
-					Exec: &core.ExecAction{
-						Command: []string{
-							"/bin/bash",
-							"-c",
-							peerFinderLocation + " -on-start=" + inMemoryReplicaSetScriptName + " -service=" + mongodb.GvrSvcName(mongodb.OffshootName()),
-						},
+		peerFinderLocation := fmt.Sprintf("%v/peer-finder", InitScriptDirectoryPath)
+		replicasetScriptName := fmt.Sprintf("%v/replicaset.sh", InitScriptDirectoryPath)
+		podTemplate.Spec.Lifecycle = &core.Lifecycle{
+			PostStart: &core.Handler{
+				Exec: &core.ExecAction{
+					Command: []string{
+						"/bin/bash",
+						"-c",
+						peerFinderLocation + " -on-start=" + replicasetScriptName + " -service=" + db.GoverningServiceName(db.OffshootName()),
 					},
 				},
-			}
+			},
+		}
+
+		volumeMounts = core_util.UpsertVolumeMount(volumeMounts, []core.VolumeMount{
+			{
+				Name:      workDirectoryName,
+				MountPath: workDirectoryPath,
+			},
+			{
+				Name:      configDirectoryName,
+				MountPath: configDirectoryPath,
+			},
+			{
+				Name:      dataDirectoryName,
+				MountPath: dataDirectoryPath,
+			},
+			{
+				Name:      InitScriptDirectoryName,
+				MountPath: InitScriptDirectoryPath,
+			},
+		}...)
+
+		if db.Spec.KeyFileSecret != nil {
+			volumes = core_util.UpsertVolume(volumes, core.Volume{
+				Name: initialKeyDirectoryName, // FIXIT: mounted where?
+				VolumeSource: core.VolumeSource{
+					Secret: &core.SecretVolumeSource{
+						DefaultMode: types.Int32P(0400),
+						SecretName:  db.Spec.KeyFileSecret.Name,
+					},
+				},
+			})
+		}
+
+		//only on mongos in case of sharding (which is handled on 'ensureMongosNode'.
+		if db.Spec.ShardTopology == nil && db.Spec.Init != nil && db.Spec.Init.Script != nil {
+			volumes = core_util.UpsertVolume(volumes, core.Volume{
+				Name:         "initial-script",
+				VolumeSource: db.Spec.Init.Script.VolumeSource,
+			})
 
 			volumeMounts = core_util.UpsertVolumeMount(
 				volumeMounts,
 				core.VolumeMount{
-					Name:      workDirectoryName,
-					MountPath: workDirectoryPath,
-				})
-
-		} else {
-			bootstrpContnr, bootstrpVol := c.topologyInitContainer(
-				mongodb,
-				mongodbVersion,
-				mongodb.Spec.PodTemplate,
-				mongodb.RepSetName(),
-				mongodb.GvrSvcName(mongodb.OffshootName()),
-				"replicaset.sh",
+					Name:      "initial-script",
+					MountPath: "/docker-entrypoint-initdb.d",
+				},
 			)
-			initContainers = append(initContainers, bootstrpContnr)
-			volumes = core_util.UpsertVolume(volumes, bootstrpVol...)
+		}
+
+		if db.Spec.StorageEngine == api.StorageEngineInMemory {
+			args = append(args, []string{
+				"--storageEngine=inMemory",
+			}...)
 		}
 	}
 
 	opts := workloadOptions{
-		stsName:        mongodb.OffshootName(),
-		labels:         mongodb.OffshootLabels(),
-		selectors:      mongodb.OffshootSelectors(),
+		stsName:        db.OffshootName(),
+		labels:         db.OffshootLabels(),
+		selectors:      db.OffshootSelectors(),
 		args:           args,
 		cmd:            cmds,
 		envList:        envList,
 		initContainers: initContainers,
-		gvrSvcName:     mongodb.GvrSvcName(mongodb.OffshootName()),
-		podTemplate:    mongodb.Spec.PodTemplate,
-		configSource:   mongodb.Spec.ConfigSource,
-		pvcSpec:        mongodb.Spec.Storage,
-		replicas:       mongodb.Spec.Replicas,
+		gvrSvcName:     db.GoverningServiceName(db.OffshootName()),
+		podTemplate:    db.Spec.PodTemplate,
+		configSecret:   db.Spec.ConfigSecret,
+		pvcSpec:        db.Spec.Storage,
+		replicas:       db.Spec.Replicas,
 		volumes:        volumes,
 		volumeMount:    volumeMounts,
 	}
 
-	st, vt, err := c.ensureStatefulSet(mongodb, opts)
+	st, vt, err := c.ensureStatefulSet(db, opts)
 	if err != nil {
 		return kutil.VerbUnchanged, err
 	}
 	if vt != kutil.VerbUnchanged {
-		if err := c.checkStatefulSetPodStatus(st); err != nil {
-			return kutil.VerbUnchanged, err
+		if !app_util.IsStatefulSetReady(st) {
+			return "", ErrStsNotReady
 		}
-		c.recorder.Eventf(
-			mongodb,
+		c.Recorder.Eventf(
+			db,
 			core.EventTypeNormal,
 			eventer.EventReasonSuccessful,
 			"Successfully %v StatefulSet %v/%v",
-			vt, mongodb.Namespace, opts.stsName,
+			vt, db.Namespace, opts.stsName,
 		)
 	}
 	return vt, err
 }
 
-func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB, opts workloadOptions) (*apps.StatefulSet, kutil.VerbType, error) {
+func (c *Controller) ensureStatefulSet(db *api.MongoDB, opts workloadOptions) (*apps.StatefulSet, kutil.VerbType, error) {
 	// Take value of podTemplate
 	var pt ofst.PodTemplateSpec
 	if opts.podTemplate != nil {
 		pt = *opts.podTemplate
 	}
-	if err := c.checkStatefulSet(mongodb, opts.stsName); err != nil {
+	if err := c.checkStatefulSet(db, opts.stsName); err != nil {
 		return nil, kutil.VerbUnchanged, err
 	}
 
-	mongodbVersion, err := c.ExtClient.CatalogV1alpha1().MongoDBVersions().Get(context.TODO(), string(mongodb.Spec.Version), metav1.GetOptions{})
+	mongodbVersion, err := c.DBClient.CatalogV1alpha1().MongoDBVersions().Get(context.TODO(), string(db.Spec.Version), metav1.GetOptions{})
 	if err != nil {
 		return nil, kutil.VerbUnchanged, err
 	}
@@ -651,10 +798,10 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB, opts workloadOption
 	// Create statefulSet for MongoDB database
 	statefulSetMeta := metav1.ObjectMeta{
 		Name:      opts.stsName,
-		Namespace: mongodb.Namespace,
+		Namespace: db.Namespace,
 	}
 
-	owner := metav1.NewControllerRef(mongodb, api.SchemeGroupVersion.WithKind(api.ResourceKindMongoDB))
+	owner := metav1.NewControllerRef(db, api.SchemeGroupVersion.WithKind(api.ResourceKindMongoDB))
 
 	readinessProbe := pt.Spec.ReadinessProbe
 	if readinessProbe != nil && structs.IsZero(*readinessProbe) {
@@ -665,8 +812,8 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB, opts workloadOption
 		livenessProbe = nil
 	}
 
-	if mongodb.Spec.SSLMode != api.SSLModeDisabled && mongodb.Spec.TLS != nil {
-		opts.volumeMount = append(opts.volumeMount, core.VolumeMount{
+	if db.Spec.SSLMode != api.SSLModeDisabled && db.Spec.TLS != nil {
+		opts.volumeMount = core_util.UpsertVolumeMount(opts.volumeMount, core.VolumeMount{
 			Name:      certDirectoryName,
 			MountPath: api.MongoCertDirectory,
 		})
@@ -695,7 +842,7 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB, opts workloadOption
 			in.Spec.Template.Spec.Containers = core_util.UpsertContainer(
 				in.Spec.Template.Spec.Containers,
 				core.Container{
-					Name:            api.ResourceSingularMongoDB,
+					Name:            api.MongoDBContainerName,
 					Image:           mongodbVersion.Spec.DB.Image,
 					ImagePullPolicy: core.PullIfNotPresent,
 					Command:         opts.cmd,
@@ -703,8 +850,8 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB, opts workloadOption
 						opts.args, pt.Spec.Args),
 					Ports: []core.ContainerPort{
 						{
-							Name:          "db",
-							ContainerPort: MongoDBPort,
+							Name:          api.MongoDBDatabasePortName,
+							ContainerPort: api.MongoDBDatabasePort,
 							Protocol:      core.ProtocolTCP,
 						},
 					},
@@ -721,23 +868,23 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB, opts workloadOption
 				opts.initContainers,
 			)
 
-			if mongodb.GetMonitoringVendor() == mona.VendorPrometheus {
+			if db.Spec.Monitor != nil && db.Spec.Monitor.Agent.Vendor() == mona.VendorPrometheus {
 				in.Spec.Template.Spec.Containers = core_util.UpsertContainer(
 					in.Spec.Template.Spec.Containers,
-					getExporterContainer(mongodb, mongodbVersion),
+					getExporterContainer(db, mongodbVersion),
 				)
 			}
 
 			in.Spec.Template.Spec.Volumes = core_util.UpsertVolume(in.Spec.Template.Spec.Volumes, opts.volumes...)
 
-			in.Spec.Template = upsertEnv(in.Spec.Template, mongodb)
+			in.Spec.Template = upsertEnv(in.Spec.Template, db)
 			if !opts.isMongos {
 				//Mongos doesn't have any data
-				in = upsertDataVolume(in, opts.pvcSpec, mongodb.Spec.StorageType)
+				in = upsertDataVolume(in, opts.pvcSpec, db.Spec.StorageType)
 			}
 
-			if opts.configSource != nil {
-				in.Spec.Template = c.upsertConfigSourceVolume(in.Spec.Template, opts.configSource)
+			if opts.configSecret != nil {
+				in.Spec.Template = c.upsertConfigSecretVolume(in.Spec.Template, opts.configSecret)
 			}
 
 			in.Spec.Template.Spec.NodeSelector = pt.Spec.NodeSelector
@@ -772,9 +919,9 @@ func (c *Controller) ensureStatefulSet(mongodb *api.MongoDB, opts workloadOption
 	return statefulSet, vt, nil
 }
 
-func (c *Controller) checkStatefulSet(mongodb *api.MongoDB, stsName string) error {
+func (c *Controller) checkStatefulSet(db *api.MongoDB, stsName string) error {
 	// StatefulSet for MongoDB database
-	statefulSet, err := c.Client.AppsV1().StatefulSets(mongodb.Namespace).Get(context.TODO(), stsName, metav1.GetOptions{})
+	statefulSet, err := c.Client.AppsV1().StatefulSets(db.Namespace).Get(context.TODO(), stsName, metav1.GetOptions{})
 	if err != nil {
 		if kerr.IsNotFound(err) {
 			return nil
@@ -783,8 +930,8 @@ func (c *Controller) checkStatefulSet(mongodb *api.MongoDB, stsName string) erro
 	}
 
 	if statefulSet.Labels[api.LabelDatabaseKind] != api.ResourceKindMongoDB ||
-		statefulSet.Labels[api.LabelDatabaseName] != mongodb.Name {
-		return fmt.Errorf(`intended statefulSet "%v/%v" already exists`, mongodb.Namespace, stsName)
+		statefulSet.Labels[api.LabelDatabaseName] != db.Name {
+		return fmt.Errorf(`intended statefulSet "%v/%v" already exists`, db.Namespace, stsName)
 	}
 
 	return nil
@@ -792,7 +939,7 @@ func (c *Controller) checkStatefulSet(mongodb *api.MongoDB, stsName string) erro
 
 // Init container for both ReplicaSet and Standalone instances
 func installInitContainer(
-	mongodb *api.MongoDB,
+	db *api.MongoDB,
 	mongodbVersion *v1alpha1.MongoDBVersion,
 	podTemplate *ofst.PodTemplateSpec,
 	stsName string,
@@ -807,7 +954,7 @@ func installInitContainer(
 
 	envList := make([]core.EnvVar, 0)
 
-	if mongodb.Spec.SSLMode == api.SSLModeDisabled || mongodb.Spec.TLS == nil {
+	if db.Spec.SSLMode == api.SSLModeDisabled || db.Spec.TLS == nil {
 		envList = append(envList, core.EnvVar{
 			Name:  "SSL_MODE",
 			Value: string(api.SSLModeDisabled),
@@ -815,7 +962,7 @@ func installInitContainer(
 	}
 
 	installContainer = core.Container{
-		Name:            InitInstallContainerName,
+		Name:            api.MongoDBInitInstallContainerName,
 		Image:           mongodbVersion.Spec.InitContainer.Image,
 		ImagePullPolicy: core.PullIfNotPresent,
 		Command:         []string{"/bin/sh"},
@@ -863,7 +1010,7 @@ func installInitContainer(
 		},
 	}
 
-	if mongodb.Spec.TLS != nil {
+	if db.Spec.TLS != nil {
 		installContainer.VolumeMounts = core_util.UpsertVolumeMount(
 			installContainer.VolumeMounts,
 			[]core.VolumeMount{
@@ -877,13 +1024,13 @@ func installInitContainer(
 				},
 			}...)
 
-		initVolumes = append(initVolumes, []core.Volume{
+		initVolumes = core_util.UpsertVolume(initVolumes, []core.Volume{
 			{
 				Name: ClientCertDirectoryName,
 				VolumeSource: core.VolumeSource{
 					Secret: &core.SecretVolumeSource{
 						DefaultMode: types.Int32P(0400),
-						SecretName:  mongodb.MustCertSecretName(api.MongoDBClientCert, ""),
+						SecretName:  db.MustCertSecretName(api.MongoDBClientCert, ""),
 					},
 				},
 			},
@@ -892,7 +1039,7 @@ func installInitContainer(
 				VolumeSource: core.VolumeSource{
 					Secret: &core.SecretVolumeSource{
 						DefaultMode: types.Int32P(0400),
-						SecretName:  mongodb.MustCertSecretName(api.MongoDBServerCert, stsName),
+						SecretName:  db.MustCertSecretName(api.MongoDBServerCert, stsName),
 					},
 				},
 			},
@@ -905,7 +1052,7 @@ func installInitContainer(
 	//if sslMode == "" {
 	//	sslMode = api.SSLModeDisabled
 	//}
-	if mongodb.Spec.KeyFile != nil {
+	if db.Spec.KeyFileSecret != nil {
 		installContainer.VolumeMounts = core_util.UpsertVolumeMount(
 			installContainer.VolumeMounts,
 			core.VolumeMount{
@@ -913,12 +1060,12 @@ func installInitContainer(
 				MountPath: initialKeyDirectoryPath,
 			})
 
-		initVolumes = append(initVolumes, core.Volume{
+		initVolumes = core_util.UpsertVolume(initVolumes, core.Volume{
 			Name: initialKeyDirectoryName,
 			VolumeSource: core.VolumeSource{
 				Secret: &core.SecretVolumeSource{
 					DefaultMode: types.Int32P(0400),
-					SecretName:  mongodb.Spec.KeyFile.SecretName,
+					SecretName:  db.Spec.KeyFileSecret.Name,
 				},
 			},
 		})
@@ -933,7 +1080,7 @@ func upsertDataVolume(
 	storageType api.StorageType,
 ) *apps.StatefulSet {
 	for i, container := range statefulSet.Spec.Template.Spec.Containers {
-		if container.Name == api.ResourceSingularMongoDB {
+		if container.Name == api.MongoDBContainerName {
 			volumeMount := []core.VolumeMount{
 				{
 					Name:      dataDirectoryName,
@@ -1010,14 +1157,14 @@ func upsertDataVolume(
 	return statefulSet
 }
 
-func upsertEnv(template core.PodTemplateSpec, mongodb *api.MongoDB) core.PodTemplateSpec {
+func upsertEnv(template core.PodTemplateSpec, db *api.MongoDB) core.PodTemplateSpec {
 	envList := []core.EnvVar{
 		{
 			Name: "MONGO_INITDB_ROOT_USERNAME",
 			ValueFrom: &core.EnvVarSource{
 				SecretKeyRef: &core.SecretKeySelector{
 					LocalObjectReference: core.LocalObjectReference{
-						Name: mongodb.Spec.DatabaseSecret.SecretName,
+						Name: db.Spec.AuthSecret.Name,
 					},
 					Key: core.BasicAuthUsernameKey,
 				},
@@ -1028,7 +1175,7 @@ func upsertEnv(template core.PodTemplateSpec, mongodb *api.MongoDB) core.PodTemp
 			ValueFrom: &core.EnvVarSource{
 				SecretKeyRef: &core.SecretKeySelector{
 					LocalObjectReference: core.LocalObjectReference{
-						Name: mongodb.Spec.DatabaseSecret.SecretName,
+						Name: db.Spec.AuthSecret.Name,
 					},
 					Key: core.BasicAuthPasswordKey,
 				},
@@ -1036,42 +1183,27 @@ func upsertEnv(template core.PodTemplateSpec, mongodb *api.MongoDB) core.PodTemp
 		},
 	}
 	for i, container := range template.Spec.Containers {
-		if container.Name == api.ResourceSingularMongoDB || container.Name == "exporter" {
+		if container.Name == api.MongoDBContainerName || container.Name == api.ContainerExporterName {
 			template.Spec.Containers[i].Env = core_util.UpsertEnvVars(container.Env, envList...)
 		}
 	}
 	return template
 }
 
-func (c *Controller) checkStatefulSetPodStatus(sts *apps.StatefulSet) error {
-	log.Infof("Waiting for running phase for statefulset %v/%v.", sts.Namespace, sts.Name)
-	err := core_util.WaitUntilPodRunningBySelector(
-		context.TODO(),
-		c.Client,
-		sts.Namespace,
-		sts.Spec.Selector,
-		int(types.Int32(sts.Spec.Replicas)),
-	)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func getExporterContainer(mongodb *api.MongoDB, mongodbVersion *v1alpha1.MongoDBVersion) core.Container {
-	metricsPath := fmt.Sprintf("--web.metrics-path=%v", mongodb.StatsService().Path())
+func getExporterContainer(db *api.MongoDB, mongodbVersion *v1alpha1.MongoDBVersion) core.Container {
+	metricsPath := fmt.Sprintf("--web.metrics-path=%v", db.StatsService().Path())
 	// change metric path for percona-mongodb-exporter
 	if strings.Contains(mongodbVersion.Spec.Exporter.Image, "percona") {
-		metricsPath = fmt.Sprintf("--web.telemetry-path=%v", mongodb.StatsService().Path())
+		metricsPath = fmt.Sprintf("--web.telemetry-path=%v", db.StatsService().Path())
 	}
 
 	args := append([]string{
 		"--mongodb.uri=mongodb://$(MONGO_INITDB_ROOT_USERNAME):$(MONGO_INITDB_ROOT_PASSWORD)@localhost:27017/admin",
-		fmt.Sprintf("--web.listen-address=:%d", mongodb.Spec.Monitor.Prometheus.Exporter.Port),
+		fmt.Sprintf("--web.listen-address=:%d", db.Spec.Monitor.Prometheus.Exporter.Port),
 		metricsPath,
-	}, mongodb.Spec.Monitor.Args...)
+	}, db.Spec.Monitor.Prometheus.Exporter.Args...)
 
-	if mongodb.Spec.SSLMode != api.SSLModeDisabled && mongodb.Spec.TLS != nil {
+	if db.Spec.SSLMode != api.SSLModeDisabled && db.Spec.TLS != nil {
 		clientPEM := fmt.Sprintf("%s/%s", api.MongoCertDirectory, api.MongoClientFileName)
 		clientCA := fmt.Sprintf("%s/%s", api.MongoCertDirectory, api.TLSCACertFileName)
 		args = append(args, "--mongodb.tls")
@@ -1082,19 +1214,19 @@ func getExporterContainer(mongodb *api.MongoDB, mongodbVersion *v1alpha1.MongoDB
 	}
 
 	return core.Container{
-		Name:  "exporter",
+		Name:  api.ContainerExporterName,
 		Args:  args,
 		Image: mongodbVersion.Spec.Exporter.Image,
 		Ports: []core.ContainerPort{
 			{
-				Name:          api.PrometheusExporterPortName,
+				Name:          mona.PrometheusExporterPortName,
 				Protocol:      core.ProtocolTCP,
-				ContainerPort: mongodb.Spec.Monitor.Prometheus.Exporter.Port,
+				ContainerPort: db.Spec.Monitor.Prometheus.Exporter.Port,
 			},
 		},
-		Env:             mongodb.Spec.Monitor.Prometheus.Exporter.Env,
-		Resources:       mongodb.Spec.Monitor.Prometheus.Exporter.Resources,
-		SecurityContext: mongodb.Spec.Monitor.Prometheus.Exporter.SecurityContext,
+		Env:             db.Spec.Monitor.Prometheus.Exporter.Env,
+		Resources:       db.Spec.Monitor.Prometheus.Exporter.Resources,
+		SecurityContext: db.Spec.Monitor.Prometheus.Exporter.SecurityContext,
 		VolumeMounts: []core.VolumeMount{
 			{
 				Name:      certDirectoryName,

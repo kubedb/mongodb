@@ -22,7 +22,7 @@ import (
 	"kmodules.xyz/monitoring-agent-api/agents/prometheusoperator"
 	api "kmodules.xyz/monitoring-agent-api/api/v1"
 
-	prom "github.com/coreos/prometheus-operator/pkg/client/versioned/typed/monitoring/v1"
+	prom "github.com/prometheus-operator/prometheus-operator/pkg/client/versioned/typed/monitoring/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -30,7 +30,7 @@ func New(at api.AgentType, k8sClient kubernetes.Interface, promClient prom.Monit
 	switch at {
 	case api.AgentPrometheus:
 		return prometheus.New()
-	case api.AgentPrometheusOperator, api.AgentCoreOSPrometheus, api.DeprecatedAgentCoreOSPrometheus:
+	case api.AgentPrometheusOperator:
 		return prometheusoperator.New(at, k8sClient, promClient)
 	case api.AgentPrometheusBuiltin:
 		return prometheusbuiltin.New(k8sClient)

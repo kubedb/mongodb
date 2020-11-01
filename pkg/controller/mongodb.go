@@ -20,8 +20,8 @@ import (
 	"context"
 	"fmt"
 
-	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
-	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha1/util"
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha2"
+	"kubedb.dev/apimachinery/client/clientset/versioned/typed/kubedb/v1alpha2/util"
 	"kubedb.dev/apimachinery/pkg/eventer"
 	validator "kubedb.dev/mongodb/pkg/admission"
 
@@ -31,14 +31,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kutil "kmodules.xyz/client-go"
+	kmapi "kmodules.xyz/client-go/api/v1"
 	dynamic_util "kmodules.xyz/client-go/dynamic"
-	meta_util "kmodules.xyz/client-go/meta"
 )
 
-func (c *Controller) create(mongodb *api.MongoDB) error {
-	if err := validator.ValidateMongoDB(c.Client, c.ExtClient, mongodb, true); err != nil {
-		c.recorder.Event(
-			mongodb,
+func (c *Controller) create(db *api.MongoDB) error {
+	if err := validator.ValidateMongoDB(c.Client, c.DBClient, db, true); err != nil {
+		c.Recorder.Event(
+			db,
 			core.EventTypeWarning,
 			eventer.EventReasonInvalid,
 			err.Error(),
@@ -47,98 +47,91 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 		return nil
 	}
 
-	if mongodb.Status.Phase == "" {
-		mg, err := util.UpdateMongoDBStatus(context.TODO(), c.ExtClient.KubedbV1alpha1(), mongodb.ObjectMeta, func(in *api.MongoDBStatus) *api.MongoDBStatus {
-			in.Phase = api.DatabasePhaseCreating
-			return in
-		}, metav1.UpdateOptions{})
-		if err != nil {
-			return err
-		}
-		mongodb.Status = mg.Status
-	}
-
 	// create Governing Service
-	if err := c.ensureMongoGvrSvc(mongodb); err != nil {
-		return fmt.Errorf(`failed to create governing Service for "%v/%v". Reason: %v`, mongodb.Namespace, mongodb.Name, err)
+	if err := c.ensureGoverningService(db); err != nil {
+		return fmt.Errorf(`failed to create governing Service for "%v/%v". Reason: %v`, db.Namespace, db.Name, err)
 	}
 
 	// Ensure Service account, role, rolebinding, and PSP for database statefulsets
-	if err := c.ensureDatabaseRBAC(mongodb); err != nil {
+	if err := c.ensureDatabaseRBAC(db); err != nil {
 		return err
 	}
 
 	// ensure database Service
-	vt1, err := c.ensureService(mongodb)
+	vt1, err := c.ensureService(db)
 	if err != nil {
 		return err
 	}
 
-	if err := c.ensureDatabaseSecret(mongodb); err != nil {
+	if err := c.ensureAuthSecret(db); err != nil {
 		return err
 	}
 
 	// ensure certificate or keyfile for cluster
-	sslMode := mongodb.Spec.SSLMode
+	sslMode := db.Spec.SSLMode
 	if (sslMode != api.SSLModeDisabled && sslMode != "") ||
-		mongodb.Spec.ReplicaSet != nil || mongodb.Spec.ShardTopology != nil {
-		if err := c.ensureKeyFileSecret(mongodb); err != nil {
+		db.Spec.ReplicaSet != nil || db.Spec.ShardTopology != nil {
+		if err := c.ensureKeyFileSecret(db); err != nil {
 			return err
 		}
 	}
 
 	// wait for certificates
-	if mongodb.Spec.TLS != nil {
+	if db.Spec.TLS != nil {
 		var secrets []string
-		if mongodb.Spec.ShardTopology != nil {
+		if db.Spec.ShardTopology != nil {
 			// for config server
-			secrets = append(secrets, mongodb.MustCertSecretName(api.MongoDBServerCert, mongodb.ConfigSvrNodeName()))
+			secrets = append(secrets, db.MustCertSecretName(api.MongoDBServerCert, db.ConfigSvrNodeName()))
 			// for shards
-			for i := 0; i < int(mongodb.Spec.ShardTopology.Shard.Shards); i++ {
-				secrets = append(secrets, mongodb.MustCertSecretName(api.MongoDBServerCert, mongodb.ShardNodeName(int32(i))))
+			for i := 0; i < int(db.Spec.ShardTopology.Shard.Shards); i++ {
+				secrets = append(secrets, db.MustCertSecretName(api.MongoDBServerCert, db.ShardNodeName(int32(i))))
 			}
 			// for mongos
-			secrets = append(secrets, mongodb.MustCertSecretName(api.MongoDBServerCert, mongodb.MongosNodeName()))
+			secrets = append(secrets, db.MustCertSecretName(api.MongoDBServerCert, db.MongosNodeName()))
 		} else {
 			// ReplicaSet or Standalone
-			secrets = append(secrets, mongodb.MustCertSecretName(api.MongoDBServerCert, ""))
+			secrets = append(secrets, db.MustCertSecretName(api.MongoDBServerCert, ""))
 		}
 		// for stash/user
-		secrets = append(secrets, mongodb.MustCertSecretName(api.MongoDBClientCert, ""))
+		secrets = append(secrets, db.MustCertSecretName(api.MongoDBClientCert, ""))
 		// for prometheus exporter
-		secrets = append(secrets, mongodb.MustCertSecretName(api.MongoDBMetricsExporterCert, ""))
+		secrets = append(secrets, db.MustCertSecretName(api.MongoDBMetricsExporterCert, ""))
 
 		ok, err := dynamic_util.ResourcesExists(
 			c.DynamicClient,
 			core.SchemeGroupVersion.WithResource("secrets"),
-			mongodb.Namespace,
+			db.Namespace,
 			secrets...,
 		)
 		if err != nil {
 			return err
 		}
 		if !ok {
-			log.Infof("wait for all certificate secrets for MongoDB %s/%s", mongodb.Namespace, mongodb.Name)
+			log.Infof("wait for all certificate secrets for MongoDB %s/%s", db.Namespace, db.Name)
 			return nil
 		}
 	}
 
 	// ensure database StatefulSet
-	vt2, err := c.ensureMongoDBNode(mongodb)
-	if err != nil {
+	vt2, err := c.ensureMongoDBNode(db)
+	if err != nil && err != ErrStsNotReady {
 		return err
 	}
 
+	if err == ErrStsNotReady {
+		return nil
+	}
+
 	if vt1 == kutil.VerbCreated && vt2 == kutil.VerbCreated {
-		c.recorder.Event(
-			mongodb,
+		c.Recorder.Event(
+			db,
 			core.EventTypeNormal,
 			eventer.EventReasonSuccessful,
 			"Successfully created MongoDB",
 		)
 	} else if vt1 == kutil.VerbPatched || vt2 == kutil.VerbPatched {
-		c.recorder.Event(
-			mongodb,
+		c.Recorder.Event(
+			db,
 			core.EventTypeNormal,
 			eventer.EventReasonSuccessful,
 			"Successfully patched MongoDB",
@@ -146,69 +139,98 @@ func (c *Controller) create(mongodb *api.MongoDB) error {
 	}
 
 	// ensure appbinding before ensuring Restic scheduler and restore
-	_, err = c.ensureAppBinding(mongodb)
+	_, err = c.ensureAppBinding(db)
 	if err != nil {
 		log.Errorln(err)
 		return err
 	}
 
-	if _, err := meta_util.GetString(mongodb.Annotations, api.AnnotationInitialized); err == kutil.ErrNotFound &&
-		mongodb.Spec.Init != nil && mongodb.Spec.Init.StashRestoreSession != nil {
-
-		if mongodb.Status.Phase == api.DatabasePhaseInitializing {
+	//======================== Wait for the initial restore =====================================
+	if db.Spec.Init != nil && db.Spec.Init.WaitForInitialRestore {
+		// Only wait for the first restore.
+		// For initial restore, "Provisioned" condition won't exist and "DataRestored" condition either won't exist or will be "False".
+		if !kmapi.HasCondition(db.Status.Conditions, api.DatabaseProvisioned) &&
+			!kmapi.IsConditionTrue(db.Status.Conditions, api.DatabaseDataRestored) {
+			// write log indicating that the database is waiting for the data to be restored by external initializer
+			log.Infof("Database %s %s/%s is waiting for data to be restored by external initializer",
+				db.Kind,
+				db.Namespace,
+				db.Name,
+			)
+			// Rest of the processing will execute after the the restore process completed. So, just return for now.
 			return nil
 		}
+	}
 
-		// add phase that database is being initialized
-		mg, err := util.UpdateMongoDBStatus(context.TODO(), c.ExtClient.KubedbV1alpha1(), mongodb.ObjectMeta, func(in *api.MongoDBStatus) *api.MongoDBStatus {
-			in.Phase = api.DatabasePhaseInitializing
-			return in
-		}, metav1.UpdateOptions{})
+	// ensure StatsService for desired monitoring
+	if _, err := c.ensureStatsService(db); err != nil {
+		c.Recorder.Eventf(
+			db,
+			core.EventTypeWarning,
+			eventer.EventReasonFailedToCreate,
+			"Failed to manage monitoring system. Reason: %v",
+			err,
+		)
+		log.Errorf("failed to manage monitoring system. Reason: %v", err)
+		return nil
+	}
+
+	if err := c.manageMonitor(db); err != nil {
+		c.Recorder.Eventf(
+			db,
+			core.EventTypeWarning,
+			eventer.EventReasonFailedToCreate,
+			"Failed to manage monitoring system. Reason: %v",
+			err,
+		)
+		log.Errorf("failed to manage monitoring system. Reason: %v", err)
+		return nil
+	}
+
+	// Check: ReplicaReady --> AcceptingConnection --> Ready --> Provisioned
+	// If spec.Init.WaitForInitialRestore is true, but data wasn't restored successfully,
+	// process won't reach here (returned nil at the beginning). As it is here, that means data was restored successfully.
+	// No need to check for IsConditionTrue(DataRestored).
+	if kmapi.IsConditionTrue(db.Status.Conditions, api.DatabaseReplicaReady) &&
+		kmapi.IsConditionTrue(db.Status.Conditions, api.DatabaseAcceptingConnection) &&
+		kmapi.IsConditionTrue(db.Status.Conditions, api.DatabaseReady) &&
+		!kmapi.IsConditionTrue(db.Status.Conditions, api.DatabaseProvisioned) {
+		_, err := util.UpdateMongoDBStatus(
+			context.TODO(),
+			c.DBClient.KubedbV1alpha2(),
+			db.ObjectMeta,
+			func(in *api.MongoDBStatus) *api.MongoDBStatus {
+				in.Conditions = kmapi.SetCondition(in.Conditions,
+					kmapi.Condition{
+						Type:               api.DatabaseProvisioned,
+						Status:             core.ConditionTrue,
+						Reason:             api.DatabaseSuccessfullyProvisioned,
+						ObservedGeneration: db.Generation,
+						Message:            fmt.Sprintf("The MongoDB: %s/%s is successfully provisioned.", db.Namespace, db.Name),
+					})
+				return in
+			},
+			metav1.UpdateOptions{},
+		)
 		if err != nil {
 			return err
 		}
-		mongodb.Status = mg.Status
+	}
 
-		init := mongodb.Spec.Init
-		if init.StashRestoreSession != nil {
-			log.Debugf("MongoDB %v/%v is waiting for restoreSession to be succeeded", mongodb.Namespace, mongodb.Name)
-			return nil
+	// If the database is successfully provisioned,
+	// Set spec.Init.Initialized to true, if init!=nil.
+	// This will prevent the operator from re-initializing the database.
+	if db.Spec.Init != nil &&
+		!db.Spec.Init.Initialized &&
+		kmapi.IsConditionTrue(db.Status.Conditions, api.DatabaseProvisioned) {
+		_, _, err := util.CreateOrPatchMongoDB(context.TODO(), c.DBClient.KubedbV1alpha2(), db.ObjectMeta, func(in *api.MongoDB) *api.MongoDB {
+			in.Spec.Init.Initialized = true
+			return in
+		}, metav1.PatchOptions{})
+
+		if err != nil {
+			return err
 		}
-	}
-
-	mg, err := util.UpdateMongoDBStatus(context.TODO(), c.ExtClient.KubedbV1alpha1(), mongodb.ObjectMeta, func(in *api.MongoDBStatus) *api.MongoDBStatus {
-		in.Phase = api.DatabasePhaseRunning
-		in.ObservedGeneration = mongodb.Generation
-		return in
-	}, metav1.UpdateOptions{})
-	if err != nil {
-		return err
-	}
-	mongodb.Status = mg.Status
-
-	// ensure StatsService for desired monitoring
-	if _, err := c.ensureStatsService(mongodb); err != nil {
-		c.recorder.Eventf(
-			mongodb,
-			core.EventTypeWarning,
-			eventer.EventReasonFailedToCreate,
-			"Failed to manage monitoring system. Reason: %v",
-			err,
-		)
-		log.Errorf("failed to manage monitoring system. Reason: %v", err)
-		return nil
-	}
-
-	if err := c.manageMonitor(mongodb); err != nil {
-		c.recorder.Eventf(
-			mongodb,
-			core.EventTypeWarning,
-			eventer.EventReasonFailedToCreate,
-			"Failed to manage monitoring system. Reason: %v",
-			err,
-		)
-		log.Errorf("failed to manage monitoring system. Reason: %v", err)
-		return nil
 	}
 
 	return nil
@@ -222,13 +244,40 @@ func (c *Controller) halt(db *api.MongoDB) error {
 	if err := c.haltDatabase(db); err != nil {
 		return err
 	}
-	if err := c.waitUntilPaused(db); err != nil {
+	if err := c.waitUntilHalted(db); err != nil {
 		return err
 	}
 	log.Infof("update status of MongoDB %v/%v to Halted.", db.Namespace, db.Name)
-	if _, err := util.UpdateMongoDBStatus(context.TODO(), c.ExtClient.KubedbV1alpha1(), db.ObjectMeta, func(in *api.MongoDBStatus) *api.MongoDBStatus {
-		in.Phase = api.DatabasePhaseHalted
-		in.ObservedGeneration = db.Generation
+	if _, err := util.UpdateMongoDBStatus(context.TODO(), c.DBClient.KubedbV1alpha2(), db.ObjectMeta, func(in *api.MongoDBStatus) *api.MongoDBStatus {
+		in.Conditions = kmapi.SetCondition(in.Conditions, kmapi.Condition{
+			Type:               api.DatabaseHalted,
+			Status:             core.ConditionTrue,
+			Reason:             api.DatabaseHaltedSuccessfully,
+			ObservedGeneration: db.Generation,
+			Message:            fmt.Sprintf("MongoDB %s/%s successfully halted.", db.Namespace, db.Name),
+		})
+
+		// make "AcceptingConnection" and "Ready" conditions false.
+		// Because these are handled from health checker at a certain interval,
+		// if consecutive halt and un-halt occurs in the meantime,
+		// phase might still be on the "Ready" state.
+		in.Conditions = kmapi.SetCondition(in.Conditions,
+			kmapi.Condition{
+				Type:               api.DatabaseAcceptingConnection,
+				Status:             core.ConditionFalse,
+				Reason:             api.DatabaseHaltedSuccessfully,
+				ObservedGeneration: db.Generation,
+				Message:            fmt.Sprintf("The MongoDB: %s/%s is not accepting client requests.", db.Namespace, db.Name),
+			})
+		in.Conditions = kmapi.SetCondition(in.Conditions,
+			kmapi.Condition{
+				Type:               api.DatabaseReady,
+				Status:             core.ConditionFalse,
+				Reason:             api.DatabaseHaltedSuccessfully,
+				ObservedGeneration: db.Generation,
+				Message:            fmt.Sprintf("The MongoDB: %s/%s is not ready.", db.Namespace, db.Name),
+			})
+
 		return in
 	}, metav1.UpdateOptions{}); err != nil {
 		return err
@@ -241,7 +290,7 @@ func (c *Controller) terminate(db *api.MongoDB) error {
 
 	// If TerminationPolicy is "halt", keep PVCs and Secrets intact.
 	// TerminationPolicyPause is deprecated and will be removed in future.
-	if db.Spec.TerminationPolicy == api.TerminationPolicyHalt || db.Spec.TerminationPolicy == api.TerminationPolicyPause {
+	if db.Spec.TerminationPolicy == api.TerminationPolicyHalt {
 		if err := c.removeOwnerReferenceFromOffshoots(db); err != nil {
 			return err
 		}
@@ -270,7 +319,7 @@ func (c *Controller) setOwnerReferenceToOffshoots(db *api.MongoDB, owner *metav1
 	// else, keep it intact.
 	if db.Spec.TerminationPolicy == api.TerminationPolicyWipeOut {
 		// wipeOut restoreSession
-		if err := c.wipeOutDatabase(db.ObjectMeta, db.Spec.GetSecrets(), owner); err != nil {
+		if err := c.wipeOutDatabase(db.ObjectMeta, db.Spec.GetPersistentSecrets(), owner); err != nil {
 			return errors.Wrap(err, "error in wiping out database.")
 		}
 	} else {
@@ -280,7 +329,7 @@ func (c *Controller) setOwnerReferenceToOffshoots(db *api.MongoDB, owner *metav1
 			c.DynamicClient,
 			core.SchemeGroupVersion.WithResource("secrets"),
 			db.Namespace,
-			db.Spec.GetSecrets(),
+			db.Spec.GetPersistentSecrets(),
 			db); err != nil {
 			return err
 		}
@@ -313,7 +362,7 @@ func (c *Controller) removeOwnerReferenceFromOffshoots(db *api.MongoDB) error {
 		c.DynamicClient,
 		core.SchemeGroupVersion.WithResource("secrets"),
 		db.Namespace,
-		db.Spec.GetSecrets(),
+		db.Spec.GetPersistentSecrets(),
 		db); err != nil {
 		return err
 	}

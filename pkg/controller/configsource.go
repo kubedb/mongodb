@@ -19,7 +19,7 @@ package controller
 import (
 	"path/filepath"
 
-	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha2"
 
 	core "k8s.io/api/core/v1"
 	core_util "kmodules.xyz/client-go/core/v1"
@@ -29,22 +29,22 @@ import (
 // Initially mount configmap `mongodb.conf` on initialConfigDirectoryPath "/configdb-readonly".
 // But, mongodb can't write this initial mounted file. Because, configmap mounted files is not writable.
 // So, This initial file is copied to configDirectoryPath "/data/configdb" by init-container.
-func (c *Controller) upsertConfigSourceVolume(template core.PodTemplateSpec, configSource *core.VolumeSource) core.PodTemplateSpec {
+func (c *Controller) upsertConfigSecretVolume(template core.PodTemplateSpec, configSecret *core.LocalObjectReference) core.PodTemplateSpec {
 	for i, container := range template.Spec.Containers {
-		if container.Name == api.ResourceSingularMongoDB {
+		if container.Name == api.MongoDBContainerName {
 			template.Spec.Containers[i].Args = meta_util.UpsertArgumentList(
 				template.Spec.Containers[i].Args,
-				[]string{"--config=" + filepath.Join(configDirectoryPath, "mongod.conf")},
+				[]string{"--config=" + filepath.Join(configDirectoryPath, api.MongoDBCustomConfigFile)},
 			)
 		}
 	}
 
 	for i, container := range template.Spec.InitContainers {
-		if container.Name == InitInstallContainerName {
+		if container.Name == api.MongoDBInitInstallContainerName {
 			template.Spec.InitContainers[i].VolumeMounts = core_util.UpsertVolumeMount(
 				template.Spec.InitContainers[i].VolumeMounts,
 				core.VolumeMount{
-					Name:      initialConfigDirectoryName,
+					Name:      api.MongoDBConfigDirectoryName,
 					MountPath: initialConfigDirectoryPath,
 				})
 		}
@@ -53,8 +53,12 @@ func (c *Controller) upsertConfigSourceVolume(template core.PodTemplateSpec, con
 	template.Spec.Volumes = core_util.UpsertVolume(
 		template.Spec.Volumes,
 		core.Volume{
-			Name:         initialConfigDirectoryName,
-			VolumeSource: *configSource,
+			Name: api.MongoDBConfigDirectoryName,
+			VolumeSource: core.VolumeSource{
+				Secret: &core.SecretVolumeSource{
+					SecretName: configSecret.Name,
+				},
+			},
 		})
 
 	return template

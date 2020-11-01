@@ -22,12 +22,13 @@ import (
 	"os"
 	"strings"
 
-	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha2"
 	"kubedb.dev/apimachinery/pkg/admission/namespace"
 	"kubedb.dev/apimachinery/pkg/eventer"
 	mgAdmsn "kubedb.dev/mongodb/pkg/admission"
 	"kubedb.dev/mongodb/pkg/controller"
 
+	license "go.bytebuilders.dev/license-verifier/kubernetes"
 	admission "k8s.io/api/admission/v1beta1"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -126,6 +127,8 @@ func (c completedConfig) New() (*MongoDBServer, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	license.NewLicenseEnforcer(c.OperatorConfig.ClientConfig, c.OperatorConfig.LicenseFile).Install(genericServer.Handler.NonGoRestfulMux)
 
 	ctrl, err := c.OperatorConfig.New()
 	if err != nil {

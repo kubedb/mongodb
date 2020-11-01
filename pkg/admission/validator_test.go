@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	catalog "kubedb.dev/apimachinery/apis/catalog/v1alpha1"
-	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha1"
+	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha2"
 	extFake "kubedb.dev/apimachinery/client/clientset/versioned/fake"
 	"kubedb.dev/apimachinery/client/clientset/versioned/scheme"
 
@@ -115,7 +115,7 @@ func TestMongoDBValidator_Admit(t *testing.T) {
 			req.OldObject.Raw = oldObjJS
 
 			if c.heatUp {
-				if _, err := validator.extClient.KubedbV1alpha1().MongoDBs(c.namespace).Create(context.TODO(), &c.object, metaV1.CreateOptions{}); err != nil && !kerr.IsAlreadyExists(err) {
+				if _, err := validator.extClient.KubedbV1alpha2().MongoDBs(c.namespace).Create(context.TODO(), &c.object, metaV1.CreateOptions{}); err != nil && !kerr.IsAlreadyExists(err) {
 					t.Errorf(err.Error())
 				}
 			}
@@ -172,7 +172,7 @@ var cases = []struct {
 		false,
 		false,
 	},
-	{"Edit MongoDB Spec.DatabaseSecret with Existing Secret",
+	{"Edit MongoDB Spec.AuthSecret with Existing Secret",
 		requestKind,
 		"foo",
 		"default",
@@ -182,7 +182,7 @@ var cases = []struct {
 		false,
 		true,
 	},
-	{"Edit MongoDB Spec.DatabaseSecret with non Existing Secret",
+	{"Edit MongoDB Spec.AuthSecret with non Existing Secret",
 		requestKind,
 		"foo",
 		"default",
@@ -192,7 +192,7 @@ var cases = []struct {
 		false,
 		true,
 	},
-	{"Edit MongoDB Spec.DatabaseSecret",
+	{"Edit MongoDB Spec.AuthSecret",
 		requestKind,
 		"foo",
 		"default",
@@ -282,6 +282,26 @@ var cases = []struct {
 		false,
 		true,
 	},
+	{"Edit spec.Init before provisioning complete",
+		requestKind,
+		"foo",
+		"default",
+		admission.Update,
+		updateInit(sampleMongoDB()),
+		sampleMongoDB(),
+		true,
+		true,
+	},
+	{"Edit spec.Init after provisioning complete",
+		requestKind,
+		"foo",
+		"default",
+		admission.Update,
+		updateInit(completeInitialization(sampleMongoDB())),
+		completeInitialization(sampleMongoDB()),
+		true,
+		false,
+	},
 }
 
 func sampleMongoDB() api.MongoDB {
@@ -310,14 +330,7 @@ func sampleMongoDB() api.MongoDB {
 				},
 			},
 			Init: &api.InitSpec{
-				ScriptSource: &api.ScriptSourceSpec{
-					VolumeSource: core.VolumeSource{
-						GitRepo: &core.GitRepoVolumeSource{
-							Repository: "https://kubedb.dev/mongodb-init-scripts.git",
-							Directory:  ".",
-						},
-					},
-				},
+				WaitForInitialRestore: true,
 			},
 			TerminationPolicy: api.TerminationPolicyDoNotTerminate,
 		},
@@ -380,22 +393,22 @@ func getAwkwardMongoDB() api.MongoDB {
 }
 
 func editExistingSecret(old api.MongoDB) api.MongoDB {
-	old.Spec.DatabaseSecret = &core.SecretVolumeSource{
-		SecretName: "foo-auth",
+	old.Spec.AuthSecret = &core.LocalObjectReference{
+		Name: "foo-auth",
 	}
 	return old
 }
 
 func editNonExistingSecret(old api.MongoDB) api.MongoDB {
-	old.Spec.DatabaseSecret = &core.SecretVolumeSource{
-		SecretName: "foo-auth-fused",
+	old.Spec.AuthSecret = &core.LocalObjectReference{
+		Name: "foo-auth-fused",
 	}
 	return old
 }
 
 func editStatus(old api.MongoDB) api.MongoDB {
 	old.Status = api.MongoDBStatus{
-		Phase: api.DatabasePhaseCreating,
+		Phase: api.DatabasePhaseReady,
 	}
 	return old
 }
@@ -404,7 +417,7 @@ func editSpecMonitor(old api.MongoDB) api.MongoDB {
 	old.Spec.Monitor = &mona.AgentSpec{
 		Agent: mona.AgentPrometheusBuiltin,
 		Prometheus: &mona.PrometheusSpec{
-			Exporter: &mona.PrometheusExporterSpec{
+			Exporter: mona.PrometheusExporterSpec{
 				Port: 1289,
 			},
 		},
@@ -427,5 +440,15 @@ func haltDatabase(old api.MongoDB) api.MongoDB {
 
 func editShardPrefix(old api.MongoDB) api.MongoDB {
 	old.Spec.ShardTopology.Shard.Prefix = "demo-prefix"
+	return old
+}
+
+func completeInitialization(old api.MongoDB) api.MongoDB {
+	old.Spec.Init.Initialized = true
+	return old
+}
+
+func updateInit(old api.MongoDB) api.MongoDB {
+	old.Spec.Init.WaitForInitialRestore = false
 	return old
 }

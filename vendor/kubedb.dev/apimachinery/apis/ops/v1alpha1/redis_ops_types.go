@@ -17,9 +17,11 @@ limitations under the License.
 package v1alpha1
 
 import (
-	v1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
+	resource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kmapi "kmodules.xyz/client-go/api/v1"
+	ofst "kmodules.xyz/offshoot-api/api/v1"
 )
 
 const (
@@ -51,15 +53,34 @@ type RedisOpsRequest struct {
 // RedisOpsRequestSpec is the spec for RedisOpsRequest
 type RedisOpsRequestSpec struct {
 	// Specifies the Redis reference
-	DatabaseRef v1.LocalObjectReference `json:"databaseRef" protobuf:"bytes,1,opt,name=databaseRef"`
+	DatabaseRef core.LocalObjectReference `json:"databaseRef" protobuf:"bytes,1,opt,name=databaseRef"`
 	// Specifies the ops request type: Upgrade, HorizontalScaling, VerticalScaling etc.
 	Type OpsRequestType `json:"type" protobuf:"bytes,2,opt,name=type,casttype=OpsRequestType"`
-	// Specifies the field information that needed to be upgraded
-	Upgrade *UpgradeSpec `json:"upgrade,omitempty" protobuf:"bytes,3,opt,name=upgrade"`
-	// Specifies information necessary for horizontal scaling.
+	// Specifies information necessary for upgrading Redis
+	Upgrade *RedisUpgradeSpec `json:"upgrade,omitempty" protobuf:"bytes,3,opt,name=upgrade"`
+	// Specifies information necessary for horizontal scaling
 	HorizontalScaling *RedisHorizontalScalingSpec `json:"horizontalScaling,omitempty" protobuf:"bytes,4,opt,name=horizontalScaling"`
 	// Specifies information necessary for vertical scaling
 	VerticalScaling *RedisVerticalScalingSpec `json:"verticalScaling,omitempty" protobuf:"bytes,5,opt,name=verticalScaling"`
+	// Specifies information necessary for volume expansion
+	VolumeExpansion *RedisVolumeExpansionSpec `json:"volumeExpansion,omitempty" protobuf:"bytes,6,opt,name=volumeExpansion"`
+	// Specifies information necessary for custom configuration of Redis
+	Configuration *RedisCustomConfigurationSpec `json:"configuration,omitempty" protobuf:"bytes,7,opt,name=configuration"`
+	// Specifies information necessary for configuring TLS
+	TLS *TLSSpec `json:"tls,omitempty" protobuf:"bytes,8,opt,name=tls"`
+	// Specifies information necessary for restarting database
+	Restart *RestartSpec `json:"restart,omitempty" protobuf:"bytes,9,opt,name=restart"`
+}
+
+// RedisReplicaReadinessCriteria is the criteria for checking readiness of a Redis pod
+// after updating, horizontal scaling etc.
+type RedisReplicaReadinessCriteria struct {
+}
+
+type RedisUpgradeSpec struct {
+	// Specifies the target version name from catalog
+	TargetVersion     string                         `json:"targetVersion,omitempty" protobuf:"bytes,1,opt,name=targetVersion"`
+	ReadinessCriteria *RedisReplicaReadinessCriteria `json:"readinessCriteria,omitempty" protobuf:"bytes,2,opt,name=readinessCriteria"`
 }
 
 type RedisHorizontalScalingSpec struct {
@@ -71,8 +92,22 @@ type RedisHorizontalScalingSpec struct {
 
 // RedisVerticalScalingSpec is the spec for Redis vertical scaling
 type RedisVerticalScalingSpec struct {
-	Redis    *v1.ResourceRequirements `json:"redis,omitempty" protobuf:"bytes,1,opt,name=redis"`
-	Exporter *v1.ResourceRequirements `json:"exporter,omitempty" protobuf:"bytes,2,opt,name=exporter"`
+	Redis    *core.ResourceRequirements `json:"redis,omitempty" protobuf:"bytes,1,opt,name=redis"`
+	Exporter *core.ResourceRequirements `json:"exporter,omitempty" protobuf:"bytes,2,opt,name=exporter"`
+}
+
+// RedisVolumeExpansionSpec is the spec for Redis volume expansion
+type RedisVolumeExpansionSpec struct {
+	Redis *resource.Quantity `json:"redis,omitempty" protobuf:"bytes,1,opt,name=redis"`
+}
+
+type RedisCustomConfigurationSpec struct {
+	// PodTemplate is an optional configuration for pods used to expose database
+	// +optional
+	PodTemplate        ofst.PodTemplateSpec       `json:"podTemplate,omitempty" protobuf:"bytes,1,opt,name=podTemplate"`
+	ConfigSecret       *core.LocalObjectReference `json:"configSecret,omitempty" protobuf:"bytes,2,opt,name=configSecret"`
+	InlineConfig       string                     `json:"inlineConfig,omitempty" protobuf:"bytes,3,opt,name=inlineConfig"`
+	RemoveCustomConfig bool                       `json:"removeCustomConfig,omitempty" protobuf:"varint,4,opt,name=removeCustomConfig"`
 }
 
 // RedisOpsRequestStatus is the status for RedisOpsRequest

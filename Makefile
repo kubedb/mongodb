@@ -14,6 +14,10 @@
 
 SHELL=/bin/bash -o pipefail
 
+PRODUCT_OWNER_NAME := appscode
+PRODUCT_NAME       := kubedb-community
+ENFORCE_LICENSE    ?=
+
 GO_PKG   := kubedb.dev
 REPO     := $(notdir $(shell pwd))
 BIN      := mg-operator
@@ -47,7 +51,7 @@ endif
 ###
 
 SRC_PKGS := cmd pkg
-SRC_DIRS := $(SRC_PKGS) test hack/gendocs # directories which hold app source (not vendored)
+SRC_DIRS := $(SRC_PKGS) hack/gendocs # directories which hold app source (not vendored)
 
 DOCKER_PLATFORMS := linux/amd64 linux/arm64
 BIN_PLATFORMS    := $(DOCKER_PLATFORMS) windows/amd64 darwin/amd64
@@ -56,8 +60,8 @@ BIN_PLATFORMS    := $(DOCKER_PLATFORMS) windows/amd64 darwin/amd64
 OS   := $(if $(GOOS),$(GOOS),$(shell go env GOOS))
 ARCH := $(if $(GOARCH),$(GOARCH),$(shell go env GOARCH))
 
-BASEIMAGE_PROD   ?= gcr.io/distroless/static
-BASEIMAGE_DBG    ?= debian:stretch
+BASEIMAGE_PROD   ?= gcr.io/distroless/static-debian10
+BASEIMAGE_DBG    ?= debian:buster
 
 IMAGE            := $(REGISTRY)/$(BIN)
 VERSION_PROD     := $(VERSION)
@@ -66,7 +70,7 @@ TAG              := $(VERSION)_$(OS)_$(ARCH)
 TAG_PROD         := $(TAG)
 TAG_DBG          := $(VERSION)-dbg_$(OS)_$(ARCH)
 
-GO_VERSION       ?= 1.14
+GO_VERSION       ?= 1.15
 BUILD_IMAGE      ?= appscode/golang-dev:$(GO_VERSION)
 
 OUTBIN = bin/$(OS)_$(ARCH)/$(BIN)
@@ -178,6 +182,9 @@ $(OUTBIN): .go/$(OUTBIN).stamp
 	    --env HTTPS_PROXY=$(HTTPS_PROXY)                        \
 	    $(BUILD_IMAGE)                                          \
 	    /bin/bash -c "                                          \
+	        PRODUCT_OWNER_NAME=$(PRODUCT_OWNER_NAME)            \
+	        PRODUCT_NAME=$(PRODUCT_NAME)                        \
+	        ENFORCE_LICENSE=$(ENFORCE_LICENSE)                  \
 	        ARCH=$(ARCH)                                        \
 	        OS=$(OS)                                            \
 	        VERSION=$(VERSION)                                  \
@@ -336,8 +343,10 @@ lint: $(BUILD_DIRS)
 $(BUILD_DIRS):
 	@mkdir -p $@
 
-REGISTRY_SECRET ?=
-KUBE_NAMESPACE  ?=
+REGISTRY_SECRET 	?=
+KUBE_NAMESPACE  	?=
+LICENSE_FILE    	?=
+IMAGE_PULL_POLICY 	?= Always
 
 ifeq ($(strip $(REGISTRY_SECRET)),)
 	IMAGE_PULL_SECRETS =
@@ -348,27 +357,28 @@ endif
 .PHONY: install
 install:
 	@cd ../installer; \
-	helm install kubedb charts/kubedb --wait \
-		--namespace=$(KUBE_NAMESPACE) \
-		--set operator.registry=$(REGISTRY) \
+	helm install kubedb charts/kubedb --wait  \
+		--namespace=$(KUBE_NAMESPACE)         \
+		--set-file license=$(LICENSE_FILE)    \
+		--set operator.registry=$(REGISTRY)   \
 		--set operator.repository=mg-operator \
-		--set operator.tag=$(TAG) \
-		--set imagePullPolicy=Always \
-		$(IMAGE_PULL_SECRETS); \
+		--set operator.tag=$(TAG)             \
+		--set imagePullPolicy=$(IMAGE_PULL_POLICY)	\
+		$(IMAGE_PULL_SECRETS);                		\
 	kubectl wait --for=condition=Available apiservice -l 'app.kubernetes.io/name=kubedb,app.kubernetes.io/instance=kubedb' --timeout=5m; \
 	until kubectl get crds mongodbversions.catalog.kubedb.com -o=jsonpath='{.items[0].metadata.name}' &> /dev/null; do sleep 1; done; \
 	kubectl wait --for=condition=Established crds -l app.kubernetes.io/name=kubedb --timeout=5m; \
 	helm install kubedb-catalog charts/kubedb-catalog \
-		--namespace=$(KUBE_NAMESPACE) \
-		--set catalog.elasticsearch=false \
-		--set catalog.etcd=false \
-		--set catalog.memcached=false \
-		--set catalog.mongo=true \
-		--set catalog.mysql=false \
-		--set catalog.perconaxtradb=false \
-		--set catalog.pgbouncer=false \
-		--set catalog.postgres=false \
-		--set catalog.proxysql=false \
+		--namespace=$(KUBE_NAMESPACE)         \
+		--set catalog.elasticsearch=false     \
+		--set catalog.etcd=false              \
+		--set catalog.memcached=false         \
+		--set catalog.mongo=true              \
+		--set catalog.mysql=false             \
+		--set catalog.perconaxtradb=false     \
+		--set catalog.pgbouncer=false         \
+		--set catalog.postgres=false          \
+		--set catalog.proxysql=false          \
 		--set catalog.redis=false
 
 .PHONY: uninstall
@@ -459,3 +469,8 @@ release:
 .PHONY: clean
 clean:
 	rm -rf .go bin
+
+push-to-kind: container
+	@echo "Loading docker image into kind cluster...."
+	@kind load docker-image $(IMAGE):$(TAG)
+	@echo "Image has been pushed successfully into kind cluster."

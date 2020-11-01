@@ -22,9 +22,12 @@ import (
 
 	cs "kubedb.dev/apimachinery/client/clientset/versioned"
 	kubedbinformers "kubedb.dev/apimachinery/client/informers/externalversions"
+	"kubedb.dev/apimachinery/pkg/controller/initializer/stash"
+	sts "kubedb.dev/apimachinery/pkg/controller/statefulset"
+	"kubedb.dev/apimachinery/pkg/eventer"
 	"kubedb.dev/mongodb/pkg/controller"
 
-	prom "github.com/coreos/prometheus-operator/pkg/client/versioned/typed/monitoring/v1"
+	prom "github.com/prometheus-operator/prometheus-operator/pkg/client/versioned/typed/monitoring/v1"
 	"github.com/spf13/pflag"
 	core "k8s.io/api/core/v1"
 	crd_cs "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -34,41 +37,29 @@ import (
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
-	"kmodules.xyz/client-go/meta"
 	"kmodules.xyz/client-go/tools/cli"
 	appcat_cs "kmodules.xyz/custom-resources/client/clientset/versioned"
-	scs "stash.appscode.dev/apimachinery/client/clientset/versioned"
-	stashInformers "stash.appscode.dev/apimachinery/client/informers/externalversions"
 )
 
 type ExtraOptions struct {
-	OperatorNamespace           string
-	RestrictToOperatorNamespace bool
-	GoverningService            string
-	QPS                         float64
-	Burst                       int
-	ResyncPeriod                time.Duration
-	MaxNumRequeues              int
-	NumThreads                  int
+	LicenseFile            string
+	QPS                    float64
+	Burst                  int
+	ResyncPeriod           time.Duration
+	ReadinessProbeInterval time.Duration
+	MaxNumRequeues         int
+	NumThreads             int
 
 	EnableMutatingWebhook   bool
 	EnableValidatingWebhook bool
 }
 
-func (s ExtraOptions) WatchNamespace() string {
-	if s.RestrictToOperatorNamespace {
-		return s.OperatorNamespace
-	}
-	return core.NamespaceAll
-}
-
 func NewExtraOptions() *ExtraOptions {
 	return &ExtraOptions{
-		OperatorNamespace: meta.Namespace(),
-		GoverningService:  "kubedb",
-		ResyncPeriod:      10 * time.Minute,
-		MaxNumRequeues:    5,
-		NumThreads:        2,
+		ResyncPeriod:           10 * time.Minute,
+		ReadinessProbeInterval: 10 * time.Second,
+		MaxNumRequeues:         5,
+		NumThreads:             2,
 		// ref: https://github.com/kubernetes/ingress-nginx/blob/e4d53786e771cc6bdd55f180674b79f5b692e552/pkg/ingress/controller/launch.go#L252-L259
 		// High enough QPS to fit all expected use cases. QPS=0 is not set here, because client code is overriding it.
 		QPS: 1e6,
@@ -78,13 +69,12 @@ func NewExtraOptions() *ExtraOptions {
 }
 
 func (s *ExtraOptions) AddGoFlags(fs *flag.FlagSet) {
-	fs.StringVar(&s.GoverningService, "governing-service", s.GoverningService, "Governing service for database statefulset")
+	fs.StringVar(&s.LicenseFile, "license-file", s.LicenseFile, "Path to license file")
 
 	fs.Float64Var(&s.QPS, "qps", s.QPS, "The maximum QPS to the master from this client")
 	fs.IntVar(&s.Burst, "burst", s.Burst, "The maximum burst for throttle")
 	fs.DurationVar(&s.ResyncPeriod, "resync-period", s.ResyncPeriod, "If non-zero, will re-list this often. Otherwise, re-list will be delayed aslong as possible (until the upstream source closes the watch or times out.")
-
-	fs.BoolVar(&s.RestrictToOperatorNamespace, "restrict-to-operator-namespace", s.RestrictToOperatorNamespace, "If true, KubeDB operator will only handle Kubernetes objects in its own namespace.")
+	fs.DurationVar(&s.ReadinessProbeInterval, "readiness-probe-interval", s.ReadinessProbeInterval, "The time between two consecutive health checks that the operator performs to the database.")
 
 	fs.BoolVar(&s.EnableMutatingWebhook, "enable-mutating-webhook", s.EnableMutatingWebhook, "If true, enables mutating webhooks for KubeDB CRDs.")
 	fs.BoolVar(&s.EnableValidatingWebhook, "enable-validating-webhook", s.EnableValidatingWebhook, "If true, enables validating webhooks for KubeDB CRDs.")
@@ -99,8 +89,7 @@ func (s *ExtraOptions) AddFlags(fs *pflag.FlagSet) {
 func (s *ExtraOptions) ApplyTo(cfg *controller.OperatorConfig) error {
 	var err error
 
-	cfg.OperatorNamespace = s.OperatorNamespace
-	cfg.GoverningService = s.GoverningService
+	cfg.LicenseFile = s.LicenseFile
 
 	cfg.EnableAnalytics = cli.EnableAnalytics
 	cfg.AnalyticsClientID = cli.AnalyticsClientID
@@ -109,9 +98,10 @@ func (s *ExtraOptions) ApplyTo(cfg *controller.OperatorConfig) error {
 	cfg.ClientConfig.QPS = float32(s.QPS)
 	cfg.ClientConfig.Burst = s.Burst
 	cfg.ResyncPeriod = s.ResyncPeriod
+	cfg.ReadinessProbeInterval = s.ReadinessProbeInterval
 	cfg.MaxNumRequeues = s.MaxNumRequeues
 	cfg.NumThreads = s.NumThreads
-	cfg.WatchNamespace = s.WatchNamespace()
+	cfg.WatchNamespace = core.NamespaceAll
 	cfg.EnableMutatingWebhook = s.EnableMutatingWebhook
 	cfg.EnableValidatingWebhook = s.EnableValidatingWebhook
 
@@ -133,12 +123,8 @@ func (s *ExtraOptions) ApplyTo(cfg *controller.OperatorConfig) error {
 	if cfg.PromClient, err = prom.NewForConfig(cfg.ClientConfig); err != nil {
 		return err
 	}
-	if cfg.StashClient, err = scs.NewForConfig(cfg.ClientConfig); err != nil {
-		return err
-	}
 	cfg.KubeInformerFactory = informers.NewSharedInformerFactory(cfg.KubeClient, cfg.ResyncPeriod)
 	cfg.KubedbInformerFactory = kubedbinformers.NewSharedInformerFactory(cfg.DBClient, cfg.ResyncPeriod)
-	cfg.StashInformerFactory = stashInformers.NewSharedInformerFactory(cfg.StashClient, cfg.ResyncPeriod)
 
 	cfg.SecretInformer = cfg.KubeInformerFactory.InformerFor(&core.Secret{}, func(client kubernetes.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
 		return coreinformers.NewSecretInformer(
@@ -149,6 +135,10 @@ func (s *ExtraOptions) ApplyTo(cfg *controller.OperatorConfig) error {
 		)
 	})
 	cfg.SecretLister = corelisters.NewSecretLister(cfg.SecretInformer.GetIndexer())
-
-	return nil
+	// Create event recorder
+	cfg.Recorder = eventer.NewEventRecorder(cfg.KubeClient, "MongoDB operator")
+	// Initialize StatefulSet watcher
+	sts.NewController(&cfg.Config, cfg.KubeClient, cfg.DBClient, cfg.DynamicClient).InitStsWatcher()
+	// Configure Stash initializer
+	return stash.Configure(cfg.ClientConfig, &cfg.Initializers.Stash, cfg.ResyncPeriod)
 }
