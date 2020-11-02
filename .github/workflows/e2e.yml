@@ -32,7 +32,7 @@ jobs:
         name: Generate test matrix
         run: |
           k8s=(v1.12.10 v1.14.10 v1.16.9 v1.18.8 v1.19.0)
-          db=(4.1.13-v1 4.1.7-v3 4.1.4-v1 4.0.11-v1 4.0.5-v3 4.0.3-v1 3.6.13-v1 3.6.8-v1 3.4.22-v1 3.4.17-v1)
+          db=(4.2.3 4.1.13-v1 4.1.7-v3 4.1.4-v1 4.0.11-v1 4.0.5-v3 4.0.3-v1 3.6.13-v1 3.6.8-v1 3.4.22-v1 3.4.17-v1 4.2.7-percona 4.0.10-percona 3.6.18-percona)
 
           IFS=' '
           read -ra COMMENT <<< "${{ github.event.comment.body }}"
@@ -185,4 +185,4 @@ jobs:
           echo -n "$TEST_CREDENTIALS" > hack/config/.env
           echo >> hack/config/.env
           echo "GOOGLE_SERVICE_ACCOUNT_JSON_KEY=$(echo $GOOGLE_SERVICE_ACCOUNT_JSON_KEY)" >> hack/config/.env
-          make e2e-tests GINKGO_ARGS="--flakeAttempts=2" TEST_ARGS="--db-version=${{ matrix.db }} --test-profiles community" || (kubectl describe deployment -n kube-system kubedb-mg-operator; kubectl logs -n kube-system deployment/kubedb-mg-operator; kubectl describe deployment -n kube-system stash-operator; kubectl logs -n kube-system deployment/stash-operator operator; exit 1;)
+          make e2e-tests GINKGO_ARGS="--flakeAttempts=2" TEST_ARGS="--db-type mongodb --db-version=${{ matrix.db }} --test-profiles community" || (kubectl describe deployment -n kube-system kubedb-mg-operator; kubectl logs -n kube-system deployment/mg-operator; kubectl describe deployment -n kube-system stash-operator; kubectl logs -n kube-system deployment/stash-operator operator; exit 1;)
