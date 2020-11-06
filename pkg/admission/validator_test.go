@@ -26,7 +26,7 @@ import (
 	extFake "kubedb.dev/apimachinery/client/clientset/versioned/fake"
 	"kubedb.dev/apimachinery/client/clientset/versioned/scheme"
 
-	"github.com/appscode/go/types"
+	"gomodules.xyz/pointer"
 	admission "k8s.io/api/admission/v1beta1"
 	authenticationV1 "k8s.io/api/authentication/v1"
 	core "k8s.io/api/core/v1"
@@ -319,10 +319,10 @@ func sampleMongoDB() api.MongoDB {
 		},
 		Spec: api.MongoDBSpec{
 			Version:     "3.4",
-			Replicas:    types.Int32P(1),
+			Replicas:    pointer.Int32P(1),
 			StorageType: api.StorageTypeDurable,
 			Storage: &core.PersistentVolumeClaimSpec{
-				StorageClassName: types.StringP("standard"),
+				StorageClassName: pointer.StringP("standard"),
 				Resources: core.ResourceRequirements{
 					Requests: core.ResourceList{
 						core.ResourceStorage: resource.MustParse("100Mi"),
@@ -360,7 +360,7 @@ func sampleShardMongo() api.MongoDB {
 								core.ResourceStorage: resource.MustParse("1Gi"),
 							},
 						},
-						StorageClassName: types.StringP("standard"),
+						StorageClassName: pointer.StringP("standard"),
 					},
 				},
 				ConfigServer: api.MongoDBConfigNode{
@@ -373,7 +373,7 @@ func sampleShardMongo() api.MongoDB {
 								core.ResourceStorage: resource.MustParse("1Gi"),
 							},
 						},
-						StorageClassName: types.StringP("standard"),
+						StorageClassName: pointer.StringP("standard"),
 					},
 				},
 				Mongos: api.MongoDBMongosNode{
