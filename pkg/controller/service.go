@@ -54,6 +54,7 @@ func (c *Controller) ensurePrimaryService(db *api.MongoDB) (kutil.VerbType, erro
 		Name:      db.OffshootName(),
 		Namespace: db.Namespace,
 	}
+	svcTemplate := api.GetServiceTemplate(db.Spec.ServiceTemplates, api.PrimaryServiceAlias)
 	owner := metav1.NewControllerRef(db, api.SchemeGroupVersion.WithKind(api.ResourceKindMongoDB))
 
 	selector := db.OffshootSelectors()
@@ -68,7 +69,7 @@ func (c *Controller) ensurePrimaryService(db *api.MongoDB) (kutil.VerbType, erro
 		func(in *core.Service) *core.Service {
 			core_util.EnsureOwnerReference(&in.ObjectMeta, owner)
 			in.Labels = db.OffshootLabels()
-			in.Annotations = db.Spec.ServiceTemplate.Annotations
+			in.Annotations = svcTemplate.Annotations
 
 			in.Spec.Selector = selector
 			if db.Spec.ReplicaSet != nil {
@@ -82,21 +83,21 @@ func (c *Controller) ensurePrimaryService(db *api.MongoDB) (kutil.VerbType, erro
 						TargetPort: intstr.FromString(api.MongoDBDatabasePortName),
 					},
 				}),
-				db.Spec.ServiceTemplate.Spec.Ports,
+				svcTemplate.Spec.Ports,
 			)
 
-			if db.Spec.ServiceTemplate.Spec.ClusterIP != "" {
-				in.Spec.ClusterIP = db.Spec.ServiceTemplate.Spec.ClusterIP
+			if svcTemplate.Spec.ClusterIP != "" {
+				in.Spec.ClusterIP = svcTemplate.Spec.ClusterIP
 			}
-			if db.Spec.ServiceTemplate.Spec.Type != "" {
-				in.Spec.Type = db.Spec.ServiceTemplate.Spec.Type
+			if svcTemplate.Spec.Type != "" {
+				in.Spec.Type = svcTemplate.Spec.Type
 			}
-			in.Spec.ExternalIPs = db.Spec.ServiceTemplate.Spec.ExternalIPs
-			in.Spec.LoadBalancerIP = db.Spec.ServiceTemplate.Spec.LoadBalancerIP
-			in.Spec.LoadBalancerSourceRanges = db.Spec.ServiceTemplate.Spec.LoadBalancerSourceRanges
-			in.Spec.ExternalTrafficPolicy = db.Spec.ServiceTemplate.Spec.ExternalTrafficPolicy
-			if db.Spec.ServiceTemplate.Spec.HealthCheckNodePort > 0 {
-				in.Spec.HealthCheckNodePort = db.Spec.ServiceTemplate.Spec.HealthCheckNodePort
+			in.Spec.ExternalIPs = svcTemplate.Spec.ExternalIPs
+			in.Spec.LoadBalancerIP = svcTemplate.Spec.LoadBalancerIP
+			in.Spec.LoadBalancerSourceRanges = svcTemplate.Spec.LoadBalancerSourceRanges
+			in.Spec.ExternalTrafficPolicy = svcTemplate.Spec.ExternalTrafficPolicy
+			if svcTemplate.Spec.HealthCheckNodePort > 0 {
+				in.Spec.HealthCheckNodePort = svcTemplate.Spec.HealthCheckNodePort
 			}
 			return in
 		},
