@@ -85,7 +85,6 @@ func (c *Controller) ensurePrimaryService(db *api.MongoDB) (kutil.VerbType, erro
 				}),
 				svcTemplate.Spec.Ports,
 			)
-
 			if svcTemplate.Spec.ClusterIP != "" {
 				in.Spec.ClusterIP = svcTemplate.Spec.ClusterIP
 			}
@@ -113,13 +112,13 @@ func (c *Controller) ensureStatsService(db *api.MongoDB) (kutil.VerbType, error)
 		return kutil.VerbUnchanged, nil
 	}
 
-	owner := metav1.NewControllerRef(db, api.SchemeGroupVersion.WithKind(api.ResourceKindMongoDB))
-
 	// create/patch stats Service
 	meta := metav1.ObjectMeta{
 		Name:      db.StatsService().ServiceName(),
 		Namespace: db.Namespace,
 	}
+	svcTemplate := api.GetServiceTemplate(db.Spec.ServiceTemplates, api.StatsServiceAlias)
+	owner := metav1.NewControllerRef(db, api.SchemeGroupVersion.WithKind(api.ResourceKindMongoDB))
 	_, vt, err := core_util.CreateOrPatchService(
 		context.TODO(),
 		c.Client,
@@ -127,14 +126,32 @@ func (c *Controller) ensureStatsService(db *api.MongoDB) (kutil.VerbType, error)
 		func(in *core.Service) *core.Service {
 			core_util.EnsureOwnerReference(&in.ObjectMeta, owner)
 			in.Labels = db.StatsServiceLabels()
+			in.Annotations = svcTemplate.Annotations
+
 			in.Spec.Selector = db.OffshootSelectors()
-			in.Spec.Ports = core_util.MergeServicePorts(in.Spec.Ports, []core.ServicePort{
-				{
-					Name:       mona.PrometheusExporterPortName,
-					Port:       db.Spec.Monitor.Prometheus.Exporter.Port,
-					TargetPort: intstr.FromString(mona.PrometheusExporterPortName),
-				},
-			})
+			in.Spec.Ports = ofst.PatchServicePorts(
+				core_util.MergeServicePorts(in.Spec.Ports, []core.ServicePort{
+					{
+						Name:       mona.PrometheusExporterPortName,
+						Port:       db.Spec.Monitor.Prometheus.Exporter.Port,
+						TargetPort: intstr.FromString(mona.PrometheusExporterPortName),
+					},
+				}),
+				svcTemplate.Spec.Ports,
+			)
+			if svcTemplate.Spec.ClusterIP != "" {
+				in.Spec.ClusterIP = svcTemplate.Spec.ClusterIP
+			}
+			if svcTemplate.Spec.Type != "" {
+				in.Spec.Type = svcTemplate.Spec.Type
+			}
+			in.Spec.ExternalIPs = svcTemplate.Spec.ExternalIPs
+			in.Spec.LoadBalancerIP = svcTemplate.Spec.LoadBalancerIP
+			in.Spec.LoadBalancerSourceRanges = svcTemplate.Spec.LoadBalancerSourceRanges
+			in.Spec.ExternalTrafficPolicy = svcTemplate.Spec.ExternalTrafficPolicy
+			if svcTemplate.Spec.HealthCheckNodePort > 0 {
+				in.Spec.HealthCheckNodePort = svcTemplate.Spec.HealthCheckNodePort
+			}
 			return in
 		},
 		metav1.PatchOptions{},
