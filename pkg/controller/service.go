@@ -71,6 +71,9 @@ func (c *Controller) ensurePrimaryService(db *api.MongoDB) (kutil.VerbType, erro
 			in.Annotations = db.Spec.ServiceTemplate.Annotations
 
 			in.Spec.Selector = selector
+			if db.Spec.ReplicaSet != nil {
+				in.Spec.Selector[api.LabelRole] = api.DatabasePodPrimary
+			}
 			in.Spec.Ports = ofst.PatchServicePorts(
 				core_util.MergeServicePorts(in.Spec.Ports, []core.ServicePort{
 					{
