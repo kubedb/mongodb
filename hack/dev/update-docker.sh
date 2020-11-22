@@ -14,9 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-
-
 set -eou pipefail
 
 GOPATH=$(go env GOPATH)
@@ -27,71 +24,71 @@ export EXPORTER_UPDATE=1
 export OPERATOR_UPDATE=1
 
 show_help() {
-  echo "update-docker.sh [options]"
-  echo " "
-  echo "options:"
-  echo "-h, --help                       show brief help"
-  echo "    --tools-only                 update only database-tools images"
-  echo "    --exporter-only              update only database-exporter images"
-  echo "    --operator-only              update only operator image"
+    echo "update-docker.sh [options]"
+    echo " "
+    echo "options:"
+    echo "-h, --help                       show brief help"
+    echo "    --tools-only                 update only database-tools images"
+    echo "    --exporter-only              update only database-exporter images"
+    echo "    --operator-only              update only operator image"
 }
 
 while test $# -gt 0; do
-  case "$1" in
-    -h | --help)
-      show_help
-      exit 0
-      ;;
-    --tools-only)
-      export TOOLS_UPDATE=1
-      export EXPORTER_UPDATE=0
-      export OPERATOR_UPDATE=0
-      shift
-      ;;
-    --exporter-only)
-      export TOOLS_UPDATE=0
-      export EXPORTER_UPDATE=1
-      export OPERATOR_UPDATE=0
-      shift
-      ;;
-    --operator-only)
-      export TOOLS_UPDATE=0
-      export EXPORTER_UPDATE=0
-      export OPERATOR_UPDATE=1
-      shift
-      ;;
-    *)
-      show_help
-      exit 1
-      ;;
-  esac
+    case "$1" in
+        -h | --help)
+            show_help
+            exit 0
+            ;;
+        --tools-only)
+            export TOOLS_UPDATE=1
+            export EXPORTER_UPDATE=0
+            export OPERATOR_UPDATE=0
+            shift
+            ;;
+        --exporter-only)
+            export TOOLS_UPDATE=0
+            export EXPORTER_UPDATE=1
+            export OPERATOR_UPDATE=0
+            shift
+            ;;
+        --operator-only)
+            export TOOLS_UPDATE=0
+            export EXPORTER_UPDATE=0
+            export OPERATOR_UPDATE=1
+            shift
+            ;;
+        *)
+            show_help
+            exit 1
+            ;;
+    esac
 done
 
 dbversions=(
-  3.4.17
-  3.4.22
-  3.4
-  3.6.8
-  3.6.13
-  3.6
-  4.0.3
-  4.0.5
-  4.0.11
-  4.0
-  4.1.4
-  4.1.7
-  4.1.13
-  4.1
+    3.4.17
+    3.4.22
+    3.4
+    3.6.8
+    3.6.13
+    3.6
+    4.0.3
+    4.0.5
+    4.0.11
+    4.0
+    4.1.4
+    4.1.7
+    4.1.13
+    4.1
 )
 
 exporters=(
-  latest
-  v1.0.0
+    latest
+    v1.0.0
 )
 
 percona_exporters=(
-  latest
-  v0.8.0
+    latest
+    v0.8.0
 )
 
 echo ""
@@ -99,29 +96,29 @@ env | sort | grep -e DOCKER_REGISTRY -e APPSCODE_ENV || true
 echo ""
 
 if [ "$TOOLS_UPDATE" -eq 1 ]; then
-  cowsay -f tux "Processing database-tools images" || true
-  for db in "${dbversions[@]}"; do
-    ${REPO_ROOT}/hack/docker/mongo-tools/${db}/make.sh build
-    ${REPO_ROOT}/hack/docker/mongo-tools/${db}/make.sh push
-  done
+    cowsay -f tux "Processing database-tools images" || true
+    for db in "${dbversions[@]}"; do
+        ${REPO_ROOT}/hack/docker/mongo-tools/${db}/make.sh build
+        ${REPO_ROOT}/hack/docker/mongo-tools/${db}/make.sh push
+    done
 fi
 
 if [ "$EXPORTER_UPDATE" -eq 1 ]; then
-  cowsay -f tux "Processing database-exporter images" || true
-  for exporter in "${exporters[@]}"; do
-    # deprecated
-    ${REPO_ROOT}/hack/docker/mongodb_exporter/${exporter}/make.sh build
-    ${REPO_ROOT}/hack/docker/mongodb_exporter/${exporter}/make.sh push
-  done
+    cowsay -f tux "Processing database-exporter images" || true
+    for exporter in "${exporters[@]}"; do
+        # deprecated
+        ${REPO_ROOT}/hack/docker/mongodb_exporter/${exporter}/make.sh build
+        ${REPO_ROOT}/hack/docker/mongodb_exporter/${exporter}/make.sh push
+    done
 
-  for exporter in "${percona_exporters[@]}"; do
-    ${REPO_ROOT}/hack/docker/percona-mongodb-exporter/${exporter}/make.sh build
-    ${REPO_ROOT}/hack/docker/percona-mongodb-exporter/${exporter}/make.sh push
-  done
+    for exporter in "${percona_exporters[@]}"; do
+        ${REPO_ROOT}/hack/docker/percona-mongodb-exporter/${exporter}/make.sh build
+        ${REPO_ROOT}/hack/docker/percona-mongodb-exporter/${exporter}/make.sh push
+    done
 fi
 
 if [ "$OPERATOR_UPDATE" -eq 1 ]; then
-  cowsay -f tux "Processing Operator images" || true
-  ${REPO_ROOT}/hack/docker/mg-operator/make.sh build
-  ${REPO_ROOT}/hack/docker/mg-operator/make.sh push
+    cowsay -f tux "Processing Operator images" || true
+    ${REPO_ROOT}/hack/docker/mg-operator/make.sh build
+    ${REPO_ROOT}/hack/docker/mg-operator/make.sh push
 fi

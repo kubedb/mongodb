@@ -14,9 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-
-
 set -xeou pipefail
 
 DOCKER_REGISTRY=${DOCKER_REGISTRY:-kubedb}
@@ -28,7 +25,6 @@ PATCH=4.1.13
 
 TAG="$DB_VERSION"
 BASE_TAG="$PATCH"
-
 
 docker pull "$DOCKER_REGISTRY/$IMG:$BASE_TAG"
 

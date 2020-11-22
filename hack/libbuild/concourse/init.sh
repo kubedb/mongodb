@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-
-
 BASE_DIR=$(pwd)
 GOPATH=$(go env GOPATH)
 REPO_ROOT=${REPO_ROOT:-"$GOPATH/src/github.com/$ORG_NAME/$REPO_NAME"}
