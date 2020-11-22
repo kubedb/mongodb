@@ -14,9 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-
-
 set -eou pipefail
 
 GOPATH=$(go env GOPATH)
@@ -32,26 +29,30 @@ IMG_REPOSITORY=mongodb_exporter
 TAG=latest
 
 # Take 1st 8 letters of hash as a shorten hash. Get hash without cloning: https://stackoverflow.com/a/24750310/4628962
-COMMIT_HASH=`git ls-remote https://github.com/${IMG_REGISTRY}/${IMG_REPOSITORY}.git | grep HEAD | awk '{ print substr($1,1,8)}'`
+COMMIT_HASH=$(git ls-remote https://github.com/${IMG_REGISTRY}/${IMG_REPOSITORY}.git | grep HEAD | awk '{ print substr($1,1,8)}')
 
 build() {
-  pushd "$REPO_ROOT/hack/docker/percona-mongodb-exporter/$TAG"
+    pushd "$REPO_ROOT/hack/docker/percona-mongodb-exporter/$TAG"
 
-  local cmd="docker build --pull -t $DOCKER_REGISTRY/$IMG:$COMMIT_HASH ."
-  echo $cmd; $cmd
+    local cmd="docker build --pull -t $DOCKER_REGISTRY/$IMG:$COMMIT_HASH ."
+    echo $cmd
+    $cmd
 
-  local cmd="docker tag $DOCKER_REGISTRY/$IMG:$COMMIT_HASH $DOCKER_REGISTRY/$IMG:$TAG"
-  echo $cmd; $cmd
+    local cmd="docker tag $DOCKER_REGISTRY/$IMG:$COMMIT_HASH $DOCKER_REGISTRY/$IMG:$TAG"
+    echo $cmd
+    $cmd
 
-  popd
+    popd
 }
 
 docker_push() {
-  local cmd="docker push $DOCKER_REGISTRY/$IMG:$COMMIT_HASH"
-  echo $cmd; $cmd
+    local cmd="docker push $DOCKER_REGISTRY/$IMG:$COMMIT_HASH"
+    echo $cmd
+    $cmd
 
-  local cmd="docker push $DOCKER_REGISTRY/$IMG:$TAG"
-  echo $cmd; $cmd
+    local cmd="docker push $DOCKER_REGISTRY/$IMG:$TAG"
+    echo $cmd
+    $cmd
 }
 
 binary_repo $@

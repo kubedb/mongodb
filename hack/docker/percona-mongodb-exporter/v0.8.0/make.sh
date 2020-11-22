@@ -14,9 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-
-
 set -eou pipefail
 
 GOPATH=$(go env GOPATH)
@@ -30,12 +27,13 @@ IMG=percona-mongodb-exporter
 TAG=v0.8.0
 
 build() {
-  pushd "$REPO_ROOT/hack/docker/percona-mongodb-exporter/$TAG"
+    pushd "$REPO_ROOT/hack/docker/percona-mongodb-exporter/$TAG"
 
-  local cmd="docker build --pull -t $DOCKER_REGISTRY/$IMG:$TAG ."
-  echo $cmd; $cmd
+    local cmd="docker build --pull -t $DOCKER_REGISTRY/$IMG:$TAG ."
+    echo $cmd
+    $cmd
 
-  popd
+    popd
 }
 
 binary_repo $@
