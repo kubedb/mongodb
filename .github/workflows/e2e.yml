@@ -91,6 +91,8 @@ jobs:
           echo "waiting for nodes to be ready ..."
           kubectl wait --for=condition=Ready nodes --all --timeout=5m
           kubectl get nodes
+          kubectl wait --for=condition=Ready pods -n kube-system --all --timeout=10m
+          kubectl get pods -n kube-system
           echo
           echo "install helm 3"
           curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
@@ -106,9 +108,9 @@ jobs:
           eval MAJOR=`echo ${{ matrix.k8s }} | sed -e "s#$RE#\1#"`
           eval MINOR=`echo ${{ matrix.k8s }} | sed -e "s#$RE#\2#"`
           if [ $MAJOR -eq 1 ] && [ $MINOR -lt 15 ]; then
-            kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v1.0.1/cert-manager-legacy.yaml
+            kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v1.0.4/cert-manager-legacy.yaml
           else
-            kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v1.0.1/cert-manager.yaml
+            kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v1.0.4/cert-manager.yaml
           fi
 
       - name: Check out installer
@@ -152,4 +154,4 @@ jobs:
           echo -n "$TEST_CREDENTIALS" > hack/config/.env
           echo >> hack/config/.env
           echo "GOOGLE_SERVICE_ACCOUNT_JSON_KEY=$(echo $GOOGLE_SERVICE_ACCOUNT_JSON_KEY)" >> hack/config/.env
-          make e2e-tests GINKGO_ARGS="--flakeAttempts=2" TEST_ARGS="--db-type=${{ matrix.db }} --db-version=${{ matrix.version }} --test-profiles=${{ matrix.profiles }} --ssl=${{ matrix.ssl }}" || (kubectl describe deployment -n kube-system kubedb; kubectl logs -n kube-system deployment/kubedb; kubectl describe deployment -n kube-system stash-operator; kubectl logs -n kube-system deployment/stash-operator operator; exit 1;)
+          make e2e-tests GINKGO_ARGS="--flakeAttempts=2" TEST_ARGS="--db-type=${{ matrix.db }} --db-version=${{ matrix.version }} --test-profiles=${{ matrix.profiles }} --ssl=${{ matrix.ssl }}" || (kubectl describe deployment -n kube-system  -l 'app.kubernetes.io/name in (kubedb,kubedb-enterprise)'; kubectl logs -n kube-system -l 'app.kubernetes.io/name in (kubedb,kubedb-enterprise)'; kubectl describe deployment -n kube-system stash-operator; kubectl logs -n kube-system deployment/stash-operator operator; exit 1;)
