@@ -29,7 +29,7 @@ require (
 	kmodules.xyz/monitoring-agent-api v0.0.0-20201105074044-be7a1044891a
 	kmodules.xyz/offshoot-api v0.0.0-20201105074700-8675f5f686f2
 	kmodules.xyz/webhook-runtime v0.0.0-20201105073856-2dc7382b88c6
-	kubedb.dev/apimachinery v0.15.2-0.20201117210058-03a5a9a72f49
+	kubedb.dev/apimachinery v0.15.2-0.20201122170734-a022a50249dc
 	stash.appscode.dev/apimachinery v0.11.7
 )
 
