@@ -123,7 +123,7 @@ func (c *Controller) createAuthSecret(db *api.MongoDB) (*core.LocalObjectReferen
 				Name:   authSecretName,
 				Labels: db.OffshootLabels(),
 			},
-			Type: core.SecretTypeOpaque,
+			Type: core.SecretTypeBasicAuth,
 			StringData: map[string]string{
 				core.BasicAuthUsernameKey: mongodbUser,
 				core.BasicAuthPasswordKey: passgen.Generate(api.DefaultPasswordLength),
