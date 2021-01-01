@@ -70,7 +70,6 @@ func (c *Controller) CheckMongoDBHealth(stopCh <-chan struct{}) {
 				var err error
 				var dbClient, configSvrClient, mongosClient *mongo.Client
 				var shardPingErrors []error
-				shardClient := make([]*mongo.Client, 0)
 				// Create database client
 				if db.Spec.ShardTopology == nil {
 					dbClient, err = c.GetMongoClient(db, strings.Join(db.Hosts(), ","))
@@ -105,10 +104,9 @@ func (c *Controller) CheckMongoDBHealth(stopCh <-chan struct{}) {
 						}
 					}()
 
-					shardClient = make([]*mongo.Client, db.Spec.ShardTopology.Shard.Shards)
 					shardPingErrors = make([]error, db.Spec.ShardTopology.Shard.Shards)
 					for i := int32(0); i < db.Spec.ShardTopology.Shard.Shards; i++ {
-						shardClient[i], err = c.GetMongoClient(db, strings.Join(db.ShardHosts(i), ","))
+						shardClient, err := c.GetMongoClient(db, strings.Join(db.ShardHosts(i), ","))
 						if err != nil {
 							// Since the client was unable to connect to the shard nodes,
 							// update "AcceptingConnection" to "false".
@@ -131,7 +129,7 @@ func (c *Controller) CheckMongoDBHealth(stopCh <-chan struct{}) {
 								// Since the get status failed, skip remaining operations.
 								return
 							}
-						}(shardClient[i])
+						}(shardClient)
 					}
 
 					mongosClient, err = c.GetMongoClient(db, strings.Join(db.MongosHosts(), ","))
