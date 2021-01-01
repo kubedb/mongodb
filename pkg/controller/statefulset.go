@@ -527,12 +527,6 @@ func (c *Controller) ensureConfigNode(db *api.MongoDB) (*apps.StatefulSet, kutil
 		)
 	}
 
-	if db.Spec.StorageEngine == api.StorageEngineInMemory {
-		args = append(args, []string{
-			"--storageEngine=inMemory",
-		}...)
-	}
-
 	opts := workloadOptions{
 		stsName:        db.ConfigSvrNodeName(),
 		labels:         db.ConfigSvrLabels(),
