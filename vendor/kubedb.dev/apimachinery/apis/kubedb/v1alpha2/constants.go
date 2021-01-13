@@ -119,8 +119,40 @@ const (
 	NodeTypeShard                 = "shard"
 	NodeTypeConfig                = "configsvr"
 
-	ConfigDirectoryPath        = "/data/configdb"
-	InitialConfigDirectoryPath = "/configdb-readonly"
+	MongoDBWorkDirectoryName = "workdir"
+	MongoDBWorkDirectoryPath = "/work-dir"
+
+	MongoDBCertDirectoryName = "certdir"
+
+	MongoDBDataDirectoryName = "datadir"
+	MongoDBDataDirectoryPath = "/data/db"
+
+	MongoDBInitInstallContainerName   = "copy-config"
+	MongoDBInitBootstrapContainerName = "bootstrap"
+
+	MongoDBConfigDirectoryName        = "configdir"
+	MongoDBConfigDirectoryPath        = "/data/configdb"
+	MongoDBInitialConfigDirectoryPath = "/configdb-readonly"
+
+	MongoDBInitScriptDirectoryName = "init-scripts"
+	MongoDBInitScriptDirectoryPath = "/init-scripts"
+
+	MongoDBClientCertDirectoryName = "client-cert"
+	MongoDBClientCertDirectoryPath = "/client-cert"
+
+	MongoDBServerCertDirectoryName = "server-cert"
+	MongoDBServerCertDirectoryPath = "/server-cert"
+
+	MongoDBInitialKeyDirectoryName = "keydir"
+	MongoDBInitialKeyDirectoryPath = "/keydir-readonly"
+
+	MongoDBContainerName = ResourceSingularMongoDB
+
+	MongoDBDefaultVolumeClaimTemplateName = MongoDBDataDirectoryName
+
+	MongodbUser             = "root"
+	MongoDBKeyForKeyFile    = "key.txt"
+	MongoDBAuthSecretSuffix = "-auth"
 
 	// =========================== MySQL Constants ============================
 	MySQLMetricsExporterConfigSecretSuffix = "metrics-exporter-config"
