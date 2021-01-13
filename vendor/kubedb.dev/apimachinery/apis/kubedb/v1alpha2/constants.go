@@ -112,7 +112,7 @@ const (
 	MongoDBDatabasePortName       = "db"
 	MongoDBPrimaryServicePortName = "primary"
 	MongoDBDatabasePort           = 27017
-	MongoDBKeyFileSecretSuffix    = "key"
+	MongoDBKeyFileSecretSuffix    = "-key"
 	MongoDBRootUsername           = "root"
 	MongoDBCustomConfigFile       = "mongod.conf"
 	NodeTypeMongos                = "mongos"
