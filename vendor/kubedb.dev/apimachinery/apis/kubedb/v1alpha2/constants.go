@@ -68,9 +68,9 @@ const (
 	ElasticsearchTransportPort                   = 9300
 	ElasticsearchTransportPortName               = "transport"
 	ElasticsearchMetricsPort                     = 9600
-	ElasticsearchIngestNodePrefix                = "ingest"
-	ElasticsearchDataNodePrefix                  = "data"
-	ElasticsearchMasterNodePrefix                = "master"
+	ElasticsearchIngestNodeSuffix                = "ingest"
+	ElasticsearchDataNodeSuffix                  = "data"
+	ElasticsearchMasterNodeSuffix                = "master"
 	ElasticsearchNodeRoleMaster                  = kubedb.GroupName + "/" + "role-master"
 	ElasticsearchNodeRoleIngest                  = kubedb.GroupName + "/" + "role-ingest"
 	ElasticsearchNodeRoleData                    = kubedb.GroupName + "/" + "role-data"
@@ -287,7 +287,7 @@ const (
 )
 
 var (
-	defaultResourceLimits = core.ResourceList{
+	DefaultResourceLimits = core.ResourceList{
 		core.ResourceCPU:    resource.MustParse(".500"),
 		core.ResourceMemory: resource.MustParse("1024Mi"),
 	}
