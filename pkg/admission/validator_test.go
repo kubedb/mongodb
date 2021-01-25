@@ -347,7 +347,7 @@ func sampleShardMongo() api.MongoDB {
 			},
 		},
 		Spec: api.MongoDBSpec{
-			Version: "3.6-v2",
+			Version: "3.4",
 			ShardTopology: &api.MongoDBShardingTopology{
 				Shard: api.MongoDBShardNode{
 					Shards: 3,
