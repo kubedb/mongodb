@@ -365,7 +365,7 @@ func (c *Controller) ensureConfigNode(db *api.MongoDB) (*apps.StatefulSet, kutil
 	args := []string{
 		"--dbpath=" + api.MongoDBDataDirectoryPath,
 		"--auth",
-		"--ipv6"
+		"--ipv6",
 		"--bind_ip_all",
 		"--port=" + strconv.Itoa(api.MongoDBDatabasePort),
 		"--configsvr",
@@ -549,7 +549,7 @@ func (c *Controller) ensureNonTopology(db *api.MongoDB) (kutil.VerbType, error) 
 	args := []string{
 		"--dbpath=" + api.MongoDBDataDirectoryPath,
 		"--auth",
-		"--ipv6"
+		"--ipv6",
 		"--bind_ip_all",
 		"--port=" + strconv.Itoa(api.MongoDBDatabasePort),
 	}
