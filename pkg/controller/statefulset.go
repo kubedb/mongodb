@@ -157,7 +157,8 @@ func (c *Controller) ensureShardNode(db *api.MongoDB) ([]*apps.StatefulSet, kuti
 		args := []string{
 			"--dbpath=" + api.MongoDBDataDirectoryPath,
 			"--auth",
-			"--bind_ip=0.0.0.0",
+			"--ipv6",
+			"--bind_ip_all",
 			"--port=" + strconv.Itoa(api.MongoDBDatabasePort),
 			"--shardsvr",
 			"--replSet=" + db.ShardRepSetName(nodeNum),
@@ -364,7 +365,8 @@ func (c *Controller) ensureConfigNode(db *api.MongoDB) (*apps.StatefulSet, kutil
 	args := []string{
 		"--dbpath=" + api.MongoDBDataDirectoryPath,
 		"--auth",
-		"--bind_ip=0.0.0.0",
+		"--ipv6"
+		"--bind_ip_all",
 		"--port=" + strconv.Itoa(api.MongoDBDatabasePort),
 		"--configsvr",
 		"--replSet=" + db.ConfigSvrRepSetName(),
@@ -547,7 +549,8 @@ func (c *Controller) ensureNonTopology(db *api.MongoDB) (kutil.VerbType, error) 
 	args := []string{
 		"--dbpath=" + api.MongoDBDataDirectoryPath,
 		"--auth",
-		"--bind_ip=0.0.0.0",
+		"--ipv6"
+		"--bind_ip_all",
 		"--port=" + strconv.Itoa(api.MongoDBDatabasePort),
 	}
 
