@@ -55,7 +55,8 @@ func (c *Controller) ensureMongosNode(db *api.MongoDB) (*apps.StatefulSet, kutil
 
 	cmds := []string{"mongos"}
 	args := []string{
-		"--bind_ip=0.0.0.0",
+		"--ipv6",
+		"--bind_ip_all",
 		"--port=" + strconv.Itoa(api.MongoDBDatabasePort),
 		"--configdb=$(CONFIGDB_REPSET)",
 		"--clusterAuthMode=" + string(clusterAuth),
