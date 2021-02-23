@@ -3,7 +3,6 @@ module kubedb.dev/mongodb
 go 1.12
 
 require (
-	github.com/davecgh/go-spew v1.1.1
 	github.com/fatih/structs v1.1.0
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/pkg/errors v0.9.1
@@ -30,7 +29,7 @@ require (
 	kmodules.xyz/monitoring-agent-api v0.0.0-20201105074044-be7a1044891a
 	kmodules.xyz/offshoot-api v0.0.0-20210218144050-e1d794cb382a
 	kmodules.xyz/webhook-runtime v0.0.0-20201105073856-2dc7382b88c6
-	kubedb.dev/apimachinery v0.16.2
+	kubedb.dev/apimachinery v0.16.3-0.20210223000114-14ba7e04e839
 	stash.appscode.dev/apimachinery v0.11.9
 )
 
