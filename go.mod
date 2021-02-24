@@ -3,6 +3,7 @@ module kubedb.dev/mongodb
 go 1.12
 
 require (
+	github.com/davecgh/go-spew v1.1.1
 	github.com/fatih/structs v1.1.0
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/pkg/errors v0.9.1
@@ -124,3 +125,5 @@ replace k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20200410145947-61e04a5
 replace k8s.io/kubernetes => github.com/kmodules/kubernetes v1.19.0-alpha.0.0.20200922200158-8b13196d8dc4
 
 replace k8s.io/utils => k8s.io/utils v0.0.0-20200324210504-a9aa75ae1b89
+
+replace go.mongodb.org/mongo-driver => github.com/appscode/mongo-go-driver v1.4.0-beta2.0.20210223075318-951c8933c59c

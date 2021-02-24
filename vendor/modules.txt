@@ -24,7 +24,7 @@ github.com/PuerkitoBio/purell
 github.com/PuerkitoBio/urlesc
 # github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e
 github.com/armon/circbuf
-# github.com/aws/aws-sdk-go v1.31.9
+# github.com/aws/aws-sdk-go v1.34.28
 github.com/aws/aws-sdk-go/aws
 github.com/aws/aws-sdk-go/aws/arn
 github.com/aws/aws-sdk-go/aws/awserr
@@ -131,7 +131,7 @@ github.com/golang/protobuf/ptypes/timestamp
 github.com/golang/snappy
 # github.com/google/btree v1.0.0
 github.com/google/btree
-# github.com/google/go-cmp v0.4.0
+# github.com/google/go-cmp v0.5.2
 github.com/google/go-cmp/cmp
 github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
@@ -204,7 +204,7 @@ github.com/jetstack/cert-manager/pkg/client/listers/acme/v1beta1
 github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha2
 github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1alpha3
 github.com/jetstack/cert-manager/pkg/client/listers/certmanager/v1beta1
-# github.com/jmespath/go-jmespath v0.3.0
+# github.com/jmespath/go-jmespath v0.4.0
 github.com/jmespath/go-jmespath
 # github.com/jpillora/go-ogle-analytics v0.0.0-20161213085824-14b04e0594ef
 github.com/jpillora/go-ogle-analytics
@@ -278,6 +278,8 @@ github.com/spf13/pflag
 github.com/xdg/scram
 # github.com/xdg/stringprep v0.0.0-20180714160509-73f8eece6fdc
 github.com/xdg/stringprep
+# github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d
+github.com/youmark/pkcs8
 # github.com/yudai/gojsondiff v1.0.0
 github.com/yudai/gojsondiff
 github.com/yudai/gojsondiff/formatter
@@ -311,7 +313,7 @@ go.etcd.io/etcd/raft/confchange
 go.etcd.io/etcd/raft/quorum
 go.etcd.io/etcd/raft/raftpb
 go.etcd.io/etcd/raft/tracker
-# go.mongodb.org/mongo-driver v1.3.2
+# go.mongodb.org/mongo-driver v1.3.2 => github.com/appscode/mongo-go-driver v1.4.0-beta2.0.20210223075318-951c8933c59c
 go.mongodb.org/mongo-driver/bson
 go.mongodb.org/mongo-driver/bson/bsoncodec
 go.mongodb.org/mongo-driver/bson/bsonoptions
@@ -321,6 +323,8 @@ go.mongodb.org/mongo-driver/bson/primitive
 go.mongodb.org/mongo-driver/event
 go.mongodb.org/mongo-driver/internal
 go.mongodb.org/mongo-driver/mongo
+go.mongodb.org/mongo-driver/mongo/address
+go.mongodb.org/mongo-driver/mongo/description
 go.mongodb.org/mongo-driver/mongo/options
 go.mongodb.org/mongo-driver/mongo/readconcern
 go.mongodb.org/mongo-driver/mongo/readpref
@@ -330,14 +334,13 @@ go.mongodb.org/mongo-driver/version
 go.mongodb.org/mongo-driver/x/bsonx
 go.mongodb.org/mongo-driver/x/bsonx/bsoncore
 go.mongodb.org/mongo-driver/x/mongo/driver
-go.mongodb.org/mongo-driver/x/mongo/driver/address
 go.mongodb.org/mongo-driver/x/mongo/driver/auth
 go.mongodb.org/mongo-driver/x/mongo/driver/auth/internal/gssapi
 go.mongodb.org/mongo-driver/x/mongo/driver/connstring
-go.mongodb.org/mongo-driver/x/mongo/driver/description
 go.mongodb.org/mongo-driver/x/mongo/driver/dns
 go.mongodb.org/mongo-driver/x/mongo/driver/mongocrypt
 go.mongodb.org/mongo-driver/x/mongo/driver/mongocrypt/options
+go.mongodb.org/mongo-driver/x/mongo/driver/ocsp
 go.mongodb.org/mongo-driver/x/mongo/driver/operation
 go.mongodb.org/mongo-driver/x/mongo/driver/session
 go.mongodb.org/mongo-driver/x/mongo/driver/topology
@@ -378,6 +381,7 @@ golang.org/x/crypto/cryptobyte
 golang.org/x/crypto/cryptobyte/asn1
 golang.org/x/crypto/internal/subtle
 golang.org/x/crypto/nacl/secretbox
+golang.org/x/crypto/ocsp
 golang.org/x/crypto/pbkdf2
 golang.org/x/crypto/poly1305
 golang.org/x/crypto/salsa20/salsa
@@ -402,6 +406,7 @@ golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
 # golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
+golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
 golang.org/x/sync/singleflight
 # golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1
@@ -409,7 +414,7 @@ golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/text v0.3.2
+# golang.org/x/text v0.3.3
 golang.org/x/text/encoding
 golang.org/x/text/encoding/internal
 golang.org/x/text/encoding/internal/identifier
