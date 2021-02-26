@@ -25,11 +25,9 @@ require (
 	k8s.io/apiserver v0.18.9
 	k8s.io/client-go v0.18.9
 	kmodules.xyz/client-go v0.0.0-20210218100652-8f345ddfe801
-	kmodules.xyz/custom-resources v0.0.0-20210218144958-579bf8307d65
+	kmodules.xyz/custom-resources v0.0.0-20210222235834-b3f8dc56b6a3
 	kmodules.xyz/monitoring-agent-api v0.0.0-20201105074044-be7a1044891a
-	kmodules.xyz/objectstore-api v0.0.0-20210218144135-bfabb80e0362 // indirect
 	kmodules.xyz/offshoot-api v0.0.0-20210218144050-e1d794cb382a
-	kmodules.xyz/prober v0.0.0-20210218144026-43e923722d81 // indirect
 	kmodules.xyz/webhook-runtime v0.0.0-20201105073856-2dc7382b88c6
 	kubedb.dev/apimachinery v0.16.2
 	stash.appscode.dev/apimachinery v0.11.9
