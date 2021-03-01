@@ -377,6 +377,7 @@ install:
 		--set catalog.memcached=false         \
 		--set catalog.mongo=true              \
 		--set catalog.mysql=false             \
+		--set catalog.mariadb=false           \
 		--set catalog.perconaxtradb=false     \
 		--set catalog.pgbouncer=false         \
 		--set catalog.postgres=false          \
