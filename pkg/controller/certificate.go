@@ -26,7 +26,7 @@ import (
 	"gomodules.xyz/version"
 )
 
-func (c *Controller) getTLSArgs(db *api.MongoDB, mgVersion *v1alpha1.MongoDBVersion) ([]string, error) {
+func (c *NodeReconciler) getTLSArgs(db *api.MongoDB, mgVersion *v1alpha1.MongoDBVersion) ([]string, error) {
 	var sslArgs []string
 	sslMode := string(db.Spec.SSLMode)
 	breakingVer, err := version.NewVersion("4.2")

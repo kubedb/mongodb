@@ -114,7 +114,11 @@ func (c *Controller) create(db *api.MongoDB) error {
 	}
 
 	// ensure database StatefulSet
-	vt2, err := c.ensureMongoDBNode(db)
+
+	vt2, err := NodeReconciler{
+		Config:     c.Config,
+		Controller: c.Controller,
+	}.Reconcile(db)
 	if err != nil && err != ErrStsNotReady {
 		return err
 	}
