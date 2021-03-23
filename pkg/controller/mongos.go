@@ -33,7 +33,7 @@ import (
 	ofst "kmodules.xyz/offshoot-api/api/v1"
 )
 
-func (c *NodeReconciler) ensureMongosNode(db *api.MongoDB) (*apps.StatefulSet, kutil.VerbType, error) {
+func (c *Reconciler) ensureMongosNode(db *api.MongoDB) (*apps.StatefulSet, kutil.VerbType, error) {
 	mongodbVersion, err := c.DBClient.CatalogV1alpha1().MongoDBVersions().Get(context.TODO(), string(db.Spec.Version), metav1.GetOptions{})
 	if err != nil {
 		return nil, kutil.VerbUnchanged, err

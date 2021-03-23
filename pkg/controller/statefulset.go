@@ -70,12 +70,12 @@ type workloadOptions struct {
 	isMongos       bool
 }
 
-type NodeReconciler struct {
+type Reconciler struct {
 	amc.Config
 	*amc.Controller
 }
 
-func (c NodeReconciler) Reconcile(db *api.MongoDB) (kutil.VerbType, error) {
+func (c Reconciler) Reconcile(db *api.MongoDB) (kutil.VerbType, error) {
 	// Standalone, replicaset, shard
 	if db.Spec.ShardTopology != nil {
 		return c.ensureTopologyCluster(db)
@@ -84,7 +84,7 @@ func (c NodeReconciler) Reconcile(db *api.MongoDB) (kutil.VerbType, error) {
 	return c.ensureNonTopology(db)
 }
 
-func (c *NodeReconciler) ensureTopologyCluster(db *api.MongoDB) (kutil.VerbType, error) {
+func (c *Reconciler) ensureTopologyCluster(db *api.MongoDB) (kutil.VerbType, error) {
 	st, vt1, err := c.ensureConfigNode(db)
 	if err != nil {
 		return vt1, err
@@ -139,7 +139,7 @@ func (c *NodeReconciler) ensureTopologyCluster(db *api.MongoDB) (kutil.VerbType,
 	return kutil.VerbUnchanged, nil
 }
 
-func (c *NodeReconciler) ensureShardNode(db *api.MongoDB) ([]*apps.StatefulSet, kutil.VerbType, error) {
+func (c *Reconciler) ensureShardNode(db *api.MongoDB) ([]*apps.StatefulSet, kutil.VerbType, error) {
 	shardSts := func(nodeNum int32) (*apps.StatefulSet, kutil.VerbType, error) {
 		mongodbVersion, err := c.DBClient.CatalogV1alpha1().MongoDBVersions().Get(context.TODO(), string(db.Spec.Version), metav1.GetOptions{})
 		if err != nil {
@@ -348,7 +348,7 @@ func (c *NodeReconciler) ensureShardNode(db *api.MongoDB) ([]*apps.StatefulSet, 
 	return sts, vt, nil
 }
 
-func (c *NodeReconciler) ensureConfigNode(db *api.MongoDB) (*apps.StatefulSet, kutil.VerbType, error) {
+func (c *Reconciler) ensureConfigNode(db *api.MongoDB) (*apps.StatefulSet, kutil.VerbType, error) {
 	mongodbVersion, err := c.DBClient.CatalogV1alpha1().MongoDBVersions().Get(context.TODO(), string(db.Spec.Version), metav1.GetOptions{})
 	if err != nil {
 		return nil, kutil.VerbUnchanged, err
@@ -528,7 +528,7 @@ func (c *NodeReconciler) ensureConfigNode(db *api.MongoDB) (*apps.StatefulSet, k
 	return c.ensureStatefulSet(db, opts)
 }
 
-func (c *NodeReconciler) ensureNonTopology(db *api.MongoDB) (kutil.VerbType, error) {
+func (c *Reconciler) ensureNonTopology(db *api.MongoDB) (kutil.VerbType, error) {
 	mongodbVersion, err := c.DBClient.CatalogV1alpha1().MongoDBVersions().Get(context.TODO(), string(db.Spec.Version), metav1.GetOptions{})
 	if err != nil {
 		return kutil.VerbUnchanged, err
@@ -756,7 +756,7 @@ func (c *NodeReconciler) ensureNonTopology(db *api.MongoDB) (kutil.VerbType, err
 	return vt, err
 }
 
-func (c *NodeReconciler) ensureStatefulSet(db *api.MongoDB, opts workloadOptions) (*apps.StatefulSet, kutil.VerbType, error) {
+func (c *Reconciler) ensureStatefulSet(db *api.MongoDB, opts workloadOptions) (*apps.StatefulSet, kutil.VerbType, error) {
 	// Take value of podTemplate
 	var pt ofst.PodTemplateSpec
 	if opts.podTemplate != nil {
@@ -912,7 +912,7 @@ func (c *NodeReconciler) ensureStatefulSet(db *api.MongoDB, opts workloadOptions
 	return statefulSet, vt, nil
 }
 
-func (c *NodeReconciler) checkStatefulSet(db *api.MongoDB, stsName string) error {
+func (c *Reconciler) checkStatefulSet(db *api.MongoDB, stsName string) error {
 	// StatefulSet for MongoDB database
 	statefulSet, err := c.Client.AppsV1().StatefulSets(db.Namespace).Get(context.TODO(), stsName, metav1.GetOptions{})
 	if err != nil {
