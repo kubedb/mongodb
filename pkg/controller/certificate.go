@@ -20,13 +20,12 @@ import (
 	"fmt"
 	"strings"
 
-	core "k8s.io/api/core/v1"
-	dynamic_util "kmodules.xyz/client-go/dynamic"
-
 	"kubedb.dev/apimachinery/apis/catalog/v1alpha1"
 	api "kubedb.dev/apimachinery/apis/kubedb/v1alpha2"
 
 	"gomodules.xyz/version"
+	core "k8s.io/api/core/v1"
+	dynamic_util "kmodules.xyz/client-go/dynamic"
 )
 
 func (c *Reconciler) getTLSArgs(db *api.MongoDB, mgVersion *v1alpha1.MongoDBVersion) ([]string, error) {

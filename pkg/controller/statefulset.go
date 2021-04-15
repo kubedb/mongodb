@@ -73,9 +73,17 @@ type workloadOptions struct {
 type Reconciler struct {
 	amc.Config
 	*amc.Controller
+
+	enableIPv6 bool
 }
 
-func (c Reconciler) Reconcile(db *api.MongoDB) (kutil.VerbType, error) {
+func (c *Reconciler) Reconcile(db *api.MongoDB) (kutil.VerbType, error) {
+	var err error
+	c.enableIPv6, err = meta_util.IPv6Enabled(c.Client)
+	if err != nil {
+		return kutil.VerbUnchanged, err
+	}
+
 	// Standalone, replicaset, shard
 	if db.Spec.ShardTopology != nil {
 		return c.ensureTopologyCluster(db)
@@ -163,13 +171,15 @@ func (c *Reconciler) ensureShardNode(db *api.MongoDB) ([]*apps.StatefulSet, kuti
 		args := []string{
 			"--dbpath=" + api.MongoDBDataDirectoryPath,
 			"--auth",
-			"--ipv6",
 			"--bind_ip_all",
 			"--port=" + strconv.Itoa(api.MongoDBDatabasePort),
 			"--shardsvr",
 			"--replSet=" + db.ShardRepSetName(nodeNum),
 			"--clusterAuthMode=" + string(clusterAuth),
 			"--keyFile=" + api.MongoDBConfigDirectoryPath + "/" + api.MongoDBKeyForKeyFile,
+		}
+		if c.enableIPv6 {
+			args = append(args, "--ipv6")
 		}
 
 		sslArgs, err := c.getTLSArgs(db, mongodbVersion)
@@ -371,13 +381,15 @@ func (c *Reconciler) ensureConfigNode(db *api.MongoDB) (*apps.StatefulSet, kutil
 	args := []string{
 		"--dbpath=" + api.MongoDBDataDirectoryPath,
 		"--auth",
-		"--ipv6",
 		"--bind_ip_all",
 		"--port=" + strconv.Itoa(api.MongoDBDatabasePort),
 		"--configsvr",
 		"--replSet=" + db.ConfigSvrRepSetName(),
 		"--clusterAuthMode=" + string(clusterAuth),
 		"--keyFile=" + api.MongoDBConfigDirectoryPath + "/" + api.MongoDBKeyForKeyFile,
+	}
+	if c.enableIPv6 {
+		args = append(args, "--ipv6")
 	}
 
 	sslArgs, err := c.getTLSArgs(db, mongodbVersion)
@@ -555,9 +567,11 @@ func (c *Reconciler) ensureNonTopology(db *api.MongoDB) (kutil.VerbType, error) 
 	args := []string{
 		"--dbpath=" + api.MongoDBDataDirectoryPath,
 		"--auth",
-		"--ipv6",
 		"--bind_ip_all",
 		"--port=" + strconv.Itoa(api.MongoDBDatabasePort),
+	}
+	if c.enableIPv6 {
+		args = append(args, "--ipv6")
 	}
 
 	sslArgs, err := c.getTLSArgs(db, mongodbVersion)
