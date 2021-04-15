@@ -198,6 +198,9 @@ func (m MongoDB) ServiceName() string {
 // Governing Service Name. Here, name parameter is either
 // OffshootName, ShardNodeName or ConfigSvrNodeName
 func (m MongoDB) GoverningServiceName(name string) string {
+	if name == "" {
+		panic(fmt.Sprintf("StatefulSet name is missing for MongoDB %s/%s", m.Namespace, m.Name))
+	}
 	return name + "-pods"
 }
 
@@ -536,7 +539,7 @@ func (m *MongoDB) getCmdForProbes(mgVersion *v1alpha1.MongoDBVersion) []string {
 		exceptionVer, _ := version.NewVersion("4.1.4")
 		currentVer, err := version.NewVersion(mgVersion.Spec.Version)
 		if err != nil {
-			return []string{}
+			panic(fmt.Errorf("MongoDB %s/%s: unable to parse version. reason: %s", m.Namespace, m.Name, err.Error()))
 		}
 		if currentVer.Equal(exceptionVer) {
 			sslArgs = fmt.Sprintf("--tls --tlsCAFile=%v/%v --tlsPEMKeyFile=%v/%v", MongoCertDirectory, TLSCACertFileName, MongoCertDirectory, MongoClientFileName)
@@ -688,7 +691,10 @@ func (m *MongoDB) KeyFileRequired() bool {
 
 // CertificateName returns the default certificate name and/or certificate secret name for a certificate alias
 func (m *MongoDB) CertificateName(alias MongoDBCertificateAlias, stsName string) string {
-	if m.Spec.ShardTopology != nil && alias == MongoDBServerCert && stsName != "" {
+	if m.Spec.ShardTopology != nil && alias == MongoDBServerCert {
+		if stsName == "" {
+			panic(fmt.Sprintf("StatefulSet name required to compute %s certificate name for MongoDB %s/%s", alias, m.Namespace, m.Name))
+		}
 		return meta_util.NameWithSuffix(stsName, fmt.Sprintf("%s-cert", string(alias)))
 	}
 	return meta_util.NameWithSuffix(m.Name, fmt.Sprintf("%s-cert", string(alias)))
@@ -696,13 +702,15 @@ func (m *MongoDB) CertificateName(alias MongoDBCertificateAlias, stsName string)
 
 // GetCertSecretName returns the secret name for a certificate alias
 func (m *MongoDB) GetCertSecretName(alias MongoDBCertificateAlias, stsName string) string {
-	if m.Spec.TLS != nil {
-		if !(m.Spec.ShardTopology != nil && alias == MongoDBServerCert) {
-			name, ok := kmapi.GetCertificateSecretName(m.Spec.TLS.Certificates, string(alias))
-			if ok {
-				return name
-			}
+	if m.Spec.ShardTopology != nil && alias == MongoDBServerCert {
+		if stsName == "" {
+			panic(fmt.Sprintf("StatefulSet name required to compute %s certificate name for MongoDB %s/%s", alias, m.Namespace, m.Name))
 		}
+		return m.CertificateName(alias, stsName)
+	}
+	name, ok := kmapi.GetCertificateSecretName(m.Spec.TLS.Certificates, string(alias))
+	if ok {
+		return name
 	}
 
 	return m.CertificateName(alias, stsName)

@@ -358,6 +358,12 @@ func (e *Elasticsearch) SetDefaults(esVersion *catalog.ElasticsearchVersion, top
 		}
 	}
 
+	// Add default Elasticsearch UID
+	if e.Spec.PodTemplate.Spec.ContainerSecurityContext.RunAsUser == nil &&
+		esVersion.Spec.SecurityContext.RunAsUser != nil {
+		e.Spec.PodTemplate.Spec.ContainerSecurityContext.RunAsUser = esVersion.Spec.SecurityContext.RunAsUser
+	}
+
 	e.setDefaultAffinity(&e.Spec.PodTemplate, e.OffshootSelectors(), topology)
 	e.SetTLSDefaults(esVersion)
 	e.setDefaultInternalUsersAndRoleMappings(esVersion)
