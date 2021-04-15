@@ -80,21 +80,21 @@ func (c *Reconciler) IsCertificateSecretsCreated(db *api.MongoDB) (bool, error) 
 		var secrets []string
 		if db.Spec.ShardTopology != nil {
 			// for config server
-			secrets = append(secrets, db.MustCertSecretName(api.MongoDBServerCert, db.ConfigSvrNodeName()))
+			secrets = append(secrets, db.GetCertSecretName(api.MongoDBServerCert, db.ConfigSvrNodeName()))
 			// for shards
 			for i := 0; i < int(db.Spec.ShardTopology.Shard.Shards); i++ {
-				secrets = append(secrets, db.MustCertSecretName(api.MongoDBServerCert, db.ShardNodeName(int32(i))))
+				secrets = append(secrets, db.GetCertSecretName(api.MongoDBServerCert, db.ShardNodeName(int32(i))))
 			}
 			// for mongos
-			secrets = append(secrets, db.MustCertSecretName(api.MongoDBServerCert, db.MongosNodeName()))
+			secrets = append(secrets, db.GetCertSecretName(api.MongoDBServerCert, db.MongosNodeName()))
 		} else {
 			// ReplicaSet or Standalone
-			secrets = append(secrets, db.MustCertSecretName(api.MongoDBServerCert, ""))
+			secrets = append(secrets, db.GetCertSecretName(api.MongoDBServerCert, ""))
 		}
 		// for stash/user
-		secrets = append(secrets, db.MustCertSecretName(api.MongoDBClientCert, ""))
+		secrets = append(secrets, db.GetCertSecretName(api.MongoDBClientCert, ""))
 		// for prometheus exporter
-		secrets = append(secrets, db.MustCertSecretName(api.MongoDBMetricsExporterCert, ""))
+		secrets = append(secrets, db.GetCertSecretName(api.MongoDBMetricsExporterCert, ""))
 
 		return dynamic_util.ResourcesExists(
 			c.DynamicClient,

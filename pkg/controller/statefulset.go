@@ -1023,7 +1023,7 @@ func installInitContainer(
 				VolumeSource: core.VolumeSource{
 					Secret: &core.SecretVolumeSource{
 						DefaultMode: pointer.Int32P(0400),
-						SecretName:  db.MustCertSecretName(api.MongoDBClientCert, ""),
+						SecretName:  db.GetCertSecretName(api.MongoDBClientCert, ""),
 					},
 				},
 			},
@@ -1032,7 +1032,7 @@ func installInitContainer(
 				VolumeSource: core.VolumeSource{
 					Secret: &core.SecretVolumeSource{
 						DefaultMode: pointer.Int32P(0400),
-						SecretName:  db.MustCertSecretName(api.MongoDBServerCert, stsName),
+						SecretName:  db.GetCertSecretName(api.MongoDBServerCert, stsName),
 					},
 				},
 			},
