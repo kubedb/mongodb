@@ -79,7 +79,7 @@ type Reconciler struct {
 
 func (c *Reconciler) Reconcile(db *api.MongoDB) (kutil.VerbType, error) {
 	var err error
-	c.enableIPv6, err = meta_util.IPv6Enabled(c.Client)
+	c.enableIPv6, err = meta_util.IPv6EnabledInKernel()
 	if err != nil {
 		return kutil.VerbUnchanged, err
 	}
