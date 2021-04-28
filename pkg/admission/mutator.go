@@ -129,7 +129,10 @@ func (a *MongoDBMutator) setDefaultValues(extClient cs.Interface, db *api.MongoD
 		return nil, err
 	}
 
-	db.SetDefaults(mgVersion, a.ClusterTopology)
+	err = db.SetDefaults(mgVersion, a.ClusterTopology)
+	if err != nil {
+		return nil, err
+	}
 
 	return db, nil
 }

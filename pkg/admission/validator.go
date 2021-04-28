@@ -128,7 +128,10 @@ func (a *MongoDBValidator) Admit(req *admission.AdmissionRequest) *admission.Adm
 			if err != nil {
 				return hookapi.StatusInternalServerError(err)
 			}
-			oldMongoDB.SetDefaults(mgVersion, a.ClusterTopology)
+			err = oldMongoDB.SetDefaults(mgVersion, a.ClusterTopology)
+			if err != nil {
+				return hookapi.StatusInternalServerError(err)
+			}
 			// Allow changing Database Secret only if there was no secret have set up yet.
 			if oldMongoDB.Spec.AuthSecret == nil {
 				oldMongoDB.Spec.AuthSecret = mongodb.Spec.AuthSecret

@@ -337,9 +337,9 @@ func (m MongoDB) StatsServiceLabels() map[string]string {
 	return lbl
 }
 
-func (m *MongoDB) SetDefaults(mgVersion *v1alpha1.MongoDBVersion, topology *core_util.Topology) {
+func (m *MongoDB) SetDefaults(mgVersion *v1alpha1.MongoDBVersion, topology *core_util.Topology) error {
 	if m == nil {
-		return
+		return nil
 	}
 
 	if m.Spec.StorageType == "" {
@@ -394,9 +394,18 @@ func (m *MongoDB) SetDefaults(mgVersion *v1alpha1.MongoDBVersion, topology *core
 		}
 
 		// set default probes
-		m.setDefaultProbes(&m.Spec.ShardTopology.Shard.PodTemplate, mgVersion)
-		m.setDefaultProbes(&m.Spec.ShardTopology.ConfigServer.PodTemplate, mgVersion)
-		m.setDefaultProbes(&m.Spec.ShardTopology.Mongos.PodTemplate, mgVersion)
+		err := m.setDefaultProbes(&m.Spec.ShardTopology.Shard.PodTemplate, mgVersion)
+		if err != nil {
+			return err
+		}
+		err = m.setDefaultProbes(&m.Spec.ShardTopology.ConfigServer.PodTemplate, mgVersion)
+		if err != nil {
+			return err
+		}
+		err = m.setDefaultProbes(&m.Spec.ShardTopology.Mongos.PodTemplate, mgVersion)
+		if err != nil {
+			return err
+		}
 
 		// set default affinity (PodAntiAffinity)
 		shardLabels := m.OffshootSelectors()
@@ -423,7 +432,10 @@ func (m *MongoDB) SetDefaults(mgVersion *v1alpha1.MongoDBVersion, topology *core
 		}
 
 		// set default probes
-		m.setDefaultProbes(m.Spec.PodTemplate, mgVersion)
+		err := m.setDefaultProbes(m.Spec.PodTemplate, mgVersion)
+		if err != nil {
+			return err
+		}
 		// set default affinity (PodAntiAffinity)
 		m.setDefaultAffinity(m.Spec.PodTemplate, m.OffshootSelectors(), topology)
 
@@ -432,6 +444,8 @@ func (m *MongoDB) SetDefaults(mgVersion *v1alpha1.MongoDBVersion, topology *core
 
 	m.SetTLSDefaults()
 	m.Spec.Monitor.SetDefaults()
+
+	return nil
 }
 
 func (m *MongoDB) SetTLSDefaults() {
@@ -529,7 +543,7 @@ func (m *MongoDB) SetTLSDefaults() {
 	})
 }
 
-func (m *MongoDB) getCmdForProbes(mgVersion *v1alpha1.MongoDBVersion) []string {
+func (m *MongoDB) getCmdForProbes(mgVersion *v1alpha1.MongoDBVersion) ([]string, error) {
 	var sslArgs string
 	if m.Spec.SSLMode == SSLModeRequireSSL {
 		sslArgs = fmt.Sprintf("--tls --tlsCAFile=%v/%v --tlsCertificateKeyFile=%v/%v",
@@ -539,7 +553,7 @@ func (m *MongoDB) getCmdForProbes(mgVersion *v1alpha1.MongoDBVersion) []string {
 		exceptionVer, _ := version.NewVersion("4.1.4")
 		currentVer, err := version.NewVersion(mgVersion.Spec.Version)
 		if err != nil {
-			panic(fmt.Errorf("MongoDB %s/%s: unable to parse version. reason: %s", m.Namespace, m.Name, err.Error()))
+			return nil, fmt.Errorf("MongoDB %s/%s: unable to parse version. reason: %s", m.Namespace, m.Name, err.Error())
 		}
 		if currentVer.Equal(exceptionVer) {
 			sslArgs = fmt.Sprintf("--tls --tlsCAFile=%v/%v --tlsPEMKeyFile=%v/%v", MongoCertDirectory, TLSCACertFileName, MongoCertDirectory, MongoClientFileName)
@@ -555,52 +569,71 @@ func (m *MongoDB) getCmdForProbes(mgVersion *v1alpha1.MongoDBVersion) []string {
           exit 0
         fi
         exit 1`, sslArgs),
-	}
+	}, nil
 }
 
-func (m *MongoDB) GetDefaultLivenessProbeSpec(mgVersion *v1alpha1.MongoDBVersion) *core.Probe {
+func (m *MongoDB) GetDefaultLivenessProbeSpec(mgVersion *v1alpha1.MongoDBVersion) (*core.Probe, error) {
+	cmd, err := m.getCmdForProbes(mgVersion)
+	if err != nil {
+		return nil, err
+	}
 	return &core.Probe{
 		Handler: core.Handler{
 			Exec: &core.ExecAction{
-				Command: m.getCmdForProbes(mgVersion),
+				Command: cmd,
 			},
 		},
 		FailureThreshold: 3,
 		PeriodSeconds:    10,
 		SuccessThreshold: 1,
 		TimeoutSeconds:   5,
-	}
+	}, nil
 }
 
-func (m *MongoDB) GetDefaultReadinessProbeSpec(mgVersion *v1alpha1.MongoDBVersion) *core.Probe {
+func (m *MongoDB) GetDefaultReadinessProbeSpec(mgVersion *v1alpha1.MongoDBVersion) (*core.Probe, error) {
+	cmd, err := m.getCmdForProbes(mgVersion)
+	if err != nil {
+		return nil, err
+	}
 	return &core.Probe{
 		Handler: core.Handler{
 			Exec: &core.ExecAction{
-				Command: m.getCmdForProbes(mgVersion),
+				Command: cmd,
 			},
 		},
 		FailureThreshold: 3,
 		PeriodSeconds:    10,
 		SuccessThreshold: 1,
 		TimeoutSeconds:   1,
-	}
+	}, nil
 }
 
 // setDefaultProbes sets defaults only when probe fields are nil.
 // In operator, check if the value of probe fields is "{}".
 // For "{}", ignore readinessprobe or livenessprobe in statefulset.
 // ref: https://github.com/helm/charts/blob/345ba987722350ffde56ec34d2928c0b383940aa/stable/mongodb/templates/deployment-standalone.yaml#L93
-func (m *MongoDB) setDefaultProbes(podTemplate *ofst.PodTemplateSpec, mgVersion *v1alpha1.MongoDBVersion) {
+func (m *MongoDB) setDefaultProbes(podTemplate *ofst.PodTemplateSpec, mgVersion *v1alpha1.MongoDBVersion) error {
 	if podTemplate == nil {
-		return
+		return nil
 	}
 
+	livenessProbeSpec, err := m.GetDefaultLivenessProbeSpec(mgVersion)
+	if err != nil {
+		return err
+	}
 	if podTemplate.Spec.LivenessProbe == nil {
-		podTemplate.Spec.LivenessProbe = m.GetDefaultLivenessProbeSpec(mgVersion)
+		podTemplate.Spec.LivenessProbe = livenessProbeSpec
+	}
+
+	readinessProbeSpec, err := m.GetDefaultReadinessProbeSpec(mgVersion)
+	if err != nil {
+		return err
 	}
 	if podTemplate.Spec.ReadinessProbe == nil {
-		podTemplate.Spec.ReadinessProbe = m.GetDefaultReadinessProbeSpec(mgVersion)
+		podTemplate.Spec.ReadinessProbe = readinessProbeSpec
 	}
+
+	return nil
 }
 
 // setDefaultAffinity
