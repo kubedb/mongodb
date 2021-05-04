@@ -8,32 +8,152 @@ require (
 	github.com/prometheus-operator/prometheus-operator/pkg/client v0.47.0
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
-	go.bytebuilders.dev/license-verifier v0.9.0
-	go.bytebuilders.dev/license-verifier/kubernetes v0.9.0
+	go.bytebuilders.dev/license-verifier v0.9.1
+	go.bytebuilders.dev/license-verifier/kubernetes v0.9.1
 	go.mongodb.org/mongo-driver v1.3.2
 	gomodules.xyz/envsubst v0.1.0
 	gomodules.xyz/password-generator v0.2.6
 	gomodules.xyz/pointer v0.0.0-20201105071923-daf60fa55209
-	gomodules.xyz/runtime v0.0.0-20201104200926-d838b09dda8b
+	gomodules.xyz/runtime v0.2.0
 	gomodules.xyz/sets v0.0.0-20210218105342-2efe2fb519a2
 	gomodules.xyz/version v0.1.0
-	gomodules.xyz/x v0.0.0-20201105065653-91c568df6331
+	gomodules.xyz/x v0.0.3
 	k8s.io/api v0.21.0
 	k8s.io/apiextensions-apiserver v0.21.0
 	k8s.io/apimachinery v0.21.0
 	k8s.io/apiserver v0.21.0
-	k8s.io/client-go v12.0.0+incompatible
+	k8s.io/client-go v0.21.0
 	k8s.io/klog/v2 v2.8.0
-	kmodules.xyz/client-go v0.0.0-20210503064222-c8c59295a3a5
-	kmodules.xyz/custom-resources v0.0.0-20210503065135-5267be335cb4
-	kmodules.xyz/monitoring-agent-api v0.0.0-20210503064631-e2d5686a9acd
-	kmodules.xyz/offshoot-api v0.0.0-20210503065102-3250bbdedc8f
-	kmodules.xyz/webhook-runtime v0.0.0-20210503065550-dc37e69fdba2
+	kmodules.xyz/client-go v0.0.0-20210504024435-1eb80721e9b8
+	kmodules.xyz/custom-resources v0.0.0-20210504034124-54c54fcdb690
+	kmodules.xyz/monitoring-agent-api v0.0.0-20210504040241-261c2428d207
+	kmodules.xyz/offshoot-api v0.0.0-20210504040651-7951e351f0f5
+	kmodules.xyz/webhook-runtime v0.0.0-20210504042742-3a9911e3dcdc
 	kubedb.dev/apimachinery v0.18.1-0.20210503232843-7030bd8fddb2
 	stash.appscode.dev/apimachinery v0.13.0
+	k8s.io/cli-runtime v0.21.0
+	k8s.io/cloud-provider v0.21.0
+	k8s.io/component-base v0.21.0
+	k8s.io/kube-aggregator v0.21.0
+	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7
+	k8s.io/kubectl v0.21.0
+	k8s.io/kubernetes v1.21.0
+	k8s.io/utils v0.0.0-20210111153108-fddb29f9d009
+	kmodules.xyz/crd-schema-fuzz v0.0.0-20210503192455-da44af375c4c
+	kmodules.xyz/objectstore-api v0.0.0-20210504041638-b9e00ab1eab3
+	kmodules.xyz/openshift v0.0.0-20210504040454-a3ddfc579bb7
+	kmodules.xyz/prober v0.0.0-20210504042421-eca494e828bc
 )
 
 replace go.mongodb.org/mongo-driver => github.com/appscode/mongo-go-driver v1.4.0-beta2.0.20210223075318-951c8933c59c
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 replace bitbucket.org/ww/goautoneg => gomodules.xyz/goautoneg v0.0.0-20120707110453-a547fc61f48d
 
@@ -142,3 +262,4 @@ replace k8s.io/utils => k8s.io/utils v0.0.0-20201110183641-67b214c5f920
 replace kmodules.xyz/resource-metadata => kmodules.xyz/resource-metadata v0.5.0
 
 replace sigs.k8s.io/application => github.com/kmodules/application v0.8.4-0.20210427030912-90eeee3bc4ad
+
