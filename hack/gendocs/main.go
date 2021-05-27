@@ -25,7 +25,7 @@ import (
 	"github.com/spf13/cobra/doc"
 	"gomodules.xyz/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // ref: https://github.com/spf13/cobra/blob/master/doc/md_docs.md

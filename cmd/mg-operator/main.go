@@ -23,13 +23,15 @@ import (
 	"gomodules.xyz/kglog"
 	_ "k8s.io/client-go/kubernetes/fake"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 func main() {
-	kglog.InitLogs()
+	rootCmd := cmds.NewRootCmd(Version)
+	kglog.Init(rootCmd, true)
 	defer kglog.FlushLogs()
-	if err := cmds.NewRootCmd(Version).Execute(); err != nil {
+
+	if err := rootCmd.Execute(); err != nil {
 		klog.Fatal(err)
 	}
 }
