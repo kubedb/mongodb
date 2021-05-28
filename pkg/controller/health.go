@@ -66,7 +66,7 @@ func (c *Controller) CheckMongoDBHealthOnce() {
 	for idx := range dbList {
 		db := dbList[idx]
 
-		if db.DeletionTimestamp != nil {
+		if db.DeletionTimestamp != nil || db.Spec.Halted {
 			continue
 		}
 
