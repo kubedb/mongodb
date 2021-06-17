@@ -78,9 +78,13 @@ func (c *Controller) CheckMongoDBHealthOnce() {
 			var err error
 			var dbClient, configSvrClient, mongosClient *mongo.Client
 			var shardPingErrors []error
+
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+			defer cancel()
+
 			// Create database client
 			if db.Spec.ShardTopology == nil {
-				dbClient, err = c.GetMongoClient(db, strings.Join(db.Hosts(), ","), db.RepSetName())
+				dbClient, err = c.GetMongoClient(ctx, db, strings.Join(db.Hosts(), ","), db.RepSetName())
 				if err != nil {
 					// Since the client was unable to connect the database,
 					// update "AcceptingConnection" to "false".
@@ -90,13 +94,13 @@ func (c *Controller) CheckMongoDBHealthOnce() {
 					return
 				}
 				defer func() {
-					err = dbClient.Disconnect(context.TODO())
+					err = dbClient.Disconnect(ctx)
 					if err != nil {
 						klog.Errorf("Failed to disconnect client for mongodb %s/%s. error: %v", db.Namespace, db.Name, err)
 					}
 				}()
 			} else {
-				configSvrClient, err = c.GetMongoClient(db, strings.Join(db.ConfigSvrHosts(), ","), db.ConfigSvrRepSetName())
+				configSvrClient, err = c.GetMongoClient(ctx, db, strings.Join(db.ConfigSvrHosts(), ","), db.ConfigSvrRepSetName())
 				if err != nil {
 					// Since the client was unable to connect to the config server,
 					// update "AcceptingConnection" to "false".
@@ -106,7 +110,7 @@ func (c *Controller) CheckMongoDBHealthOnce() {
 					return
 				}
 				defer func() {
-					err = configSvrClient.Disconnect(context.TODO())
+					err = configSvrClient.Disconnect(ctx)
 					if err != nil {
 						klog.Errorf("Failed to disconnect client for mongodb %s/%s. error: %v", db.Namespace, db.Name, err)
 					}
@@ -114,7 +118,7 @@ func (c *Controller) CheckMongoDBHealthOnce() {
 
 				shardPingErrors = make([]error, db.Spec.ShardTopology.Shard.Shards)
 				for i := int32(0); i < db.Spec.ShardTopology.Shard.Shards; i++ {
-					shardClient, err := c.GetMongoClient(db, strings.Join(db.ShardHosts(i), ","), db.ShardRepSetName(i))
+					shardClient, err := c.GetMongoClient(ctx, db, strings.Join(db.ShardHosts(i), ","), db.ShardRepSetName(i))
 					if err != nil {
 						// Since the client was unable to connect to the shard nodes,
 						// update "AcceptingConnection" to "false".
@@ -125,12 +129,12 @@ func (c *Controller) CheckMongoDBHealthOnce() {
 					}
 					func(client *mongo.Client) {
 						defer func() {
-							err = client.Disconnect(context.TODO())
+							err = client.Disconnect(ctx)
 							if err != nil {
 								klog.Errorf("Failed to disconnect client for shard %s/%s. error: %v", db.Namespace, db.Name, err)
 							}
 						}()
-						err = client.Ping(context.TODO(), nil)
+						err = client.Ping(ctx, nil)
 						if err != nil {
 							shardPingErrors[i] = err
 							klog.Errorf("Failed to ping shard%d for MongoDB: %s/%s with: %s", i, db.Namespace, db.Name, err.Error())
@@ -140,7 +144,7 @@ func (c *Controller) CheckMongoDBHealthOnce() {
 					}(shardClient)
 				}
 
-				mongosClient, err = c.GetMongoClient(db, strings.Join(db.MongosHosts(), ","), "")
+				mongosClient, err = c.GetMongoClient(ctx, db, strings.Join(db.MongosHosts(), ","), "")
 				if err != nil {
 					// Since the client was unable to connect to the mongos,
 					// update "AcceptingConnection" to "false".
@@ -150,7 +154,7 @@ func (c *Controller) CheckMongoDBHealthOnce() {
 					return
 				}
 				defer func() {
-					err = mongosClient.Disconnect(context.TODO())
+					err = mongosClient.Disconnect(ctx)
 					if err != nil {
 						klog.Errorf("Failed to disconnect client for mongodb %s/%s. error: %v", db.Namespace, db.Name, err)
 					}
@@ -162,7 +166,7 @@ func (c *Controller) CheckMongoDBHealthOnce() {
 			// the database is accepting connection.
 			// Update "AcceptingConnection" to "true".
 			_, err = util.UpdateMongoDBStatus(
-				context.TODO(),
+				ctx,
 				c.DBClient.KubedbV1alpha2(),
 				db.ObjectMeta,
 				func(in *api.MongoDBStatus) (types.UID, *api.MongoDBStatus) {
@@ -186,7 +190,7 @@ func (c *Controller) CheckMongoDBHealthOnce() {
 
 			if db.Spec.ShardTopology == nil {
 				// Update to "Ready" condition to "true" only if the database ping is successful.
-				err = dbClient.Ping(context.TODO(), nil)
+				err = dbClient.Ping(ctx, nil)
 				if err != nil {
 					klog.Errorf("Failed to ping database for MongoDB: %s/%s with: %s", db.Namespace, db.Name, err.Error())
 					// Since the get status failed, skip remaining operations.
@@ -204,14 +208,14 @@ func (c *Controller) CheckMongoDBHealthOnce() {
 				}
 
 				// Update to "Ready" condition to "true" only if the config server and shard ping is successful.
-				err = configSvrClient.Ping(context.TODO(), nil)
+				err = configSvrClient.Ping(ctx, nil)
 				if err != nil {
 					klog.Errorf("Failed to ping config server for MongoDB: %s/%s with: %s", db.Namespace, db.Name, err.Error())
 					// Since the get status failed, skip remaining operations.
 					return
 				}
 
-				err = mongosClient.Ping(context.TODO(), nil)
+				err = mongosClient.Ping(ctx, nil)
 				if err != nil {
 					klog.Errorf("Failed to ping mongos for MongoDB: %s/%s with: %s", db.Namespace, db.Name, err.Error())
 					// Since the get status failed, skip remaining operations.
