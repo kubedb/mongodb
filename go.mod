@@ -32,8 +32,8 @@ require (
 	kmodules.xyz/monitoring-agent-api v0.0.0-20210618110729-9cd872c66513
 	kmodules.xyz/offshoot-api v0.0.0-20210618005544-5217a24765da
 	kmodules.xyz/webhook-runtime v0.0.0-20210618013329-0accb929102b
-	kubedb.dev/apimachinery v0.18.1-0.20210618122709-e98fb31f5dfb
-	stash.appscode.dev/apimachinery v0.14.1-0.20210618025054-0cae462d7e04
+	kubedb.dev/apimachinery v0.19.0-rc.0
+	stash.appscode.dev/apimachinery v0.14.1
 )
 
 replace go.mongodb.org/mongo-driver => github.com/appscode/mongo-go-driver v1.4.0-beta2.0.20210223075318-951c8933c59c
